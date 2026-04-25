@@ -1,0 +1,523 @@
+/* CSS chuyên biệt cho trang Chi tiết Dự án (Request Detail) */
+
+body {
+  background-color: #F8FAFC;
+}
+
+/* Hero Section */
+.d-hero {
+  background: var(--navy);
+  padding: 40px 20px 60px;
+  position: relative;
+  border-bottom: 5px solid var(--teal);
+  color: #fff;
+}
+
+.d-hero-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.d-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: #94A3B8;
+  margin-bottom: 24px;
+}
+
+.d-breadcrumb a {
+  color: var(--teal);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.d-breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.d-title {
+  font-family: var(--font-sans);
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 16px;
+}
+
+.d-badges {
+  display: flex;
+  gap: 12px;
+}
+
+/* Base Classes if not globally available */
+.job-badge {
+  font-family: var(--font-sans);
+  background: #F0FDF4;
+  color: #16A34A;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.job-badge.red {
+  background: #FEF2F2;
+  color: #DC2626;
+}
+
+/* Layout */
+.d-layout {
+  max-width: 1200px;
+  margin: 40px auto;
+  display: flex;
+  gap: 30px;
+  padding: 0 20px;
+  align-items: flex-start;
+}
+
+.d-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.d-sidebar {
+  width: 340px;
+  flex-shrink: 0;
+}
+
+/* Cards */
+.d-card {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid var(--border-light);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  padding: 30px;
+  margin-bottom: 24px;
+}
+
+.d-section-title {
+  font-family: var(--font-sans);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Main Content Components */
+.d-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 30px;
+  color: #475569;
+  font-size: 15px;
+  flex-wrap: wrap;
+}
+
+.d-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.d-meta-item i {
+  color: var(--teal);
+}
+
+.d-desc {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #475569;
+}
+
+.large-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.job-tag {
+  background: #F1F5F9;
+  color: #475569;
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+.job-tag.outline {
+  background: transparent;
+  border: 1px solid #E2E8F0;
+}
+
+/* Attachments */
+.attach-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  background: #F8FAFC;
+  transition: 0.2s;
+}
+
+.attach-item:hover {
+  border-color: var(--teal);
+  background: #fff;
+}
+
+.attach-item i.fa-file-pdf {
+  font-size: 32px;
+  color: #DC2626;
+}
+
+.attach-info {
+  flex: 1;
+}
+
+.attach-info a {
+  display: block;
+  font-weight: 600;
+  color: var(--navy);
+  text-decoration: none;
+  font-size: 15px;
+}
+
+.attach-info span {
+  font-size: 13px;
+  color: #64748B;
+}
+
+/* Sidebar Components */
+.d-budget-block {
+  padding: 24px;
+  background: #F8FAFC;
+  border-radius: 12px;
+  margin-bottom: 28px;
+  text-align: center;
+  border: 1px solid #F1F5F9;
+}
+
+.d-budget-label {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #64748B;
+  margin-bottom: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.d-budget-value {
+  font-size: 25px;
+  font-weight: 800;
+  color: var(--teal);
+  letter-spacing: -0.5px;
+  line-height: 1.4;
+}
+
+.d-deadline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.d-deadline-item i {
+  font-size: 20px;
+  color: var(--teal);
+  margin-top: 2px;
+}
+
+.d-label {
+  display: block;
+  font-size: 14px;
+  color: #64748B;
+}
+
+.d-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.bg-btn-primary {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  background: var(--gold);
+  color: var(--navy);
+  font-weight: 700;
+  font-size: 16px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: 0.3s;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.bg-btn-primary:hover {
+  background: #FBBF24;
+  transform: translateY(-2px);
+}
+
+.bg-btn-outline {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  background: transparent;
+  color: var(--navy);
+  font-weight: 600;
+  font-size: 16px;
+  border: 2px solid var(--border-light);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: 0.3s;
+  text-align: center;
+}
+
+.bg-btn-outline:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+  background: #F0F9FF;
+}
+
+.d-client-profile {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.d-client-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid var(--border-light);
+}
+
+.d-client-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 4px;
+}
+
+.c-stat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.c-stat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #475569;
+}
+
+.c-stat i.fa-check-circle {
+  color: #10B981;
+}
+
+.c-share {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.c-share p {
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.c-share-links {
+  display: flex;
+  gap: 12px;
+}
+
+.c-share-links a {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #F1F5F9;
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+  text-decoration: none;
+}
+
+.c-share-links a:hover {
+  background: var(--teal);
+  color: #fff;
+}
+
+/* Bids Section Overrides */
+.bids-note {
+  color: #64748B;
+  margin-bottom: 24px;
+}
+
+.bids-summary-card {
+  font-size: 14px;
+  color: #475569;
+}
+
+.bid-item {
+  display: flex;
+  gap: 30px;
+  padding: 30px 10px;
+  border-bottom: 1px solid #E2E8F0;
+  background: transparent;
+  transition: 0.2s;
+  align-items: flex-start;
+}
+
+.bid-item:last-child {
+  border-bottom: none;
+}
+
+.bid-item:hover {
+  background: #F8FAFC;
+}
+
+.bid-item.highlight {
+  background: #FAFAF9;
+}
+
+.bid-user-col {
+  width: 70px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.bid-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  margin-bottom: 8px;
+  border: 1px solid var(--border-light);
+}
+
+.stars {
+  font-size: 11px;
+}
+
+.bid-main-col {
+  flex: 1;
+}
+
+.bid-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.bid-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bid-name {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--navy);
+  text-decoration: none;
+}
+
+.bid-name:hover {
+  color: var(--teal);
+  text-decoration: underline;
+}
+
+.btn-success {
+  background: transparent;
+  color: var(--teal);
+  border: 1px solid var(--teal);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-success:hover {
+  background: var(--teal);
+  color: #fff;
+}
+
+.bid-desc {
+  font-size: 15px;
+  color: #475569;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.bid-skills {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.bid-skills strong {
+  color: var(--navy);
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.bid-stats-col {
+  width: 260px;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-left: 1px dashed #E2E8F0;
+  padding-left: 30px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  color: #64748B;
+}
+
+.stat-row span:last-child, .stat-row a {
+  font-weight: 600;
+  color: var(--navy);
+  text-decoration: none;
+}
+
+@media (max-width: 900px) {
+  .d-layout {
+    flex-direction: column;
+  }
+  .d-sidebar {
+    width: 100%;
+  }
+  .bid-item {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .bid-stats-col {
+    width: 100%;
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px dashed #E2E8F0;
+    padding-top: 16px;
+  }
+}

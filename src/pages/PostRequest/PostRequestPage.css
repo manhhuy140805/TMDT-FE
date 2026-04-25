@@ -1,0 +1,147 @@
+/* Trang Đăng Dự Án / Post Request */
+
+.post-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 30px;
+  margin-top: -60px; /* Kéo lên đè vào banner */
+  position: relative;
+  z-index: 10;
+  margin-bottom: 60px;
+}
+
+.step-card {
+  background: #fff;
+  border-radius: 20px;
+  border: 1px solid var(--border-light);
+  box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08);
+  margin-bottom: 30px;
+  overflow: hidden;
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 30px;
+  background: #F8FAFC;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.step-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--teal);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.step-header h2 {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  color: var(--navy);
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.step-body {
+  padding: 30px;
+}
+
+.file-dropzone {
+  border: 2px dashed #CBD5E1;
+  border-radius: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  background: #F8FAFC;
+  cursor: pointer;
+  transition: 0.2s;
+  margin-top: 10px;
+}
+
+.file-dropzone:hover {
+  border-color: var(--teal);
+  background: #F0F9FF;
+}
+
+.char-count {
+  font-size: 13px;
+  color: #94A3B8;
+  float: right;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.sidebar-card {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid var(--border-light);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.sidebar-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.check-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.check-list li {
+  position: relative;
+  padding-left: 28px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.check-list li i {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  color: #10B981;
+  font-size: 16px;
+}
+
+.input-group label {
+  font-weight: 600;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  color: var(--navy);
+  margin-bottom: 10px;
+  display: block;
+}
+
+.input-suffix {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748B;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+@media (max-width: 900px) {
+  .post-layout {
+    grid-template-columns: 1fr;
+    margin-top: 20px;
+  }
+}
