@@ -1,16 +1,101 @@
-# React + Vite
+# FRAS-TMDT-FE - Freelance Marketplace Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Dự án React chuyển đổi từ HTML/CSS thuần sang React với React Router.
 
-Currently, two official plugins are available:
+## 🚀 Công nghệ sử dụng
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **React 19** - UI Library
+- **React Router DOM 7** - Routing
+- **Vite 8** - Build tool
+- **CSS thuần** - Styling (không dùng Tailwind)
 
-## React Compiler
+## 📁 Cấu trúc dự án
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```
+src/
+├── components/
+│   └── layout/
+│       ├── Header.jsx
+│       ├── Footer.jsx
+│       └── Layout.jsx
+├── pages/
+│   ├── Home/
+│   │   └── HomePage.jsx
+│   └── Auth/
+│       ├── LoginPage.jsx
+│       └── SignupPage.jsx
+├── styles/
+│   ├── landing.css
+│   ├── signup.css
+│   ├── style.css
+│   ├── admin.css
+│   ├── detail.css
+│   ├── post.css
+│   ├── profile.css
+│   ├── progress.css
+│   └── requests.css
+├── App.jsx
+├── main.jsx
+└── index.css
+```
 
-## Expanding the ESLint configuration
+## 🎨 Styling
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Dự án sử dụng **CSS thuần** được copy từ thư mục UI gốc để đảm bảo giao diện giống 100%.
+
+Các file CSS được import trong `src/index.css`:
+- `landing.css` - Trang chủ
+- `signup.css` - Đăng ký/Đăng nhập
+- `style.css` - Styles chung
+
+## 🛠️ Cài đặt và chạy
+
+### Cài đặt dependencies
+```bash
+npm install
+```
+
+### Chạy development server
+```bash
+npm run dev
+```
+
+### Build production
+```bash
+npm run build
+```
+
+### Preview production build
+```bash
+npm run preview
+```
+
+## 📄 Các trang đã hoàn thành
+
+- ✅ **Home Page** (`/`) - Trang landing với hero, categories, process, testimonials
+- ✅ **Login Page** (`/login`) - Trang đăng nhập
+- ✅ **Signup Page** (`/signup`) - Trang đăng ký
+
+## 🔜 Các trang cần phát triển
+
+- ⏳ **Requests Page** (`/requests`) - Danh sách công việc
+- ⏳ **Request Detail** (`/requests/:id`) - Chi tiết công việc
+- ⏳ **Post Request** (`/post-request`) - Đăng công việc mới
+- ⏳ **Profile** (`/profile`) - Hồ sơ người dùng
+- ⏳ **Progress** (`/progress`) - Tiến độ công việc
+- ⏳ **Admin Dashboard** (`/admin`) - Quản trị
+
+## 📝 Ghi chú
+
+- Tất cả images được lưu trong `public/images/`
+- Font Awesome được load từ CDN trong `index.html`
+- CSS variables được định nghĩa trong các file CSS gốc
+- React Router được cấu hình trong `App.jsx`
+
+## 🎯 Mục tiêu
+
+Chuyển đổi hoàn toàn từ HTML/CSS thuần sang React application với:
+- Component-based architecture
+- Client-side routing
+- Reusable components
+- Giữ nguyên 100% giao diện gốc
