@@ -4,13 +4,14 @@ import HomePage from "../pages/Home/HomePage";
 import LoginPage from "../pages/Auth/LoginPage";
 import SignupPage from "../pages/Auth/SignupPage";
 import RequestsPage from "../pages/Requests/RequestsPage";
-
-// Import các pages khác khi đã tạo
-// import RequestDetailPage from "../pages/RequestDetail/RequestDetailPage";
-// import PostRequestPage from "../pages/PostRequest/PostRequestPage";
-// import ProfilePage from "../pages/Profile/ProfilePage";
-// import ProgressPage from "../pages/Progress/ProgressPage";
-// import AdminPage from "../pages/Admin/AdminPage";
+import ProfilePage from "../pages/Profile/ProfilePage";
+import ProgressPage from "../pages/Progress/ProgressPage";
+import RatingPage from "../pages/Rating/RatingPage";
+import FreelancerReviewsPage from "../pages/FreelancerProfile/ReviewsPage";
+import PublicProfilePage from "../pages/FreelancerProfile/PublicProfilePage";
+import PublicClientProfilePage from "../pages/FreelancerProfile/PublicClientProfilePage";
+import ReportPage from "../pages/Report/ReportPage";
+import AdminPage from "../pages/Admin/AdminPage";
 
 // 404 Page
 const NotFound = () => {
@@ -57,15 +58,27 @@ function AppRoutes() {
           
           {/* Job routes */}
           <Route path="requests" element={<RequestsPage />} />
-          {/* <Route path="requests/:id" element={<RequestDetailPage />} /> */}
-          {/* <Route path="post-request" element={<PostRequestPage />} /> */}
           
-          {/* User routes - uncomment khi đã tạo */}
-          {/* <Route path="profile" element={<ProfilePage />} /> */}
-          {/* <Route path="progress" element={<ProgressPage />} /> */}
+          {/* Shared routes */}
+          <Route path="profile" element={<ProfilePage />} />
           
-          {/* Admin routes - uncomment khi đã tạo */}
-          {/* <Route path="admin" element={<AdminPage />} /> */}
+          {/* Freelancer actor routes (Actions taken by Freelancer) */}
+          <Route path="freelancer">
+            <Route path="progress" element={<ProgressPage />} />
+            <Route path="reviews" element={<FreelancerReviewsPage />} />
+            <Route path="view-client" element={<PublicClientProfilePage />} />
+            <Route path="report" element={<ReportPage />} />
+          </Route>
+
+          {/* Client actor routes (Actions taken by Client) */}
+          <Route path="client">
+            <Route path="view-freelancer" element={<PublicProfilePage />} />
+            <Route path="rating" element={<RatingPage />} />
+            <Route path="report" element={<ReportPage />} />
+          </Route>
+          
+          {/* Admin routes */}
+          <Route path="admin" element={<AdminPage />} />
           
           {/* 404 */}
           <Route path="*" element={<NotFound />} />

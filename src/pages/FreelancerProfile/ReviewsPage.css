@@ -1,0 +1,348 @@
+/* Giao diện Xem đánh giá của Freelancer (Phong cách Upwork) */
+
+.freelancer-reviews-container {
+  max-width: 1200px;
+  margin: 40px auto;
+  display: flex;
+  gap: 30px;
+  padding: 0 20px;
+  align-items: flex-start;
+}
+
+/* Sidebar */
+.fl-sidebar {
+  width: 280px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 24px;
+  position: sticky;
+  top: 20px;
+}
+
+.sidebar-heading {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 20px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: #475569;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  transition: 0.2s;
+  cursor: pointer;
+}
+
+.nav-item:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.nav-item.active {
+  background: #0ea5e9;
+  color: #fff;
+}
+
+/* Main Content */
+.fl-reviews-main {
+  flex: 1;
+}
+
+.rating-summary-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 32px;
+  display: flex;
+  align-items: center;
+  gap: 60px;
+  margin-bottom: 40px;
+}
+
+.overall-score {
+  text-align: center;
+}
+
+.score-num {
+  font-size: 64px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.overall-stars {
+  color: #fbbf24;
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.total-reviews {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.rating-distribution {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dist-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 14px;
+  color: #475569;
+}
+
+.dist-label {
+  width: 60px;
+}
+
+.dist-bar-bg {
+  flex: 1;
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dist-bar-fill {
+  height: 100%;
+  background: #fbbf24;
+  border-radius: 4px;
+}
+
+.dist-count {
+  width: 40px;
+  text-align: right;
+  font-weight: 600;
+}
+
+/* Review List */
+.reviews-section-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 24px;
+}
+
+.reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.review-item {
+  display: flex;
+  gap: 20px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.review-item:last-child {
+  border-bottom: none;
+}
+
+.client-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.client-avatar-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #eef2ff;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.review-content-wrapper {
+  flex: 1;
+}
+
+.review-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.client-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.project-link {
+  font-size: 14px;
+  color: #0ea5e9;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.project-link:hover {
+  text-decoration: underline;
+}
+
+.review-meta {
+  text-align: right;
+}
+
+.review-stars {
+  color: #fbbf24;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.review-date {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.review-text {
+  font-size: 15px;
+  color: #475569;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.reply-link {
+  font-size: 14px;
+  color: #0ea5e9;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.load-more-container {
+  margin-top: 40px;
+  display: flex;
+  justify-content: center;
+}
+
+.btn-load-more {
+  padding: 10px 24px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  color: #475569;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-load-more:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+/* Reply Styles */
+.reply-content {
+  background: #f8fafc;
+  border-left: 3px solid #0ea5e9;
+  padding: 16px;
+  border-radius: 4px;
+  margin-top: 12px;
+}
+
+.reply-header {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0ea5e9;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.reply-content p {
+  font-size: 14px;
+  color: #475569;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.reply-form {
+  margin-top: 16px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.reply-form textarea {
+  width: 100%;
+  min-height: 100px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 12px;
+  font-family: inherit;
+  font-size: 14px;
+  margin-bottom: 12px;
+  resize: vertical;
+}
+
+.reply-form textarea:focus {
+  outline: none;
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+.reply-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-cancel-reply {
+  padding: 8px 16px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.btn-send-reply {
+  padding: 8px 20px;
+  background: #0ea5e9;
+  border: none;
+  border-radius: 18px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+}
+
+.btn-send-reply:hover {
+  background: #0284c7;
+}
