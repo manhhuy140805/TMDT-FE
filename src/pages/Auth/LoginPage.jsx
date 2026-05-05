@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import api from '../../services/api';
 import './Auth.css';
 
 const LoginPage = () => {
@@ -9,6 +10,8 @@ const LoginPage = () => {
     password: '',
     remember: false,
   });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -16,25 +19,52 @@ const LoginPage = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+    // Clear error when user types
+    if (error) setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Login data:', formData);
-    // TODO: Implement login logic
-    // Sau khi login thành công:
-    // navigate('/');
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await api.auth.login({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (response.success) {
+        // Lưu thông tin user vào localStorage
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        // Nếu chọn "Nhớ đăng nhập", lưu thêm flag
+        if (formData.remember) {
+          localStorage.setItem('rememberMe', 'true');
+        }
+
+        // Chuyển hướng về trang chủ
+        navigate('/');
+      } else {
+        setError(response.message || 'Đăng nhập thất bại');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Có lỗi xảy ra. Vui lòng thử lại!');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="signup-premium-wrapper">
+    <div className="auth-fullscreen">
       {/* Home Button */}
-      <Link to="/" className="home-button">
-        <i className="fa-solid fa-home"></i>
-        <span>Trang chủ</span>
+      <Link to="/" className="auth-home-btn">
+        <i className="fa-solid fa-arrow-left"></i>
+        <span>Về trang chủ</span>
       </Link>
 
-      <div className="signup-premium-card">
+      <div className="auth-split-layout">
         {/* Left Side: Interactive Banner */}
         <div className="signup-banner">
           <img src="/images/signup_bg.png" alt="Premium Network" className="signup-bg" />
@@ -72,6 +102,25 @@ const LoginPage = () => {
           </div>
 
           <form id="loginForm" className="premium-form" onSubmit={handleSubmit}>
+            {/* Error Message */}
+            {error && (
+              <div style={{
+                padding: '12px',
+                background: '#FEF2F2',
+                border: '1px solid #FCA5A5',
+                borderRadius: '8px',
+                color: '#DC2626',
+                fontSize: '13px',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <i className="fa-solid fa-circle-exclamation"></i>
+                <span>{error}</span>
+              </div>
+            )}
+
             {/* Fields */}
             <div className="premium-input-group">
               <label>Địa chỉ Email</label>
@@ -158,8 +207,15 @@ const LoginPage = () => {
             </div>
 
             {/* Submit */}
-            <button type="submit" className="btn-signup-premium">
-              Đăng Nhập
+            <button type="submit" className="btn-signup-premium" disabled={loading}>
+              {loading ? (
+                <>
+                  <i className="fa-solid fa-circle-notch fa-spin"></i>
+                  Đang đăng nhập...
+                </>
+              ) : (
+                'Đăng Nhập'
+              )}
             </button>
 
             {/* Social Auth */}

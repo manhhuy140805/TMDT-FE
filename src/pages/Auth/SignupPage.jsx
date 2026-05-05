@@ -41,14 +41,14 @@ const SignupPage = () => {
   };
 
   return (
-    <div className="signup-premium-wrapper">
+    <div className="auth-fullscreen">
       {/* Home Button */}
-      <Link to="/" className="home-button">
-        <i className="fa-solid fa-home"></i>
-        <span>Trang chủ</span>
+      <Link to="/" className="auth-home-btn">
+        <i className="fa-solid fa-arrow-left"></i>
+        <span>Về trang chủ</span>
       </Link>
 
-      <div className="signup-premium-card">
+      <div className="auth-split-layout">
         {/* Left Side: Interactive Banner */}
         <div className="signup-banner">
           <img src="/images/signup_bg.png" alt="Premium Network" className="signup-bg" />

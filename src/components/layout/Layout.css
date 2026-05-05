@@ -9,8 +9,8 @@
   --bg-blue: #0b1120; /* Dark Navy for banners */
   --border-cc: #e2e8f0;
   --error: #ef4444;
-  --font: "Inter", sans-serif;
-  --font-heading: "Playfair Display", serif;
+  --font: Arial, Helvetica, sans-serif;
+  --font-heading: Arial, Helvetica, sans-serif;
   --radius-box: 16px;
   --radius-input: 8px;
 }

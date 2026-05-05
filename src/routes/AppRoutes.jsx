@@ -4,10 +4,11 @@ import HomePage from "../pages/Home/HomePage";
 import LoginPage from "../pages/Auth/LoginPage";
 import SignupPage from "../pages/Auth/SignupPage";
 import RequestsPage from "../pages/Requests/RequestsPage";
+import RequestDetailPage from "../pages/RequestDetail/RequestDetailPage";
+import PostRequestPage from "../pages/PostRequest/PostRequestPage";
+import MyRequestsPage from "../pages/MyRequests/MyRequestsPage";
 
 // Import các pages khác khi đã tạo
-// import RequestDetailPage from "../pages/RequestDetail/RequestDetailPage";
-// import PostRequestPage from "../pages/PostRequest/PostRequestPage";
 // import ProfilePage from "../pages/Profile/ProfilePage";
 // import ProgressPage from "../pages/Progress/ProgressPage";
 // import AdminPage from "../pages/Admin/AdminPage";
@@ -57,8 +58,9 @@ function AppRoutes() {
           
           {/* Job routes */}
           <Route path="requests" element={<RequestsPage />} />
-          {/* <Route path="requests/:id" element={<RequestDetailPage />} /> */}
-          {/* <Route path="post-request" element={<PostRequestPage />} /> */}
+          <Route path="requests/:id" element={<RequestDetailPage />} />
+          <Route path="post-request" element={<PostRequestPage />} />
+          <Route path="my-requests" element={<MyRequestsPage />} />
           
           {/* User routes - uncomment khi đã tạo */}
           {/* <Route path="profile" element={<ProfilePage />} /> */}

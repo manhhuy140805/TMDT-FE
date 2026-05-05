@@ -19,8 +19,8 @@
   --text-dark: #0F172A;
   --border-light: #E2E8F0;
   
-  --font-sans: 'Inter', sans-serif;
-  --font-serif: 'Playfair Display', serif;
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-serif: Arial, Helvetica, sans-serif;
 }
 
 body.landing-body {
@@ -166,6 +166,124 @@ a {
 .btn-signup-styled:hover {
   background: #0284C7;
   transform: translateY(-1px);
+}
+
+/* === User Menu === */
+.user-menu {
+  position: relative;
+}
+
+.user-menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 30px;
+  transition: all 0.3s;
+}
+
+.user-menu-btn:hover {
+  background: #F1F5F9;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border-light);
+}
+
+.user-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--navy);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-menu-btn i {
+  font-size: 12px;
+  color: #64748B;
+}
+
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  min-width: 220px;
+  padding: 8px 0;
+  z-index: 1000;
+  animation: dropdownFadeIn 0.2s ease;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  font-size: 14px;
+  color: var(--text-dark);
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-sans);
+}
+
+.dropdown-item:hover {
+  background: #F8FAFC;
+  color: var(--teal);
+}
+
+.dropdown-item i {
+  width: 18px;
+  font-size: 16px;
+  color: #64748B;
+}
+
+.dropdown-item:hover i {
+  color: var(--teal);
+}
+
+.dropdown-item.logout {
+  color: #DC2626;
+}
+
+.dropdown-item.logout:hover {
+  background: #FEF2F2;
+  color: #DC2626;
+}
+
+.dropdown-item.logout i {
+  color: #DC2626;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--border-light);
+  margin: 8px 0;
 }
 
 /* === Hero Section === */

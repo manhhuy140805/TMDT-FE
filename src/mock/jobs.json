@@ -1,0 +1,238 @@
+[
+  {
+    "id": 1,
+    "requestId": 11,
+    "quoteId": 23,
+    "freelancerId": 15,
+    "employerId": 3,
+    "title": "Xây dựng hệ thống quản lý kho hàng",
+    "description": "Cần phát triển phần mềm quản lý kho hàng cho công ty logistics. Tính năng: nhập/xuất kho, kiểm kê, báo cáo tồn kho, cảnh báo hết hàng. Tech: Java Spring Boot + React.",
+    "freelancer": {
+      "id": 15,
+      "name": "Hoàng Quốc Việt",
+      "avatar": "/images/avatars/freelancer5.jpg",
+      "rating": 4.6
+    },
+    "employer": {
+      "id": 3,
+      "name": "Trần Thị B",
+      "avatar": "/images/avatars/user2.jpg"
+    },
+    "agreedPrice": 33000000,
+    "agreedPriceText": "33,000,000 VNĐ",
+    "startDate": "2026-04-25",
+    "endDate": "2026-06-19",
+    "completedDate": null,
+    "progress": 15,
+    "status": "DANG_THUC_HIEN",
+    "statusText": "Đang thực hiện",
+    "notes": "Đã hoàn thành: phân tích yêu cầu, thiết kế database, setup project. Đang làm: API nhập/xuất kho.",
+    "createdDate": "2026-04-25T00:00:00Z",
+    "milestones": [
+      {
+        "id": 1,
+        "name": "Phân tích yêu cầu & Thiết kế",
+        "status": "completed",
+        "progress": 100,
+        "dueDate": "2026-04-30"
+      },
+      {
+        "id": 2,
+        "name": "Phát triển Backend API",
+        "status": "in-progress",
+        "progress": 30,
+        "dueDate": "2026-05-20"
+      },
+      {
+        "id": 3,
+        "name": "Phát triển Frontend",
+        "status": "pending",
+        "progress": 0,
+        "dueDate": "2026-06-10"
+      },
+      {
+        "id": 4,
+        "name": "Testing & Deployment",
+        "status": "pending",
+        "progress": 0,
+        "dueDate": "2026-06-19"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "requestId": 12,
+    "quoteId": 25,
+    "freelancerId": 16,
+    "employerId": 4,
+    "title": "Thiết kế bộ ảnh sản phẩm cho shop thời trang",
+    "description": "Cần designer thiết kế bộ ảnh sản phẩm cho 50 sản phẩm thời trang. Yêu cầu: chỉnh sửa ảnh chuyên nghiệp, background trắng, tạo mockup, banner cho website và social media.",
+    "freelancer": {
+      "id": 16,
+      "name": "Vũ Thị Mai",
+      "avatar": "/images/avatars/freelancer6.jpg",
+      "rating": 4.8
+    },
+    "employer": {
+      "id": 4,
+      "name": "Lê Văn C",
+      "avatar": "/images/avatars/user3.jpg"
+    },
+    "agreedPrice": 5500000,
+    "agreedPriceText": "5,500,000 VNĐ",
+    "startDate": "2026-04-24",
+    "endDate": "2026-05-12",
+    "completedDate": null,
+    "progress": 30,
+    "status": "DANG_THUC_HIEN",
+    "statusText": "Đang thực hiện",
+    "notes": "Đã hoàn thành 15/50 sản phẩm. Đang chỉnh sửa batch 2.",
+    "createdDate": "2026-04-24T00:00:00Z",
+    "milestones": [
+      {
+        "id": 1,
+        "name": "Batch 1 (15 sản phẩm)",
+        "status": "completed",
+        "progress": 100,
+        "dueDate": "2026-04-30"
+      },
+      {
+        "id": 2,
+        "name": "Batch 2 (15 sản phẩm)",
+        "status": "in-progress",
+        "progress": 60,
+        "dueDate": "2026-05-05"
+      },
+      {
+        "id": 3,
+        "name": "Batch 3 (20 sản phẩm)",
+        "status": "pending",
+        "progress": 0,
+        "dueDate": "2026-05-12"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "requestId": 13,
+    "quoteId": 27,
+    "freelancerId": 14,
+    "employerId": 5,
+    "title": "Quản lý fanpage và chạy ads cho nhà hàng",
+    "description": "Cần social media manager quản lý fanpage nhà hàng (đăng bài 3-5 bài/tuần) và chạy Facebook Ads. Budget ads: 10 triệu/tháng. Thời gian: 6 tháng.",
+    "freelancer": {
+      "id": 14,
+      "name": "Phạm Thị Lan",
+      "avatar": "/images/avatars/freelancer4.jpg",
+      "rating": 4.9
+    },
+    "employer": {
+      "id": 5,
+      "name": "Phạm Thị D",
+      "avatar": "/images/avatars/user4.jpg"
+    },
+    "agreedPrice": 17000000,
+    "agreedPriceText": "17,000,000 VNĐ",
+    "startDate": "2026-04-25",
+    "endDate": "2026-10-25",
+    "completedDate": null,
+    "progress": 5,
+    "status": "DANG_THUC_HIEN",
+    "statusText": "Đang thực hiện",
+    "notes": "Đã setup fanpage, lên kế hoạch content tháng 1. Đang chuẩn bị chiến dịch ads đầu tiên.",
+    "createdDate": "2026-04-25T00:00:00Z",
+    "milestones": [
+      {
+        "id": 1,
+        "name": "Tháng 1: Setup & Content Plan",
+        "status": "in-progress",
+        "progress": 50,
+        "dueDate": "2026-05-25"
+      },
+      {
+        "id": 2,
+        "name": "Tháng 2-3: Tăng Engagement",
+        "status": "pending",
+        "progress": 0,
+        "dueDate": "2026-07-25"
+      },
+      {
+        "id": 3,
+        "name": "Tháng 4-6: Scale & Optimize",
+        "status": "pending",
+        "progress": 0,
+        "dueDate": "2026-10-25"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "requestId": 14,
+    "quoteId": 29,
+    "freelancerId": 13,
+    "employerId": 6,
+    "title": "Viết content cho 10 bài blog về công nghệ",
+    "description": "Đã hoàn thành 10 bài blog về công nghệ, AI, blockchain. Mỗi bài 1000-1500 từ, có hình ảnh minh họa, SEO tối ưu.",
+    "freelancer": {
+      "id": 13,
+      "name": "Trần Văn Nam",
+      "avatar": "/images/avatars/freelancer3.jpg",
+      "rating": 4.7
+    },
+    "employer": {
+      "id": 6,
+      "name": "Hoàng Văn E",
+      "avatar": "/images/avatars/user5.jpg"
+    },
+    "agreedPrice": 3800000,
+    "agreedPriceText": "3,800,000 VNĐ",
+    "startDate": "2026-03-27",
+    "endDate": "2026-04-08",
+    "completedDate": "2026-04-21",
+    "progress": 100,
+    "status": "HOAN_THANH",
+    "statusText": "Hoàn thành",
+    "notes": "Đã hoàn thành 10 bài blog chất lượng cao. Khách hàng rất hài lòng.",
+    "createdDate": "2026-03-27T00:00:00Z",
+    "rating": {
+      "score": 5,
+      "comment": "Freelancer viết content rất tốt, bài viết chất lượng cao, SEO chuẩn. Giao đúng hạn, thái độ chuyên nghiệp. Sẽ hợp tác lâu dài!",
+      "date": "2026-04-22T00:00:00Z"
+    }
+  },
+  {
+    "id": 5,
+    "requestId": 15,
+    "quoteId": 30,
+    "freelancerId": 17,
+    "employerId": 7,
+    "title": "Dựng video giới thiệu công ty (2-3 phút)",
+    "description": "Video giới thiệu công ty đã hoàn thành. Độ dài 2.5 phút, có voice over, motion graphics, background music.",
+    "freelancer": {
+      "id": 17,
+      "name": "Đặng Minh Khoa",
+      "avatar": "/images/avatars/freelancer7.jpg",
+      "rating": 4.7
+    },
+    "employer": {
+      "id": 7,
+      "name": "Vũ Thị F",
+      "avatar": "/images/avatars/user6.jpg"
+    },
+    "agreedPrice": 9500000,
+    "agreedPriceText": "9,500,000 VNĐ",
+    "startDate": "2026-03-17",
+    "endDate": "2026-04-01",
+    "completedDate": "2026-04-16",
+    "progress": 100,
+    "status": "HOAN_THANH",
+    "statusText": "Hoàn thành",
+    "notes": "Video đã hoàn thành và được khách hàng đánh giá cao. Đã delivery đầy đủ file nguồn.",
+    "createdDate": "2026-03-17T00:00:00Z",
+    "rating": {
+      "score": 5,
+      "comment": "Video rất đẹp, chuyên nghiệp, vượt mong đợi. Freelancer làm việc nhanh, sáng tạo. Highly recommended!",
+      "date": "2026-04-17T00:00:00Z"
+    }
+  }
+]

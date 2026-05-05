@@ -1,0 +1,261 @@
+{
+  "overview": {
+    "totalUsers": 20,
+    "totalFreelancers": 10,
+    "totalEmployers": 9,
+    "totalRequests": 15,
+    "activeRequests": 10,
+    "totalJobs": 5,
+    "activeJobs": 3,
+    "completedJobs": 2,
+    "totalRevenue": 73800000,
+    "totalRevenueText": "73,800,000 VNĐ",
+    "platformFee": 7380000,
+    "platformFeeText": "7,380,000 VNĐ"
+  },
+  "requestsByCategory": [
+    {
+      "categoryId": 1,
+      "categoryName": "Công nghệ & Lập trình",
+      "count": 5,
+      "percentage": 33.3
+    },
+    {
+      "categoryId": 2,
+      "categoryName": "Thiết kế & Đồ họa",
+      "count": 3,
+      "percentage": 20
+    },
+    {
+      "categoryId": 3,
+      "categoryName": "Digital Marketing",
+      "count": 3,
+      "percentage": 20
+    },
+    {
+      "categoryId": 4,
+      "categoryName": "Viết lách & Dịch thuật",
+      "count": 2,
+      "percentage": 13.3
+    },
+    {
+      "categoryId": 5,
+      "categoryName": "Video & Animation",
+      "count": 1,
+      "percentage": 6.7
+    },
+    {
+      "categoryId": 8,
+      "categoryName": "Dữ liệu & Phân tích",
+      "count": 1,
+      "percentage": 6.7
+    }
+  ],
+  "requestsByStatus": [
+    {
+      "status": "DANG_MOI_THAU",
+      "statusText": "Đang mời thầu",
+      "count": 10,
+      "percentage": 66.7
+    },
+    {
+      "status": "DA_CHON_BAO_GIA",
+      "statusText": "Đã chọn báo giá",
+      "count": 3,
+      "percentage": 20
+    },
+    {
+      "status": "DA_DONG",
+      "statusText": "Đã đóng",
+      "count": 2,
+      "percentage": 13.3
+    }
+  ],
+  "jobsByStatus": [
+    {
+      "status": "DANG_THUC_HIEN",
+      "statusText": "Đang thực hiện",
+      "count": 3,
+      "percentage": 60
+    },
+    {
+      "status": "HOAN_THANH",
+      "statusText": "Hoàn thành",
+      "count": 2,
+      "percentage": 40
+    }
+  ],
+  "topFreelancers": [
+    {
+      "id": 14,
+      "name": "Phạm Thị Lan",
+      "avatar": "/images/avatars/freelancer4.jpg",
+      "rating": 4.9,
+      "completedProjects": 78,
+      "totalEarnings": 30000000,
+      "totalEarningsText": "30,000,000 VNĐ"
+    },
+    {
+      "id": 12,
+      "name": "Lê Thị Hương",
+      "avatar": "/images/avatars/freelancer2.jpg",
+      "rating": 4.9,
+      "completedProjects": 48,
+      "totalEarnings": 18000000,
+      "totalEarningsText": "18,000,000 VNĐ"
+    },
+    {
+      "id": 18,
+      "name": "Bùi Thị Thảo",
+      "avatar": "/images/avatars/freelancer8.jpg",
+      "rating": 4.9,
+      "completedProjects": 234,
+      "totalEarnings": 22000000,
+      "totalEarningsText": "22,000,000 VNĐ"
+    },
+    {
+      "id": 11,
+      "name": "Nguyễn Minh Tuấn",
+      "avatar": "/images/avatars/freelancer1.jpg",
+      "rating": 4.8,
+      "completedProjects": 52,
+      "totalEarnings": 25000000,
+      "totalEarningsText": "25,000,000 VNĐ"
+    },
+    {
+      "id": 19,
+      "name": "Đỗ Văn Hùng",
+      "avatar": "/images/avatars/freelancer9.jpg",
+      "rating": 4.8,
+      "completedProjects": 67,
+      "totalEarnings": 28000000,
+      "totalEarningsText": "28,000,000 VNĐ"
+    }
+  ],
+  "topEmployers": [
+    {
+      "id": 2,
+      "name": "Nguyễn Văn A",
+      "avatar": "/images/avatars/user1.jpg",
+      "postedRequests": 5,
+      "completedJobs": 8,
+      "totalSpent": 45000000,
+      "totalSpentText": "45,000,000 VNĐ"
+    },
+    {
+      "id": 5,
+      "name": "Phạm Thị D",
+      "avatar": "/images/avatars/user4.jpg",
+      "postedRequests": 6,
+      "completedJobs": 7,
+      "totalSpent": 38000000,
+      "totalSpentText": "38,000,000 VNĐ"
+    },
+    {
+      "id": 9,
+      "name": "Bùi Thị H",
+      "avatar": "/images/avatars/user8.jpg",
+      "postedRequests": 5,
+      "completedJobs": 9,
+      "totalSpent": 42000000,
+      "totalSpentText": "42,000,000 VNĐ"
+    }
+  ],
+  "revenueByMonth": [
+    {
+      "month": "2026-01",
+      "monthText": "Tháng 1/2026",
+      "revenue": 12000000,
+      "revenueText": "12,000,000 VNĐ",
+      "jobs": 2
+    },
+    {
+      "month": "2026-02",
+      "monthText": "Tháng 2/2026",
+      "revenue": 15000000,
+      "revenueText": "15,000,000 VNĐ",
+      "jobs": 3
+    },
+    {
+      "month": "2026-03",
+      "monthText": "Tháng 3/2026",
+      "revenue": 18500000,
+      "revenueText": "18,500,000 VNĐ",
+      "jobs": 4
+    },
+    {
+      "month": "2026-04",
+      "monthText": "Tháng 4/2026",
+      "revenue": 28300000,
+      "revenueText": "28,300,000 VNĐ",
+      "jobs": 5
+    }
+  ],
+  "recentActivities": [
+    {
+      "id": 1,
+      "type": "NEW_REQUEST",
+      "typeText": "Yêu cầu mới",
+      "title": "Cần lập trình viên React.js cho dự án E-commerce",
+      "user": {
+        "id": 2,
+        "name": "Nguyễn Văn A",
+        "avatar": "/images/avatars/user1.jpg"
+      },
+      "timestamp": "2026-04-26T10:00:00Z",
+      "timeText": "2 giờ trước"
+    },
+    {
+      "id": 2,
+      "type": "NEW_QUOTE",
+      "typeText": "Báo giá mới",
+      "title": "Nguyễn Minh Tuấn đã gửi báo giá",
+      "user": {
+        "id": 11,
+        "name": "Nguyễn Minh Tuấn",
+        "avatar": "/images/avatars/freelancer1.jpg"
+      },
+      "timestamp": "2026-04-26T11:00:00Z",
+      "timeText": "1 giờ trước"
+    },
+    {
+      "id": 3,
+      "type": "JOB_STARTED",
+      "typeText": "Công việc bắt đầu",
+      "title": "Xây dựng hệ thống quản lý kho hàng",
+      "user": {
+        "id": 15,
+        "name": "Hoàng Quốc Việt",
+        "avatar": "/images/avatars/freelancer5.jpg"
+      },
+      "timestamp": "2026-04-25T00:00:00Z",
+      "timeText": "1 ngày trước"
+    },
+    {
+      "id": 4,
+      "type": "JOB_COMPLETED",
+      "typeText": "Công việc hoàn thành",
+      "title": "Viết content cho 10 bài blog về công nghệ",
+      "user": {
+        "id": 13,
+        "name": "Trần Văn Nam",
+        "avatar": "/images/avatars/freelancer3.jpg"
+      },
+      "timestamp": "2026-04-21T00:00:00Z",
+      "timeText": "5 ngày trước"
+    },
+    {
+      "id": 5,
+      "type": "PAYMENT",
+      "typeText": "Thanh toán",
+      "title": "Thanh toán 10,000,000 VNĐ",
+      "user": {
+        "id": 3,
+        "name": "Trần Thị B",
+        "avatar": "/images/avatars/user2.jpg"
+      },
+      "timestamp": "2026-04-25T00:00:00Z",
+      "timeText": "1 ngày trước"
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+[
+  {
+    "id": 1,
+    "reporterId": 2,
+    "reporter": {
+      "id": 2,
+      "name": "Nguyễn Văn A",
+      "avatar": "/images/avatars/user1.jpg"
+    },
+    "reportedId": 15,
+    "reported": {
+      "id": 15,
+      "name": "Hoàng Quốc Việt",
+      "avatar": "/images/avatars/freelancer5.jpg"
+    },
+    "reason": "Freelancer không phản hồi tin nhắn trong 3 ngày liên tiếp",
+    "evidence": "/uploads/reports/evidence-1.png",
+    "status": "DA_XU_LY",
+    "statusText": "Đã xử lý",
+    "result": "Đã liên hệ với freelancer. Freelancer giải thích do bận công việc khác. Đã nhắc nhở freelancer cần phản hồi kịp thời. Không có vi phạm nghiêm trọng.",
+    "adminId": 1,
+    "admin": {
+      "id": 1,
+      "name": "Quản Trị Viên",
+      "avatar": "/images/avatars/admin.jpg"
+    },
+    "createdDate": "2026-04-11T00:00:00Z",
+    "processedDate": "2026-04-16T00:00:00Z",
+    "createdTime": "15 ngày trước"
+  },
+  {
+    "id": 2,
+    "reporterId": 5,
+    "reporter": {
+      "id": 5,
+      "name": "Phạm Thị D",
+      "avatar": "/images/avatars/user4.jpg"
+    },
+    "reportedId": 14,
+    "reported": {
+      "id": 14,
+      "name": "Phạm Thị Lan",
+      "avatar": "/images/avatars/freelancer4.jpg"
+    },
+    "reason": "Chất lượng content không đạt yêu cầu như thỏa thuận",
+    "evidence": null,
+    "status": "CHO_XU_LY",
+    "statusText": "Chờ xử lý",
+    "result": null,
+    "adminId": null,
+    "admin": null,
+    "createdDate": "2026-04-24T00:00:00Z",
+    "processedDate": null,
+    "createdTime": "2 ngày trước"
+  }
+]

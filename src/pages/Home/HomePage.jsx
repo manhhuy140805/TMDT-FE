@@ -1,7 +1,54 @@
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import api from '../../services/api';
 import './HomePage.css';
 
 const HomePage = () => {
+  const navigate = useNavigate();
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await api.categories.getAll();
+      if (response.success) {
+        setCategories(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = () => {
+    if (searchTerm.trim()) {
+      navigate(`/requests?search=${encodeURIComponent(searchTerm)}`);
+    }
+  };
+
+  const handleCategoryClick = (categoryId) => {
+    navigate(`/requests?category=${categoryId}`);
+  };
+
+  const getIconForCategory = (categoryName) => {
+    const iconMap = {
+      'Công nghệ & Lập trình': 'fa-code',
+      'Thiết kế & Đồ họa': 'fa-pen-nib',
+      'Digital Marketing': 'fa-bullhorn',
+      'Viết lách & Dịch thuật': 'fa-language',
+      'Video & Animation': 'fa-video',
+      'Âm thanh & Nhạc': 'fa-music',
+      'Kinh doanh & Tư vấn': 'fa-briefcase',
+      'Dữ liệu & Phân tích': 'fa-chart-line'
+    };
+    return iconMap[categoryName] || 'fa-star';
+  };
   return (
     <div className="landing-body">
       {/* Hero Section */}
@@ -27,8 +74,14 @@ const HomePage = () => {
             </div>
             <div className="action-search">
               <i className="fa-solid fa-search search-icon"></i>
-              <input type="text" placeholder="Kỹ năng hoặc vị trí" />
-              <button className="btn-search-submit">
+              <input 
+                type="text" 
+                placeholder="Kỹ năng hoặc vị trí"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              />
+              <button className="btn-search-submit" onClick={handleSearch}>
                 <i className="fa-solid fa-magnifying-glass"></i> Tìm kiếm
               </button>
             </div>
@@ -47,86 +100,32 @@ const HomePage = () => {
       <section className="categories-section">
         <div className="container">
           <h2 className="section-title">Khám phá hàng triệu chuyên gia</h2>
-          <div className="categories-grid">
-            <Link to="#" className="category-card">
-              <div className="cat-icon-wrapper"><i className="fa-solid fa-code"></i></div>
-              <h3>Phát triển & CNTT</h3>
-              <div className="cat-rating">
-                <i className="fa-solid fa-star"></i> 4.85/5
-                <span>(185K kỹ năng)</span>
-              </div>
-            </Link>
-            <Link to="#" className="category-card">
-              <div className="cat-icon-wrapper">
-                <i className="fa-solid fa-pen-nib"></i>
-              </div>
-              <h3>Thiết kế & Sáng tạo</h3>
-              <div className="cat-rating">
-                <i className="fa-solid fa-star"></i> 4.91/5
-                <span>(968K kỹ năng)</span>
-              </div>
-            </Link>
-            <Link to="#" className="category-card">
-              <div className="cat-icon-wrapper">
-                <i className="fa-solid fa-bullhorn"></i>
-              </div>
-              <h3>Bán hàng & Tiếp thị</h3>
-              <div className="cat-rating">
-                <i className="fa-solid fa-star"></i> 4.77/5
-                <span>(392K kỹ năng)</span>
-              </div>
-            </Link>
-            <Link to="#" className="category-card">
-              <div className="cat-icon-wrapper">
-                <i className="fa-solid fa-language"></i>
-              </div>
-              <h3>Viết lách & Dịch thuật</h3>
-              <div className="cat-rating">
-                <i className="fa-solid fa-star"></i> 4.92/5
-                <span>(505K kỹ năng)</span>
-              </div>
-            </Link>
-            <Link to="#" className="category-card">
-              <div className="cat-icon-wrapper">
-                <i className="fa-solid fa-headset"></i>
-              </div>
-              <h3>Hành chính & Hỗ trợ KH</h3>
-              <div className="cat-rating">
-                <i className="fa-solid fa-star"></i> 4.77/5
-                <span>(508K kỹ năng)</span>
-              </div>
-            </Link>
-            <Link to="#" className="category-card">
-              <div className="cat-icon-wrapper">
-                <i className="fa-solid fa-calculator"></i>
-              </div>
-              <h3>Tài chính & Kế toán</h3>
-              <div className="cat-rating">
-                <i className="fa-solid fa-star"></i> 4.79/5
-                <span>(214K kỹ năng)</span>
-              </div>
-            </Link>
-            <Link to="#" className="category-card">
-              <div className="cat-icon-wrapper">
-                <i className="fa-solid fa-users"></i>
-              </div>
-              <h3>Nhân sự & Đào tạo</h3>
-              <div className="cat-rating">
-                <i className="fa-solid fa-star"></i> 4.81/5
-                <span>(150K kỹ năng)</span>
-              </div>
-            </Link>
-            <Link to="#" className="category-card">
-              <div className="cat-icon-wrapper">
-                <i className="fa-solid fa-scale-balanced"></i>
-              </div>
-              <h3>Pháp lý</h3>
-              <div className="cat-rating">
-                <i className="fa-solid fa-star"></i> 4.85/5
-                <span>(133K kỹ năng)</span>
-              </div>
-            </Link>
-          </div>
+          {loading ? (
+            <div className="text-center" style={{ padding: '40px' }}>
+              <i className="fa-solid fa-circle-notch fa-spin" style={{ fontSize: '32px', color: 'var(--teal)' }}></i>
+              <p style={{ marginTop: '16px', color: '#64748B' }}>Đang tải danh mục...</p>
+            </div>
+          ) : (
+            <div className="categories-grid">
+              {categories.map((category) => (
+                <div 
+                  key={category.id}
+                  className="category-card"
+                  onClick={() => handleCategoryClick(category.id)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="cat-icon-wrapper">
+                    <i className={`fa-solid ${getIconForCategory(category.name)}`}></i>
+                  </div>
+                  <h3>{category.name}</h3>
+                  <div className="cat-rating">
+                    <i className="fa-solid fa-star"></i> 4.85/5
+                    <span>({category.count} dự án)</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
