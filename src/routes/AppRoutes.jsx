@@ -6,6 +6,7 @@ import SignupPage from "../pages/Auth/SignupPage";
 import RequestsPage from "../pages/Requests/RequestsPage";
 import RequestDetailPage from "../pages/RequestDetail/RequestDetailPage";
 import PostRequestPage from "../pages/PostRequest/PostRequestPage";
+import EditRequestPage from "../pages/EditRequest/EditRequestPage";
 import MyRequestsPage from "../pages/MyRequests/MyRequestsPage";
 
 // Import các pages khác khi đã tạo
@@ -59,6 +60,7 @@ function AppRoutes() {
           {/* Job routes */}
           <Route path="requests" element={<RequestsPage />} />
           <Route path="requests/:id" element={<RequestDetailPage />} />
+          <Route path="requests/:id/edit" element={<EditRequestPage />} />
           <Route path="post-request" element={<PostRequestPage />} />
           <Route path="my-requests" element={<MyRequestsPage />} />
           

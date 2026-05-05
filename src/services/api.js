@@ -5,6 +5,13 @@
 
 import mockData from '../mock';
 
+// In-memory storage for updated data
+const inMemoryStorage = {
+  requests: {},
+  quotes: {},
+  jobs: {}
+};
+
 // Simulate API delay
 const delay = (ms = 500) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -40,7 +47,11 @@ export const requestsAPI = {
   // GET /api/requests
   getAll: async (params = {}) => {
     await delay();
-    let results = [...mockData.requests];
+    // Merge mock data with in-memory updates
+    let results = mockData.requests.map(req => {
+      const updated = inMemoryStorage.requests[req.id];
+      return updated || req;
+    }).filter(req => !req.deleted); // Filter out deleted items
 
     // Filter by category
     if (params.categoryId) {
@@ -54,7 +65,12 @@ export const requestsAPI = {
 
     // Search
     if (params.search) {
-      results = mockData.searchRequests(params.search);
+      const keyword = params.search.toLowerCase();
+      results = results.filter(r => 
+        r.title.toLowerCase().includes(keyword) ||
+        r.description.toLowerCase().includes(keyword) ||
+        (r.skills && r.skills.some(skill => skill.toLowerCase().includes(keyword)))
+      );
     }
 
     // Pagination
@@ -78,7 +94,12 @@ export const requestsAPI = {
   // GET /api/requests/:id
   getById: async (id) => {
     await delay();
-    const request = mockData.getRequestById(id);
+    const requestId = parseInt(id);
+    // Check in-memory storage first
+    if (inMemoryStorage.requests[requestId]) {
+      return apiResponse(inMemoryStorage.requests[requestId]);
+    }
+    const request = mockData.getRequestById(requestId);
     if (!request) {
       return apiResponse(null, false, 'Request not found');
     }
@@ -104,18 +125,50 @@ export const requestsAPI = {
   // PUT /api/requests/:id
   update: async (id, data) => {
     await delay(800);
-    const request = mockData.getRequestById(id);
+    const requestId = parseInt(id);
+    // Get original request
+    let request = inMemoryStorage.requests[requestId] || mockData.getRequestById(requestId);
     if (!request) {
       return apiResponse(null, false, 'Request not found');
     }
-    const updated = { ...request, ...data };
+    // Merge with new data
+    const updated = { 
+      ...request, 
+      ...data,
+      id: requestId // Ensure ID stays the same
+    };
+    // Store in memory
+    inMemoryStorage.requests[requestId] = updated;
+    console.log('Updated request in memory:', updated);
     return apiResponse(updated, true, 'Cập nhật yêu cầu thành công');
   },
 
   // DELETE /api/requests/:id
   delete: async (id) => {
     await delay(800);
+    const requestId = parseInt(id);
+    // Mark as deleted in memory
+    const request = mockData.getRequestById(requestId);
+    if (request) {
+      inMemoryStorage.requests[requestId] = { ...request, deleted: true };
+    }
     return apiResponse(null, true, 'Xóa yêu cầu thành công');
+  },
+
+  // POST /api/requests/:id/cancel
+  cancel: async (id) => {
+    console.log('API cancel called with ID:', id, 'Type:', typeof id);
+    await delay(800);
+    const requestId = parseInt(id);
+    let request = inMemoryStorage.requests[requestId] || mockData.getRequestById(requestId);
+    console.log('Found request:', request);
+    if (!request) {
+      return apiResponse(null, false, 'Request not found');
+    }
+    const cancelled = { ...request, status: 'DA_HUY', statusText: 'Đã hủy' };
+    inMemoryStorage.requests[requestId] = cancelled;
+    console.log('Cancelled request stored:', cancelled);
+    return apiResponse(cancelled, true, 'Hủy yêu cầu thành công');
   }
 };
 
