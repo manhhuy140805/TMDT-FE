@@ -1,0 +1,212 @@
+[
+  {
+    "id": 1,
+    "username": "admin",
+    "email": "admin@freelance.vn",
+    "name": "Quản Trị Viên",
+    "phone": "0901234567",
+    "avatar": "/images/avatars/admin.jpg",
+    "role": "ADMIN",
+    "status": "HOAT_DONG",
+    "createdDate": "2020-01-01T00:00:00Z",
+    "lastLogin": "2026-04-26T10:00:00Z"
+  },
+  {
+    "id": 2,
+    "username": "nguyenvana",
+    "email": "manhhuy2@gmail.com",
+    "name": "Nguyễn Văn A",
+    "phone": "0912345678",
+    "avatar": null,
+    "role": "NGUOI_THUE",
+    "status": "HOAT_DONG",
+    "address": "123 Nguyễn Huệ, Q.1, TP.HCM",
+    "verified": {
+      "email": true,
+      "phone": true
+    },
+    "createdDate": "2021-05-10T00:00:00Z",
+    "lastLogin": "2026-04-26T07:00:00Z",
+    "stats": {
+      "postedRequests": 5,
+      "activeJobs": 2,
+      "completedJobs": 8
+    }
+  },
+  {
+    "id": 3,
+    "username": "tranthib",
+    "email": "tranthib@gmail.com",
+    "name": "Trần Thị B",
+    "phone": "0923456789",
+    "avatar": null,
+    "role": "NGUOI_THUE",
+    "status": "HOAT_DONG",
+    "address": "456 Lê Lợi, Q.1, TP.HCM",
+    "verified": {
+      "email": true,
+      "phone": true
+    },
+    "createdDate": "2021-07-15T00:00:00Z",
+    "lastLogin": "2026-04-25T12:00:00Z",
+    "stats": {
+      "postedRequests": 3,
+      "activeJobs": 1,
+      "completedJobs": 5
+    }
+  },
+  {
+    "id": 4,
+    "username": "levanc",
+    "email": "levanc@company.vn",
+    "name": "Lê Văn C",
+    "phone": "0934567890",
+    "avatar": null,
+    "role": "NGUOI_THUE",
+    "status": "HOAT_DONG",
+    "address": "789 Trần Hưng Đạo, Q.5, TP.HCM",
+    "verified": {
+      "email": true,
+      "phone": false
+    },
+    "createdDate": "2021-09-20T00:00:00Z",
+    "lastLogin": "2026-04-26T00:00:00Z",
+    "stats": {
+      "postedRequests": 4,
+      "activeJobs": 1,
+      "completedJobs": 3
+    }
+  },
+  {
+    "id": 5,
+    "username": "phamthid",
+    "email": "phamthid@startup.vn",
+    "name": "Phạm Thị D",
+    "phone": "0945678901",
+    "avatar": "/images/avatars/user4.jpg",
+    "role": "NGUOI_THUE",
+    "status": "HOAT_DONG",
+    "address": "321 Võ Văn Tần, Q.3, TP.HCM",
+    "verified": {
+      "email": true,
+      "phone": true
+    },
+    "createdDate": "2022-01-05T00:00:00Z",
+    "lastLogin": "2026-04-24T12:00:00Z",
+    "stats": {
+      "postedRequests": 6,
+      "activeJobs": 2,
+      "completedJobs": 7
+    }
+  },
+  {
+    "id": 6,
+    "username": "hoangvane",
+    "email": "hoangvane@tech.vn",
+    "name": "Hoàng Văn E",
+    "phone": "0956789012",
+    "avatar": "/images/avatars/user5.jpg",
+    "role": "NGUOI_THUE",
+    "status": "HOAT_DONG",
+    "address": "654 Điện Biên Phủ, Q.Bình Thạnh, TP.HCM",
+    "verified": {
+      "email": true,
+      "phone": true
+    },
+    "createdDate": "2022-03-12T00:00:00Z",
+    "lastLogin": "2026-04-26T04:00:00Z",
+    "stats": {
+      "postedRequests": 2,
+      "activeJobs": 0,
+      "completedJobs": 4
+    }
+  },
+  {
+    "id": 7,
+    "username": "vuthif",
+    "email": "vuthif@business.vn",
+    "name": "Vũ Thị F",
+    "phone": "0967890123",
+    "avatar": "/images/avatars/user6.jpg",
+    "role": "NGUOI_THUE",
+    "status": "HOAT_DONG",
+    "address": "987 Cách Mạng Tháng 8, Q.10, TP.HCM",
+    "verified": {
+      "email": true,
+      "phone": false
+    },
+    "createdDate": "2022-05-18T00:00:00Z",
+    "lastLogin": "2026-04-23T12:00:00Z",
+    "stats": {
+      "postedRequests": 3,
+      "activeJobs": 0,
+      "completedJobs": 6
+    }
+  },
+  {
+    "id": 8,
+    "username": "dangvang",
+    "email": "dangvang@ecommerce.vn",
+    "name": "Đặng Văn G",
+    "phone": "0978901234",
+    "avatar": "/images/avatars/user7.jpg",
+    "role": "NGUOI_THUE",
+    "status": "HOAT_DONG",
+    "address": "147 Hai Bà Trưng, Q.1, TP.HCM",
+    "verified": {
+      "email": true,
+      "phone": true
+    },
+    "createdDate": "2022-07-22T00:00:00Z",
+    "lastLogin": "2026-04-25T00:00:00Z",
+    "stats": {
+      "postedRequests": 4,
+      "activeJobs": 1,
+      "completedJobs": 2
+    }
+  },
+  {
+    "id": 9,
+    "username": "buithih",
+    "email": "buithih@marketing.vn",
+    "name": "Bùi Thị H",
+    "phone": "0989012345",
+    "avatar": "/images/avatars/user8.jpg",
+    "role": "NGUOI_THUE",
+    "status": "HOAT_DONG",
+    "address": "258 Pasteur, Q.3, TP.HCM",
+    "verified": {
+      "email": true,
+      "phone": true
+    },
+    "createdDate": "2022-09-10T00:00:00Z",
+    "lastLogin": "2026-04-21T12:00:00Z",
+    "stats": {
+      "postedRequests": 5,
+      "activeJobs": 1,
+      "completedJobs": 9
+    }
+  },
+  {
+    "id": 10,
+    "username": "dovani",
+    "email": "dovani@agency.vn",
+    "name": "Đỗ Văn I",
+    "phone": "0990123456",
+    "avatar": "/images/avatars/user9.jpg",
+    "role": "NGUOI_THUE",
+    "status": "HOAT_DONG",
+    "address": "369 Nguyễn Thị Minh Khai, Q.1, TP.HCM",
+    "verified": {
+      "email": true,
+      "phone": true
+    },
+    "createdDate": "2022-11-05T00:00:00Z",
+    "lastLogin": "2026-04-24T12:00:00Z",
+    "stats": {
+      "postedRequests": 3,
+      "activeJobs": 0,
+      "completedJobs": 5
+    }
+  }
+]

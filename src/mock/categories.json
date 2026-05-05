@@ -1,0 +1,66 @@
+[
+  {
+    "id": 1,
+    "name": "Công nghệ & Lập trình",
+    "description": "Phát triển website, ứng dụng mobile, phần mềm",
+    "image": "/images/categories/tech.jpg",
+    "icon": "fa-solid fa-code",
+    "count": 1245
+  },
+  {
+    "id": 2,
+    "name": "Thiết kế & Đồ họa",
+    "description": "Thiết kế logo, UI/UX, banner, poster, branding",
+    "image": "/images/categories/design.jpg",
+    "icon": "fa-solid fa-palette",
+    "count": 892
+  },
+  {
+    "id": 3,
+    "name": "Digital Marketing",
+    "description": "SEO, Facebook Ads, Google Ads, Social Media Marketing",
+    "image": "/images/categories/marketing.jpg",
+    "icon": "fa-solid fa-bullhorn",
+    "count": 678
+  },
+  {
+    "id": 4,
+    "name": "Viết lách & Dịch thuật",
+    "description": "Content writing, copywriting, dịch thuật đa ngôn ngữ",
+    "image": "/images/categories/writing.jpg",
+    "icon": "fa-solid fa-pen-nib",
+    "count": 534
+  },
+  {
+    "id": 5,
+    "name": "Video & Animation",
+    "description": "Dựng video, motion graphics, animation 2D/3D",
+    "image": "/images/categories/video.jpg",
+    "icon": "fa-solid fa-video",
+    "count": 423
+  },
+  {
+    "id": 6,
+    "name": "Âm thanh & Nhạc",
+    "description": "Sản xuất nhạc, thu âm, lồng tiếng, mix master",
+    "image": "/images/categories/audio.jpg",
+    "icon": "fa-solid fa-music",
+    "count": 267
+  },
+  {
+    "id": 7,
+    "name": "Kinh doanh & Tư vấn",
+    "description": "Tư vấn chiến lược, phân tích thị trường, kế hoạch kinh doanh",
+    "image": "/images/categories/business.jpg",
+    "icon": "fa-solid fa-briefcase",
+    "count": 345
+  },
+  {
+    "id": 8,
+    "name": "Dữ liệu & Phân tích",
+    "description": "Data analysis, data science, machine learning, AI",
+    "image": "/images/categories/data.jpg",
+    "icon": "fa-solid fa-chart-line",
+    "count": 189
+  }
+]

@@ -1,0 +1,178 @@
+[
+  {
+    "id": 1,
+    "requestId": 1,
+    "requestTitle": "Cần lập trình viên React.js cho dự án E-commerce",
+    "participant1": {
+      "id": 2,
+      "name": "Nguyễn Văn A",
+      "avatar": "/images/avatars/user1.jpg",
+      "role": "NGUOI_THUE"
+    },
+    "participant2": {
+      "id": 11,
+      "name": "Nguyễn Minh Tuấn",
+      "avatar": "/images/avatars/freelancer1.jpg",
+      "role": "FREELANCER"
+    },
+    "lastMessage": "Cảm ơn bạn! Tôi sẽ xem xét báo giá và phản hồi sớm.",
+    "lastMessageTime": "2026-04-26T11:30:00Z",
+    "lastMessageTimeText": "30 phút trước",
+    "unreadCount": 1,
+    "createdDate": "2026-04-26T11:00:00Z"
+  },
+  {
+    "id": 2,
+    "requestId": 1,
+    "requestTitle": "Cần lập trình viên React.js cho dự án E-commerce",
+    "participant1": {
+      "id": 2,
+      "name": "Nguyễn Văn A",
+      "avatar": "/images/avatars/user1.jpg",
+      "role": "NGUOI_THUE"
+    },
+    "participant2": {
+      "id": 15,
+      "name": "Hoàng Quốc Việt",
+      "avatar": "/images/avatars/freelancer5.jpg",
+      "role": "FREELANCER"
+    },
+    "lastMessage": "Bạn có thể gửi portfolio để tôi tham khảo không?",
+    "lastMessageTime": "2026-04-26T09:00:00Z",
+    "lastMessageTimeText": "3 giờ trước",
+    "unreadCount": 0,
+    "createdDate": "2026-04-26T09:00:00Z"
+  },
+  {
+    "id": 3,
+    "requestId": 2,
+    "requestTitle": "Thiết kế logo và bộ nhận diện thương hiệu",
+    "participant1": {
+      "id": 3,
+      "name": "Trần Thị B",
+      "avatar": "/images/avatars/user2.jpg",
+      "role": "NGUOI_THUE"
+    },
+    "participant2": {
+      "id": 12,
+      "name": "Lê Thị Hương",
+      "avatar": "/images/avatars/freelancer2.jpg",
+      "role": "FREELANCER"
+    },
+    "lastMessage": "Logo concept rất đẹp! Tôi thích concept số 2.",
+    "lastMessageTime": "2026-04-26T11:15:00Z",
+    "lastMessageTimeText": "45 phút trước",
+    "unreadCount": 1,
+    "createdDate": "2026-04-26T10:00:00Z"
+  },
+  {
+    "id": 4,
+    "requestId": 4,
+    "requestTitle": "Chạy quảng cáo Facebook Ads cho sản phẩm mỹ phẩm",
+    "participant1": {
+      "id": 5,
+      "name": "Phạm Thị D",
+      "avatar": "/images/avatars/user4.jpg",
+      "role": "NGUOI_THUE"
+    },
+    "participant2": {
+      "id": 14,
+      "name": "Phạm Thị Lan",
+      "avatar": "/images/avatars/freelancer4.jpg",
+      "role": "FREELANCER"
+    },
+    "lastMessage": "ROAS hiện tại đang ở mức 4.2, rất tốt!",
+    "lastMessageTime": "2026-04-26T11:00:00Z",
+    "lastMessageTimeText": "1 giờ trước",
+    "unreadCount": 0,
+    "createdDate": "2026-04-26T08:00:00Z"
+  },
+  {
+    "id": 5,
+    "requestId": 11,
+    "requestTitle": "Xây dựng hệ thống quản lý kho hàng",
+    "participant1": {
+      "id": 3,
+      "name": "Trần Thị B",
+      "avatar": "/images/avatars/user2.jpg",
+      "role": "NGUOI_THUE"
+    },
+    "participant2": {
+      "id": 15,
+      "name": "Hoàng Quốc Việt",
+      "avatar": "/images/avatars/freelancer5.jpg",
+      "role": "FREELANCER"
+    },
+    "lastMessage": "API nhập kho đã xong, đang làm API xuất kho.",
+    "lastMessageTime": "2026-04-26T09:00:00Z",
+    "lastMessageTimeText": "3 giờ trước",
+    "unreadCount": 1,
+    "createdDate": "2026-04-25T12:00:00Z"
+  },
+  {
+    "id": 6,
+    "requestId": 12,
+    "requestTitle": "Thiết kế bộ ảnh sản phẩm cho shop thời trang",
+    "participant1": {
+      "id": 4,
+      "name": "Lê Văn C",
+      "avatar": "/images/avatars/user3.jpg",
+      "role": "NGUOI_THUE"
+    },
+    "participant2": {
+      "id": 16,
+      "name": "Vũ Thị Mai",
+      "avatar": "/images/avatars/freelancer6.jpg",
+      "role": "FREELANCER"
+    },
+    "lastMessage": "Batch 2 đã gửi, bạn check giúp mình nhé!",
+    "lastMessageTime": "2026-04-26T07:00:00Z",
+    "lastMessageTimeText": "5 giờ trước",
+    "unreadCount": 1,
+    "createdDate": "2026-04-24T12:00:00Z"
+  },
+  {
+    "id": 7,
+    "requestId": 13,
+    "requestTitle": "Quản lý fanpage và chạy ads cho nhà hàng",
+    "participant1": {
+      "id": 5,
+      "name": "Phạm Thị D",
+      "avatar": "/images/avatars/user4.jpg",
+      "role": "NGUOI_THUE"
+    },
+    "participant2": {
+      "id": 14,
+      "name": "Phạm Thị Lan",
+      "avatar": "/images/avatars/freelancer4.jpg",
+      "role": "FREELANCER"
+    },
+    "lastMessage": "Content tuần này đã đăng xong, engagement tăng 25%!",
+    "lastMessageTime": "2026-04-26T10:00:00Z",
+    "lastMessageTimeText": "2 giờ trước",
+    "unreadCount": 1,
+    "createdDate": "2026-04-25T12:00:00Z"
+  },
+  {
+    "id": 8,
+    "requestId": null,
+    "requestTitle": null,
+    "participant1": {
+      "id": 2,
+      "name": "Nguyễn Văn A",
+      "avatar": "/images/avatars/user1.jpg",
+      "role": "NGUOI_THUE"
+    },
+    "participant2": {
+      "id": 20,
+      "name": "Ngô Thị Linh",
+      "avatar": "/images/avatars/freelancer10.jpg",
+      "role": "FREELANCER"
+    },
+    "lastMessage": "Bạn có rảnh nhận dự án app mobile không?",
+    "lastMessageTime": "2026-04-25T12:00:00Z",
+    "lastMessageTimeText": "1 ngày trước",
+    "unreadCount": 0,
+    "createdDate": "2026-04-24T12:00:00Z"
+  }
+]

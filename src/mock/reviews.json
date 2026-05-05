@@ -1,0 +1,102 @@
+[
+  {
+    "id": 1,
+    "jobId": 4,
+    "jobTitle": "Viết content cho 10 bài blog về công nghệ",
+    "reviewerId": 6,
+    "reviewer": {
+      "id": 6,
+      "name": "Hoàng Văn E",
+      "avatar": "/images/avatars/user5.jpg",
+      "role": "NGUOI_THUE"
+    },
+    "reviewedId": 13,
+    "reviewed": {
+      "id": 13,
+      "name": "Trần Văn Nam",
+      "avatar": "/images/avatars/freelancer3.jpg",
+      "role": "FREELANCER"
+    },
+    "rating": 5,
+    "comment": "Freelancer viết content rất tốt, bài viết chất lượng cao, SEO chuẩn. Giao đúng hạn, thái độ chuyên nghiệp. Sẽ hợp tác lâu dài!",
+    "type": "NGUOI_THUE_DANH_GIA_FREELANCER",
+    "typeText": "Người thuê đánh giá Freelancer",
+    "createdDate": "2026-04-22T00:00:00Z",
+    "createdTime": "4 ngày trước"
+  },
+  {
+    "id": 2,
+    "jobId": 4,
+    "jobTitle": "Viết content cho 10 bài blog về công nghệ",
+    "reviewerId": 13,
+    "reviewer": {
+      "id": 13,
+      "name": "Trần Văn Nam",
+      "avatar": "/images/avatars/freelancer3.jpg",
+      "role": "FREELANCER"
+    },
+    "reviewedId": 6,
+    "reviewed": {
+      "id": 6,
+      "name": "Hoàng Văn E",
+      "avatar": "/images/avatars/user5.jpg",
+      "role": "NGUOI_THUE"
+    },
+    "rating": 5,
+    "comment": "Khách hàng rất dễ tính, yêu cầu rõ ràng, thanh toán đúng hạn. Rất vui được làm việc!",
+    "type": "FREELANCER_DANH_GIA_NGUOI_THUE",
+    "typeText": "Freelancer đánh giá Người thuê",
+    "createdDate": "2026-04-22T00:00:00Z",
+    "createdTime": "4 ngày trước"
+  },
+  {
+    "id": 3,
+    "jobId": 5,
+    "jobTitle": "Dựng video giới thiệu công ty (2-3 phút)",
+    "reviewerId": 7,
+    "reviewer": {
+      "id": 7,
+      "name": "Vũ Thị F",
+      "avatar": "/images/avatars/user6.jpg",
+      "role": "NGUOI_THUE"
+    },
+    "reviewedId": 17,
+    "reviewed": {
+      "id": 17,
+      "name": "Đặng Minh Khoa",
+      "avatar": "/images/avatars/freelancer7.jpg",
+      "role": "FREELANCER"
+    },
+    "rating": 5,
+    "comment": "Video rất đẹp, chuyên nghiệp, vượt mong đợi. Freelancer làm việc nhanh, sáng tạo. Highly recommended!",
+    "type": "NGUOI_THUE_DANH_GIA_FREELANCER",
+    "typeText": "Người thuê đánh giá Freelancer",
+    "createdDate": "2026-04-17T00:00:00Z",
+    "createdTime": "9 ngày trước"
+  },
+  {
+    "id": 4,
+    "jobId": 5,
+    "jobTitle": "Dựng video giới thiệu công ty (2-3 phút)",
+    "reviewerId": 17,
+    "reviewer": {
+      "id": 17,
+      "name": "Đặng Minh Khoa",
+      "avatar": "/images/avatars/freelancer7.jpg",
+      "role": "FREELANCER"
+    },
+    "reviewedId": 7,
+    "reviewed": {
+      "id": 7,
+      "name": "Vũ Thị F",
+      "avatar": "/images/avatars/user6.jpg",
+      "role": "NGUOI_THUE"
+    },
+    "rating": 5,
+    "comment": "Khách hàng nhiệt tình, feedback nhanh, thanh toán đúng hẹn. Dự án rất thú vị!",
+    "type": "FREELANCER_DANH_GIA_NGUOI_THUE",
+    "typeText": "Freelancer đánh giá Người thuê",
+    "createdDate": "2026-04-17T00:00:00Z",
+    "createdTime": "9 ngày trước"
+  }
+]

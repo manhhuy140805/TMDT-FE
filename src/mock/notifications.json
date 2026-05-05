@@ -1,0 +1,222 @@
+[
+  {
+    "id": 1,
+    "userId": 2,
+    "title": "Có báo giá mới cho yêu cầu của bạn",
+    "content": "Freelancer Nguyễn Minh Tuấn đã gửi báo giá cho yêu cầu \"Cần lập trình viên React.js cho dự án E-commerce\"",
+    "type": "BAO_GIA",
+    "link": "/requests/1/quotes/1",
+    "read": false,
+    "createdDate": "2026-04-26T11:00:00Z",
+    "createdTime": "1 giờ trước"
+  },
+  {
+    "id": 2,
+    "userId": 2,
+    "title": "Có báo giá mới cho yêu cầu của bạn",
+    "content": "Freelancer Hoàng Quốc Việt đã gửi báo giá cho yêu cầu \"Cần lập trình viên React.js cho dự án E-commerce\"",
+    "type": "BAO_GIA",
+    "link": "/requests/1/quotes/2",
+    "read": false,
+    "createdDate": "2026-04-26T09:00:00Z",
+    "createdTime": "3 giờ trước"
+  },
+  {
+    "id": 3,
+    "userId": 2,
+    "title": "Có báo giá mới cho yêu cầu của bạn",
+    "content": "Freelancer Ngô Thị Linh đã gửi báo giá cho yêu cầu \"Cần lập trình viên React.js cho dự án E-commerce\"",
+    "type": "BAO_GIA",
+    "link": "/requests/1/quotes/3",
+    "read": false,
+    "createdDate": "2026-04-26T07:00:00Z",
+    "createdTime": "5 giờ trước"
+  },
+  {
+    "id": 4,
+    "userId": 2,
+    "title": "Có tin nhắn mới",
+    "content": "Nguyễn Minh Tuấn đã gửi tin nhắn cho bạn",
+    "type": "HE_THONG",
+    "link": "/messages/1",
+    "read": true,
+    "createdDate": "2026-04-26T11:05:00Z",
+    "createdTime": "55 phút trước"
+  },
+  {
+    "id": 5,
+    "userId": 2,
+    "title": "Yêu cầu của bạn đang được nhiều người quan tâm",
+    "content": "Yêu cầu \"Cần lập trình viên React.js cho dự án E-commerce\" đã có 145 lượt xem và 12 báo giá",
+    "type": "YEU_CAU",
+    "link": "/requests/1",
+    "read": true,
+    "createdDate": "2026-04-26T06:00:00Z",
+    "createdTime": "6 giờ trước"
+  },
+  {
+    "id": 6,
+    "userId": 3,
+    "title": "Có báo giá mới cho yêu cầu của bạn",
+    "content": "Freelancer Lê Thị Hương đã gửi báo giá cho yêu cầu \"Thiết kế logo và bộ nhận diện thương hiệu\"",
+    "type": "BAO_GIA",
+    "link": "/requests/2/quotes/4",
+    "read": false,
+    "createdDate": "2026-04-26T10:00:00Z",
+    "createdTime": "2 giờ trước"
+  },
+  {
+    "id": 7,
+    "userId": 3,
+    "title": "Có báo giá mới cho yêu cầu của bạn",
+    "content": "Freelancer Vũ Thị Mai đã gửi báo giá cho yêu cầu \"Thiết kế logo và bộ nhận diện thương hiệu\"",
+    "type": "BAO_GIA",
+    "link": "/requests/2/quotes/5",
+    "read": false,
+    "createdDate": "2026-04-26T08:00:00Z",
+    "createdTime": "4 giờ trước"
+  },
+  {
+    "id": 8,
+    "userId": 3,
+    "title": "Công việc đang được thực hiện",
+    "content": "Freelancer Hoàng Quốc Việt đã bắt đầu làm việc trên dự án \"Xây dựng hệ thống quản lý kho hàng\"",
+    "type": "CONG_VIEC",
+    "link": "/jobs/1",
+    "read": true,
+    "createdDate": "2026-04-25T00:00:00Z",
+    "createdTime": "1 ngày trước"
+  },
+  {
+    "id": 9,
+    "userId": 3,
+    "title": "Có tin nhắn mới",
+    "content": "Hoàng Quốc Việt đã gửi tin nhắn: \"API nhập kho đã xong, đang làm API xuất kho.\"",
+    "type": "HE_THONG",
+    "link": "/messages/5",
+    "read": false,
+    "createdDate": "2026-04-26T09:00:00Z",
+    "createdTime": "3 giờ trước"
+  },
+  {
+    "id": 10,
+    "userId": 4,
+    "title": "Thanh toán thành công",
+    "content": "Bạn đã thanh toán thành công 2,000,000 VNĐ cho dự án \"Thiết kế bộ ảnh sản phẩm\"",
+    "type": "THANH_TOAN",
+    "link": "/payments/2",
+    "read": true,
+    "createdDate": "2026-04-24T00:00:00Z",
+    "createdTime": "2 ngày trước"
+  },
+  {
+    "id": 11,
+    "userId": 4,
+    "title": "Có tin nhắn mới",
+    "content": "Vũ Thị Mai đã gửi tin nhắn: \"Batch 2 đã gửi, bạn check giúp mình nhé!\"",
+    "type": "HE_THONG",
+    "link": "/messages/6",
+    "read": false,
+    "createdDate": "2026-04-26T07:00:00Z",
+    "createdTime": "5 giờ trước"
+  },
+  {
+    "id": 12,
+    "userId": 5,
+    "title": "Thanh toán thành công",
+    "content": "Bạn đã thanh toán thành công 5,000,000 VNĐ cho dự án \"Quản lý fanpage và chạy ads\"",
+    "type": "THANH_TOAN",
+    "link": "/payments/3",
+    "read": true,
+    "createdDate": "2026-04-25T00:00:00Z",
+    "createdTime": "1 ngày trước"
+  },
+  {
+    "id": 13,
+    "userId": 5,
+    "title": "Có tin nhắn mới",
+    "content": "Phạm Thị Lan đã gửi tin nhắn: \"Content tuần này đã đăng xong, engagement tăng 25%!\"",
+    "type": "HE_THONG",
+    "link": "/messages/7",
+    "read": false,
+    "createdDate": "2026-04-26T10:00:00Z",
+    "createdTime": "2 giờ trước"
+  },
+  {
+    "id": 14,
+    "userId": 6,
+    "title": "Công việc đã hoàn thành",
+    "content": "Freelancer Trần Văn Nam đã hoàn thành dự án \"Viết content cho 10 bài blog\"",
+    "type": "CONG_VIEC",
+    "link": "/jobs/4",
+    "read": true,
+    "createdDate": "2026-04-21T00:00:00Z",
+    "createdTime": "5 ngày trước"
+  },
+  {
+    "id": 15,
+    "userId": 6,
+    "title": "Vui lòng đánh giá freelancer",
+    "content": "Hãy đánh giá trải nghiệm làm việc với Trần Văn Nam",
+    "type": "HE_THONG",
+    "link": "/jobs/4/review",
+    "read": true,
+    "createdDate": "2026-04-21T00:00:00Z",
+    "createdTime": "5 ngày trước"
+  },
+  {
+    "id": 16,
+    "userId": 11,
+    "title": "Báo giá của bạn đã được gửi",
+    "content": "Báo giá cho yêu cầu \"Cần lập trình viên React.js cho dự án E-commerce\" đã được gửi thành công",
+    "type": "BAO_GIA",
+    "link": "/my-quotes/1",
+    "read": true,
+    "createdDate": "2026-04-26T11:00:00Z",
+    "createdTime": "1 giờ trước"
+  },
+  {
+    "id": 17,
+    "userId": 11,
+    "title": "Có tin nhắn mới",
+    "content": "Nguyễn Văn A đã gửi tin nhắn cho bạn",
+    "type": "HE_THONG",
+    "link": "/messages/1",
+    "read": true,
+    "createdDate": "2026-04-26T11:00:00Z",
+    "createdTime": "1 giờ trước"
+  },
+  {
+    "id": 18,
+    "userId": 13,
+    "title": "Bạn đã nhận được đánh giá 5 sao",
+    "content": "Đỗ Văn I đã đánh giá bạn 5 sao cho dự án \"Viết content cho 10 bài blog\"",
+    "type": "CONG_VIEC",
+    "link": "/jobs/4/review",
+    "read": true,
+    "createdDate": "2026-04-22T00:00:00Z",
+    "createdTime": "4 ngày trước"
+  },
+  {
+    "id": 19,
+    "userId": 13,
+    "title": "Thanh toán đã được xử lý",
+    "content": "Bạn đã nhận được 2,300,000 VNĐ từ dự án \"Viết content cho 10 bài blog\"",
+    "type": "THANH_TOAN",
+    "link": "/payments/5",
+    "read": true,
+    "createdDate": "2026-04-21T00:00:00Z",
+    "createdTime": "5 ngày trước"
+  },
+  {
+    "id": 20,
+    "userId": 17,
+    "title": "Bạn đã nhận được đánh giá 5 sao",
+    "content": "Bùi Thị H đã đánh giá bạn 5 sao cho dự án \"Dựng video giới thiệu công ty\"",
+    "type": "CONG_VIEC",
+    "link": "/jobs/5/review",
+    "read": true,
+    "createdDate": "2026-04-17T00:00:00Z",
+    "createdTime": "9 ngày trước"
+  }
+]

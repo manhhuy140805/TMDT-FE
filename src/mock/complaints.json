@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "jobId": 2,
+    "jobTitle": "Thiết kế bộ ảnh sản phẩm cho shop thời trang",
+    "complainantId": 4,
+    "complainant": {
+      "id": 4,
+      "name": "Lê Văn C",
+      "avatar": "/images/avatars/user3.jpg"
+    },
+    "type": "CHAT_LUONG",
+    "typeText": "Chất lượng",
+    "reason": "Một số ảnh sản phẩm chưa được chỉnh sửa kỹ, còn lỗi background và màu sắc không đồng nhất",
+    "requestedAmount": null,
+    "requestedAmountText": null,
+    "status": "DANG_XU_LY",
+    "statusText": "Đang xử lý",
+    "result": "Đang xem xét khiếu nại. Đã yêu cầu freelancer chỉnh sửa lại các ảnh bị lỗi.",
+    "adminId": 1,
+    "admin": {
+      "id": 1,
+      "name": "Quản Trị Viên",
+      "avatar": "/images/avatars/admin.jpg"
+    },
+    "createdDate": "2026-04-25T00:00:00Z",
+    "processedDate": "2026-04-25T12:00:00Z",
+    "createdTime": "1 ngày trước"
+  }
+]

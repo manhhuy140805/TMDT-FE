@@ -1,82 +1,76 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import api from '../../services/api';
+import RequestCard from '../../components/RequestCard';
 import './RequestsPage.css';
 
 const RequestsPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [categories, setCategories] = useState([]);
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [activeTab, setActiveTab] = useState('best-match');
   const [filters, setFilters] = useState({
-    category: 'all',
+    categoryId: searchParams.get('category') || 'all',
     status: 'ALL',
     workType: 'all',
   });
 
-  // Mock data
-  const mockRequests = [
-    {
-      id: 1,
-      title: 'Cần lập trình viên React.js cho dự án E-commerce',
-      category: 'Công nghệ & Lập trình',
-      budget: '15,000,000 - 25,000,000 VNĐ',
-      deadline: '30 ngày',
-      bids: 12,
-      status: 'DANG_MOI_THAU',
-      description: 'Tìm kiếm lập trình viên React.js có kinh nghiệm để xây dựng website thương mại điện tử...',
-      skills: ['React.js', 'Node.js', 'MongoDB'],
-      postedTime: '2 giờ trước',
-    },
-    {
-      id: 2,
-      title: 'Thiết kế logo và bộ nhận diện thương hiệu',
-      category: 'Thiết kế & Đồ họa',
-      budget: '5,000,000 - 10,000,000 VNĐ',
-      deadline: '15 ngày',
-      bids: 8,
-      status: 'DANG_MOI_THAU',
-      description: 'Cần thiết kế logo chuyên nghiệp và bộ nhận diện thương hiệu hoàn chỉnh...',
-      skills: ['Adobe Illustrator', 'Photoshop', 'Branding'],
-      postedTime: '5 giờ trước',
-    },
-    {
-      id: 3,
-      title: 'Viết content cho website du lịch',
-      category: 'Viết lách & Dịch thuật',
-      budget: '3,000,000 - 5,000,000 VNĐ',
-      deadline: '20 ngày',
-      bids: 15,
-      status: 'DANG_MOI_THAU',
-      description: 'Cần người viết content SEO cho website du lịch, 20-30 bài viết...',
-      skills: ['Content Writing', 'SEO', 'Travel'],
-      postedTime: '1 ngày trước',
-    },
-  ];
-
   useEffect(() => {
-    // Simulate loading
-    setTimeout(() => {
-      setRequests(mockRequests);
-      setLoading(false);
-    }, 1000);
+    fetchCategories();
   }, []);
 
+  useEffect(() => {
+    fetchRequests();
+  }, [filters, searchTerm]);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await api.categories.getAll();
+      if (response.success) {
+        setCategories(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  const fetchRequests = async () => {
+    setLoading(true);
+    try {
+      const params = {
+        search: searchTerm,
+        status: 'DANG_MOI_THAU'
+      };
+
+      if (filters.categoryId !== 'all') {
+        params.categoryId = filters.categoryId;
+      }
+
+      const response = await api.requests.getAll(params);
+      if (response.success) {
+        setRequests(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching requests:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSearch = () => {
-    console.log('Searching for:', searchTerm);
-    // TODO: Implement search logic
+    fetchRequests();
   };
 
   const handleRequestClick = (id) => {
     navigate(`/requests/${id}`);
   };
 
-  const filteredRequests = requests.filter(req => {
-    if (searchTerm && !req.title.toLowerCase().includes(searchTerm.toLowerCase())) {
-      return false;
-    }
-    return true;
-  });
+  const handleCategoryFilter = (categoryId) => {
+    setFilters(prev => ({ ...prev, categoryId }));
+  };
 
   return (
     <div className="bg-slate">
@@ -117,24 +111,24 @@ const RequestsPage = () => {
               </h3>
               <div className="r-filter-list">
                 <label className="r-cb">
-                  <input type="checkbox" defaultChecked /> <span>Tất cả</span>
+                  <input 
+                    type="checkbox" 
+                    checked={filters.categoryId === 'all'}
+                    onChange={() => handleCategoryFilter('all')}
+                  /> 
+                  <span>Tất cả</span>
                 </label>
-                <label className="r-cb">
-                  <input type="checkbox" /> <span>Công nghệ & Lập trình</span>
-                  <span className="r-count">45</span>
-                </label>
-                <label className="r-cb">
-                  <input type="checkbox" /> <span>Thiết kế & Đồ họa</span>
-                  <span className="r-count">16K</span>
-                </label>
-                <label className="r-cb">
-                  <input type="checkbox" /> <span>Digital Marketing</span>
-                  <span className="r-count">6K</span>
-                </label>
-                <label className="r-cb">
-                  <input type="checkbox" /> <span>Viết lách & Dịch thuật</span>
-                  <span className="r-count">3K</span>
-                </label>
+                {categories.map((category) => (
+                  <label key={category.id} className="r-cb">
+                    <input 
+                      type="checkbox"
+                      checked={filters.categoryId === category.id.toString()}
+                      onChange={() => handleCategoryFilter(category.id.toString())}
+                    /> 
+                    <span>{category.name}</span>
+                    <span className="r-count">{category.count}</span>
+                  </label>
+                ))}
               </div>
             </div>
 
@@ -207,7 +201,7 @@ const RequestsPage = () => {
             )}
 
             {/* Empty State */}
-            {!loading && filteredRequests.length === 0 && (
+            {!loading && requests.length === 0 && (
               <div className="r-placeholder empty">
                 <i className="fa-regular fa-folder-open"></i>
                 <h3>Không tìm thấy yêu cầu nào</h3>
@@ -220,54 +214,14 @@ const RequestsPage = () => {
             )}
 
             {/* Job List */}
-            {!loading && filteredRequests.length > 0 && (
+            {!loading && requests.length > 0 && (
               <div className="r-job-list">
-                {filteredRequests.map((request) => (
-                  <div
+                {requests.map((request) => (
+                  <RequestCard
                     key={request.id}
-                    className="r-job-card"
-                    onClick={() => handleRequestClick(request.id)}
-                  >
-                    <div className="r-job-header">
-                      <h3 className="r-job-title">{request.title}</h3>
-                      <button className="r-save-btn">
-                        <i className="fa-regular fa-heart"></i>
-                      </button>
-                    </div>
-
-                    <div className="r-job-meta">
-                      <span className="r-meta-item">
-                        <i className="fa-solid fa-tag"></i> {request.category}
-                      </span>
-                      <span className="r-meta-item">
-                        <i className="fa-solid fa-clock"></i> {request.postedTime}
-                      </span>
-                    </div>
-
-                    <p className="r-job-desc">{request.description}</p>
-
-                    <div className="r-job-skills">
-                      {request.skills.map((skill, index) => (
-                        <span key={index} className="r-skill-tag">
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div className="r-job-footer">
-                      <div className="r-job-info">
-                        <span className="r-budget">
-                          <i className="fa-solid fa-money-bill-wave"></i> {request.budget}
-                        </span>
-                        <span className="r-deadline">
-                          <i className="fa-solid fa-calendar-days"></i> {request.deadline}
-                        </span>
-                      </div>
-                      <div className="r-bids">
-                        <i className="fa-solid fa-users"></i> {request.bids} đề xuất
-                      </div>
-                    </div>
-                  </div>
+                    request={request}
+                    onClick={handleRequestClick}
+                  />
                 ))}
               </div>
             )}

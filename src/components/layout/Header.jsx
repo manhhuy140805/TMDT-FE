@@ -1,7 +1,33 @@
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import '../../pages/Home/HomePage.css';
 
 const Header = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  useEffect(() => {
+    // Lấy thông tin user từ localStorage
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    // Xóa thông tin user khỏi localStorage
+    localStorage.removeItem('user');
+    localStorage.removeItem('rememberMe');
+    setUser(null);
+    setShowDropdown(false);
+    navigate('/');
+  };
+
   return (
     <>
       {/* Promo Banner */}
@@ -43,12 +69,59 @@ const Header = () => {
               <i className="fa-solid fa-search"></i>
               <input type="text" placeholder="Tìm kiếm..." />
             </div>
-            <Link to="/login" className="btn-login-text">
-              Đăng nhập
-            </Link>
-            <Link to="/signup" className="btn-signup-styled">
-              Đăng ký
-            </Link>
+            
+            {user ? (
+              // Hiển thị khi đã đăng nhập
+              <div className="user-menu">
+                <button 
+                  className="user-menu-btn"
+                  onClick={() => setShowDropdown(!showDropdown)}
+                >
+                  <img 
+                    src={user.avatar || 'https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp'} 
+                    alt={user.name}
+                    className="user-avatar"
+                    onError={(e) => {
+                      e.target.src = 'https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp';
+                    }}
+                  />
+                  <span className="user-name">{user.name}</span>
+                  <i className="fa-solid fa-chevron-down"></i>
+                </button>
+                
+                {showDropdown && (
+                  <div className="user-dropdown">
+                    <Link to="/profile" className="dropdown-item" onClick={() => setShowDropdown(false)}>
+                      <i className="fa-solid fa-user"></i>
+                      Hồ sơ của tôi
+                    </Link>
+                    <Link to="/my-requests" className="dropdown-item" onClick={() => setShowDropdown(false)}>
+                      <i className="fa-solid fa-briefcase"></i>
+                      Yêu cầu của tôi
+                    </Link>
+                    <Link to="/settings" className="dropdown-item" onClick={() => setShowDropdown(false)}>
+                      <i className="fa-solid fa-gear"></i>
+                      Cài đặt
+                    </Link>
+                    <div className="dropdown-divider"></div>
+                    <button className="dropdown-item logout" onClick={handleLogout}>
+                      <i className="fa-solid fa-right-from-bracket"></i>
+                      Đăng xuất
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Hiển thị khi chưa đăng nhập
+              <>
+                <Link to="/login" className="btn-login-text">
+                  Đăng nhập
+                </Link>
+                <Link to="/signup" className="btn-signup-styled">
+                  Đăng ký
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
