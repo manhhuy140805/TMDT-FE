@@ -196,9 +196,14 @@ const EditRequestPage = () => {
         ? formData.skills.split(',').map(s => s.trim()).filter(s => s)
         : [];
 
+      // Find category name from categoryId
+      const selectedCategory = categories.find(cat => cat.id === parseInt(formData.category));
+      const categoryName = selectedCategory ? selectedCategory.name : request.category;
+
       const updateData = {
         title: formData.title,
         categoryId: parseInt(formData.category),
+        category: categoryName, // Update category name
         location: formData.location || 'Remote',
         description: formData.description,
         skills: skillsArray,
@@ -208,7 +213,6 @@ const EditRequestPage = () => {
         submissionDeadlineDate: formData.submissionDeadline,
         deadlineDate: formData.deadline,
         // Keep existing fields
-        category: request.category,
         status: request.status,
         statusText: request.statusText,
         views: request.views,
