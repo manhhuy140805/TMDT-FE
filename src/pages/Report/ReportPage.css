@@ -1,0 +1,217 @@
+/* Giao diện Báo cáo vi phạm (Phong cách Upwork) */
+
+.report-page-wrapper {
+  min-height: 100vh;
+  background-color: #f8fafc;
+  padding: 60px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.report-card {
+  width: 100%;
+  max-width: 650px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  padding: 40px;
+}
+
+.report-header {
+  margin-bottom: 32px;
+}
+
+.report-header h1 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.report-header p {
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Target User Section */
+.target-user-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #f1f5f9;
+  border-radius: 12px;
+  margin-bottom: 32px;
+}
+
+.target-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.target-info b {
+  display: block;
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.target-info span {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* Form Groups */
+.report-form-group {
+  margin-bottom: 24px;
+}
+
+.report-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 12px;
+}
+
+.report-label span {
+  color: #ef4444;
+}
+
+.reason-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reason-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.reason-option:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.reason-option.selected {
+  background: #eff6ff;
+  border-color: #3b82f6;
+}
+
+.reason-option input {
+  width: 18px;
+  height: 18px;
+  accent-color: #0ea5e9;
+}
+
+.reason-text {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.report-textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.report-textarea:focus {
+  outline: none;
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+/* Evidence Upload */
+.evidence-upload {
+  border: 2px dashed #e2e8f0;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.evidence-upload:hover {
+  background: #f8fafc;
+  border-color: #0ea5e9;
+}
+
+.evidence-upload i {
+  font-size: 24px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.evidence-upload p {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Actions */
+.report-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 40px;
+}
+
+.btn-report-cancel {
+  flex: 1;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 25px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.btn-report-submit {
+  flex: 1;
+  padding: 12px;
+  background: #ef4444;
+  border: none;
+  border-radius: 25px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-report-submit:hover {
+  background: #dc2626;
+  box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.3);
+}
+
+.btn-report-submit:disabled {
+  background: #fca5a5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Success View */
+.report-success {
+  text-align: center;
+}
+
+.report-success i {
+  font-size: 60px;
+  color: #10b981;
+  margin-bottom: 24px;
+}
