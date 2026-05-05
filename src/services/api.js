@@ -5,11 +5,51 @@
 
 import mockData from '../mock';
 
-// In-memory storage for updated data
+// Helper functions for localStorage
+const getFromLocalStorage = (key, defaultValue = {}) => {
+  try {
+    const item = localStorage.getItem(key);
+    return item ? JSON.parse(item) : defaultValue;
+  } catch (error) {
+    console.error('Error reading from localStorage:', error);
+    return defaultValue;
+  }
+};
+
+const saveToLocalStorage = (key, value) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.error('Error saving to localStorage:', error);
+  }
+};
+
+// In-memory storage for updated data (now backed by localStorage)
 const inMemoryStorage = {
-  requests: {},
-  quotes: {},
-  jobs: {}
+  get requests() {
+    return getFromLocalStorage('mock_requests', {});
+  },
+  set requests(value) {
+    saveToLocalStorage('mock_requests', value);
+  },
+  get quotes() {
+    return getFromLocalStorage('mock_quotes', {});
+  },
+  set quotes(value) {
+    saveToLocalStorage('mock_quotes', value);
+  },
+  get jobs() {
+    return getFromLocalStorage('mock_jobs', {});
+  },
+  set jobs(value) {
+    saveToLocalStorage('mock_jobs', value);
+  },
+  get nextQuoteId() {
+    return getFromLocalStorage('mock_nextQuoteId', 100);
+  },
+  set nextQuoteId(value) {
+    saveToLocalStorage('mock_nextQuoteId', value);
+  }
 };
 
 // Simulate API delay
@@ -47,9 +87,10 @@ export const requestsAPI = {
   // GET /api/requests
   getAll: async (params = {}) => {
     await delay();
-    // Merge mock data with in-memory updates
+    // Merge mock data with localStorage updates
+    const storedRequests = inMemoryStorage.requests;
     let results = mockData.requests.map(req => {
-      const updated = inMemoryStorage.requests[req.id];
+      const updated = storedRequests[req.id];
       return updated || req;
     }).filter(req => !req.deleted); // Filter out deleted items
 
@@ -95,9 +136,10 @@ export const requestsAPI = {
   getById: async (id) => {
     await delay();
     const requestId = parseInt(id);
-    // Check in-memory storage first
-    if (inMemoryStorage.requests[requestId]) {
-      return apiResponse(inMemoryStorage.requests[requestId]);
+    // Check localStorage first
+    const storedRequests = inMemoryStorage.requests;
+    if (storedRequests[requestId]) {
+      return apiResponse(storedRequests[requestId]);
     }
     const request = mockData.getRequestById(requestId);
     if (!request) {
@@ -127,7 +169,8 @@ export const requestsAPI = {
     await delay(800);
     const requestId = parseInt(id);
     // Get original request
-    let request = inMemoryStorage.requests[requestId] || mockData.getRequestById(requestId);
+    const storedRequests = inMemoryStorage.requests;
+    let request = storedRequests[requestId] || mockData.getRequestById(requestId);
     if (!request) {
       return apiResponse(null, false, 'Request not found');
     }
@@ -137,9 +180,10 @@ export const requestsAPI = {
       ...data,
       id: requestId // Ensure ID stays the same
     };
-    // Store in memory
-    inMemoryStorage.requests[requestId] = updated;
-    console.log('Updated request in memory:', updated);
+    // Store in localStorage
+    const allRequests = { ...storedRequests, [requestId]: updated };
+    inMemoryStorage.requests = allRequests;
+    console.log('Updated request in localStorage:', updated);
     return apiResponse(updated, true, 'Cập nhật yêu cầu thành công');
   },
 
@@ -147,10 +191,12 @@ export const requestsAPI = {
   delete: async (id) => {
     await delay(800);
     const requestId = parseInt(id);
-    // Mark as deleted in memory
+    // Mark as deleted in localStorage
     const request = mockData.getRequestById(requestId);
     if (request) {
-      inMemoryStorage.requests[requestId] = { ...request, deleted: true };
+      const storedRequests = inMemoryStorage.requests;
+      const allRequests = { ...storedRequests, [requestId]: { ...request, deleted: true } };
+      inMemoryStorage.requests = allRequests;
     }
     return apiResponse(null, true, 'Xóa yêu cầu thành công');
   },
@@ -160,13 +206,15 @@ export const requestsAPI = {
     console.log('API cancel called with ID:', id, 'Type:', typeof id);
     await delay(800);
     const requestId = parseInt(id);
-    let request = inMemoryStorage.requests[requestId] || mockData.getRequestById(requestId);
+    const storedRequests = inMemoryStorage.requests;
+    let request = storedRequests[requestId] || mockData.getRequestById(requestId);
     console.log('Found request:', request);
     if (!request) {
       return apiResponse(null, false, 'Request not found');
     }
     const cancelled = { ...request, status: 'DA_HUY', statusText: 'Đã hủy' };
-    inMemoryStorage.requests[requestId] = cancelled;
+    const allRequests = { ...storedRequests, [requestId]: cancelled };
+    inMemoryStorage.requests = allRequests;
     console.log('Cancelled request stored:', cancelled);
     return apiResponse(cancelled, true, 'Hủy yêu cầu thành công');
   }
@@ -233,28 +281,93 @@ export const quotesAPI = {
   // GET /api/requests/:requestId/quotes
   getByRequestId: async (requestId) => {
     await delay();
-    const quotes = mockData.getQuotesByRequestId(requestId);
-    return apiResponse(quotes);
+    const reqId = parseInt(requestId);
+    
+    // Get quotes from mock data
+    const mockQuotes = mockData.getQuotesByRequestId(reqId);
+    
+    // Get quotes from localStorage
+    const storedQuotes = inMemoryStorage.quotes;
+    const memoryQuotes = Object.values(storedQuotes).filter(
+      quote => quote.requestId === reqId
+    );
+    
+    // Merge both
+    const allQuotes = [...mockQuotes, ...memoryQuotes];
+    
+    console.log('Getting quotes for request', reqId, ':', allQuotes);
+    return apiResponse(allQuotes);
   },
 
   // POST /api/quotes
   create: async (data) => {
     await delay(800);
+    
+    // Generate new ID
+    let nextId = inMemoryStorage.nextQuoteId;
+    const newId = nextId;
+    inMemoryStorage.nextQuoteId = nextId + 1;
+    
     const newQuote = {
-      id: mockData.quotes.length + 1,
+      id: newId,
       ...data,
       status: 'DA_GUI',
       statusText: 'Đã gửi',
       submittedDate: new Date().toISOString(),
       submittedTime: 'Vừa xong'
     };
+    
+    // Store in localStorage
+    const storedQuotes = inMemoryStorage.quotes;
+    const allQuotes = { ...storedQuotes, [newId]: newQuote };
+    inMemoryStorage.quotes = allQuotes;
+    
+    // Update request bids count
+    const requestId = parseInt(data.requestId);
+    const storedRequests = inMemoryStorage.requests;
+    let request = storedRequests[requestId] || mockData.getRequestById(requestId);
+    if (request) {
+      const updatedRequest = {
+        ...request,
+        bids: (request.bids || 0) + 1
+      };
+      const allRequests = { ...storedRequests, [requestId]: updatedRequest };
+      inMemoryStorage.requests = allRequests;
+      console.log('Updated request bids count:', updatedRequest.bids);
+    }
+    
+    console.log('Created new quote:', newQuote);
+    console.log('All quotes in localStorage:', allQuotes);
+    
     return apiResponse(newQuote, true, 'Gửi báo giá thành công');
   },
 
   // PUT /api/quotes/:id
   update: async (id, data) => {
     await delay(800);
-    return apiResponse({ id, ...data }, true, 'Cập nhật báo giá thành công');
+    const quoteId = parseInt(id);
+    
+    // Get existing quote
+    const storedQuotes = inMemoryStorage.quotes;
+    let quote = storedQuotes[quoteId];
+    if (!quote) {
+      // Try to find in mock data
+      const mockQuote = mockData.quotes.find(q => q.id === quoteId);
+      if (mockQuote) {
+        quote = mockQuote;
+      }
+    }
+    
+    if (!quote) {
+      return apiResponse(null, false, 'Quote not found');
+    }
+    
+    // Update quote
+    const updated = { ...quote, ...data };
+    const allQuotes = { ...storedQuotes, [quoteId]: updated };
+    inMemoryStorage.quotes = allQuotes;
+    
+    return apiResponse(updated, true, 'Cập nhật báo giá thành công');
   }
 };
 

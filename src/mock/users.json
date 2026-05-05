@@ -34,6 +34,39 @@
     }
   },
   {
+    "id": 11,
+    "username": "freelancer1",
+    "email": "freelancer@gmail.com",
+    "password": "123456",
+    "name": "Nguyễn Văn Freelancer",
+    "phone": "0911111111",
+    "avatar": "/images/avatars/freelancer1.jpg",
+    "role": "FREELANCER",
+    "status": "HOAT_DONG",
+    "address": "100 Lê Văn Việt, Q.9, TP.HCM",
+    "verified": {
+      "email": true,
+      "phone": true,
+      "identity": true
+    },
+    "bio": "Full-stack Developer với 5 năm kinh nghiệm. Chuyên về React, Node.js, và MongoDB.",
+    "skills": ["React.js", "Node.js", "MongoDB", "TypeScript", "Next.js", "Express.js"],
+    "hourlyRate": 500000,
+    "rating": 4.8,
+    "completedProjects": 45,
+    "totalEarnings": 125000000,
+    "createdDate": "2021-03-15T00:00:00Z",
+    "lastLogin": "2026-04-26T09:00:00Z",
+    "portfolio": [
+      {
+        "title": "E-commerce Website",
+        "description": "Xây dựng website thương mại điện tử hoàn chỉnh",
+        "image": "/images/portfolio/project1.jpg",
+        "url": "https://example.com"
+      }
+    ]
+  },
+  {
     "id": 3,
     "username": "tranthib",
     "email": "tranthib@gmail.com",
