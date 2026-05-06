@@ -1,4 +1,16 @@
+import { useNavigate } from 'react-router-dom';
+
 const ActionCard = ({ request, onSubmitQuote, isOwner }) => {
+  const navigate = useNavigate();
+
+  const handleEditRequest = () => {
+    navigate(`/requests/${request.id}/edit`);
+  };
+
+  const handleManageRequest = () => {
+    navigate('/my-requests');
+  };
+
   return (
     <div className="d-card">
       <div className="d-budget-block">
@@ -42,10 +54,10 @@ const ActionCard = ({ request, onSubmitQuote, isOwner }) => {
       {isOwner ? (
         // Giao diện cho người đăng yêu cầu
         <>
-          <button className="bg-btn-primary" onClick={() => alert('Chức năng quản lý yêu cầu')}>
+          <button className="bg-btn-primary" onClick={handleManageRequest}>
             <i className="fa-solid fa-gear"></i> Quản lý yêu cầu
           </button>
-          <button className="bg-btn-outline" onClick={() => alert('Chức năng chỉnh sửa')}>
+          <button className="bg-btn-outline" onClick={handleEditRequest}>
             <i className="fa-solid fa-pen"></i> Chỉnh sửa yêu cầu
           </button>
         </>

@@ -77,18 +77,43 @@ const RequestDetailPage = () => {
 
   const handleSubmitQuote = async (e) => {
     e.preventDefault();
+    
+    if (!currentUser) {
+      alert('Vui lòng đăng nhập để gửi báo giá!');
+      navigate('/login');
+      return;
+    }
+    
     try {
-      const response = await api.quotes.create({
+      const quoteData = {
         requestId: parseInt(id),
-        ...quoteForm,
-        freelancerId: 1
-      });
+        amount: parseInt(quoteForm.amount),
+        duration: quoteForm.duration,
+        description: quoteForm.description,
+        freelancerId: currentUser.id,
+        freelancer: {
+          id: currentUser.id,
+          name: currentUser.name,
+          avatar: currentUser.avatar,
+          rating: currentUser.rating || 0,
+          completedProjects: currentUser.completedProjects || 0,
+          skills: currentUser.skills || []
+        }
+      };
+      
+      console.log('Submitting quote:', quoteData);
+      
+      const response = await api.quotes.create(quoteData);
+      
+      console.log('Quote response:', response);
       
       if (response.success) {
         alert('Gửi báo giá thành công!');
         setShowQuoteModal(false);
         setQuoteForm({ amount: '', duration: '', description: '' });
-        fetchQuotes();
+        // Refresh both quotes and request to update bids count
+        await fetchQuotes();
+        await fetchRequestDetail();
       }
     } catch (error) {
       console.error('Error submitting quote:', error);

@@ -9,6 +9,8 @@ const MyRequestsPage = () => {
   const [requests, setRequests] = useState([]);
   const [filter, setFilter] = useState('all');
   const [currentUser, setCurrentUser] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [requestToDelete, setRequestToDelete] = useState(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -75,6 +77,36 @@ const MyRequestsPage = () => {
   const formatCurrency = (amount) => {
     if (!amount) return '0 VNĐ';
     return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ';
+  };
+
+  const handleEditRequest = (requestId) => {
+    navigate(`/requests/${requestId}/edit`);
+  };
+
+  const handleDeleteRequest = async () => {
+    if (!requestToDelete) return;
+    
+    try {
+      const response = await api.requests.delete(requestToDelete);
+      if (response.success) {
+        // Remove from local state
+        setRequests(prev => prev.filter(r => r.id !== requestToDelete));
+        alert('Xóa yêu cầu thành công!');
+      } else {
+        alert('Có lỗi xảy ra khi xóa yêu cầu!');
+      }
+    } catch (error) {
+      console.error('Error deleting request:', error);
+      alert('Có lỗi xảy ra khi xóa yêu cầu!');
+    }
+    
+    setShowDeleteModal(false);
+    setRequestToDelete(null);
+  };
+
+  const openDeleteModal = (requestId) => {
+    setRequestToDelete(requestId);
+    setShowDeleteModal(true);
   };
 
   const filteredRequests = getFilteredRequests();
@@ -195,10 +227,18 @@ const MyRequestsPage = () => {
                         {getStatusBadge(request.status)}
                       </div>
                       <div className="request-actions">
-                        <button className="btn-icon" title="Chỉnh sửa">
+                        <button 
+                          className="btn-icon" 
+                          title="Chỉnh sửa"
+                          onClick={() => handleEditRequest(request.id)}
+                        >
                           <i className="fa-solid fa-pen"></i>
                         </button>
-                        <button className="btn-icon" title="Xóa">
+                        <button 
+                          className="btn-icon" 
+                          title="Xóa"
+                          onClick={() => openDeleteModal(request.id)}
+                        >
                           <i className="fa-solid fa-trash"></i>
                         </button>
                       </div>
@@ -331,6 +371,49 @@ const MyRequestsPage = () => {
           </aside>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>
+                <i className="fa-solid fa-triangle-exclamation" style={{color: '#DC2626', marginRight: '12px'}}></i>
+                Xác nhận xóa yêu cầu
+              </h3>
+              <button className="modal-close" onClick={() => setShowDeleteModal(false)}>
+                <i className="fa-solid fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-body">
+              <p style={{fontSize: '15px', lineHeight: '1.6', color: '#475569', marginBottom: '16px'}}>
+                Bạn có chắc chắn muốn xóa yêu cầu này không? Hành động này không thể hoàn tác.
+              </p>
+              <div style={{background: '#FEF2F2', padding: '16px', borderRadius: '8px', border: '1px solid #FEE2E2'}}>
+                <p style={{fontSize: '14px', color: '#991B1B', margin: 0, lineHeight: '1.6'}}>
+                  <i className="fa-solid fa-info-circle" style={{marginRight: '8px'}}></i>
+                  <b>Lưu ý:</b> Tất cả báo giá liên quan sẽ bị xóa và không thể khôi phục.
+                </p>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn-secondary"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                Hủy bỏ
+              </button>
+              <button
+                className="btn-danger"
+                onClick={handleDeleteRequest}
+              >
+                <i className="fa-solid fa-trash"></i>
+                Xóa yêu cầu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
