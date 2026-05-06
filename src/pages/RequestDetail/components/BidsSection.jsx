@@ -1,7 +1,7 @@
 import QuoteSummary from './QuoteSummary';
 import QuoteItem from './QuoteItem';
 
-const BidsSection = ({ quotes, isOwner }) => {
+const BidsSection = ({ quotes, isOwner, onAcceptQuote }) => {
   const getQuoteStats = () => {
     if (quotes.length === 0) return null;
     
@@ -21,6 +21,9 @@ const BidsSection = ({ quotes, isOwner }) => {
   };
 
   const stats = getQuoteStats();
+  
+  // Kiểm tra xem đã có báo giá được chấp nhận chưa
+  const hasAcceptedQuote = quotes.some(quote => quote.status === 'DA_CHAP_NHAN');
 
   return (
     <div style={{maxWidth: '1200px', margin: '0 auto 40px', padding: '0 20px'}}>
@@ -43,7 +46,15 @@ const BidsSection = ({ quotes, isOwner }) => {
             </div>
           ) : (
             // Hiển thị danh sách cho tất cả, nhưng ẩn chi tiết cho non-owner
-            quotes.map((quote) => <QuoteItem key={quote.id} quote={quote} isOwner={isOwner} />)
+            quotes.map((quote) => (
+              <QuoteItem 
+                key={quote.id} 
+                quote={quote} 
+                isOwner={isOwner}
+                onAccept={onAcceptQuote}
+                hasAcceptedQuote={hasAcceptedQuote}
+              />
+            ))
           )}
         </div>
       </div>

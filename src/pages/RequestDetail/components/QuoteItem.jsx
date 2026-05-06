@@ -1,8 +1,10 @@
-const QuoteItem = ({ quote, isOwner }) => {
+const QuoteItem = ({ quote, isOwner, onAccept, hasAcceptedQuote }) => {
   const defaultAvatar = 'https://png.pngtree.com/png-vector/20191101/ourmid/pngtree-cartoon-color-simple-male-avatar-png-image_1934459.jpg';
   
+  const isAccepted = quote.status === 'DA_CHAP_NHAN';
+  
   return (
-    <div className="bid-item">
+    <div className={`bid-item ${isAccepted ? 'accepted' : ''}`}>
       {/* User Column */}
       <div className="bid-user-col">
         <img 
@@ -15,7 +17,7 @@ const QuoteItem = ({ quote, isOwner }) => {
         />
         <div className="stars">
           <i className="fa-solid fa-star"></i>
-          <span>{quote.freelancer.rating}</span>
+          <span>{quote.freelancer.rating || 0}</span>
         </div>
       </div>
 
@@ -29,11 +31,36 @@ const QuoteItem = ({ quote, isOwner }) => {
                 <i className="fa-solid fa-circle-check verified"></i>
               )}
             </a>
+            {isAccepted && (
+              <span className="accepted-badge">
+                <i className="fa-solid fa-check-circle"></i>
+                Đã chấp nhận
+              </span>
+            )}
           </div>
-          {isOwner && <button className="btn-success">Chấp nhận</button>}
+          {isOwner && !hasAcceptedQuote && (
+            <button 
+              className="btn-success"
+              onClick={() => onAccept(quote)}
+            >
+              Chấp nhận
+            </button>
+          )}
         </div>
 
         <p className="bid-desc">{quote.description}</p>
+        
+        {/* Skills */}
+        {quote.freelancer.skills && quote.freelancer.skills.length > 0 && (
+          <div className="freelancer-skills">
+            {quote.freelancer.skills.slice(0, 5).map((skill, idx) => (
+              <span key={idx} className="skill-badge">{skill}</span>
+            ))}
+            {quote.freelancer.skills.length > 5 && (
+              <span className="skill-badge more">+{quote.freelancer.skills.length - 5}</span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Stats Column - Chỉ hiển thị cho owner */}
@@ -41,15 +68,15 @@ const QuoteItem = ({ quote, isOwner }) => {
         <div className="bid-stats-col">
           <div className="stat-row">
             <span>Giá đề xuất:</span>
-            <span>{quote.amount.toLocaleString('vi-VN')} VNĐ</span>
+            <span className="stat-value">{quote.amount.toLocaleString('vi-VN')} VNĐ</span>
           </div>
           <div className="stat-row">
             <span>Thời gian:</span>
-            <span>{quote.duration}</span>
+            <span className="stat-value">{quote.duration}</span>
           </div>
           <div className="stat-row">
             <span>Gửi lúc:</span>
-            <span>{quote.submittedTime}</span>
+            <span className="stat-value">{quote.submittedTime}</span>
           </div>
         </div>
       ) : (
