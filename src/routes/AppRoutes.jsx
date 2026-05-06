@@ -8,6 +8,8 @@ import RequestDetailPage from "../pages/RequestDetail/RequestDetailPage";
 import PostRequestPage from "../pages/PostRequest/PostRequestPage";
 import EditRequestPage from "../pages/EditRequest/EditRequestPage";
 import MyRequestsPage from "../pages/MyRequests/MyRequestsPage";
+import MyQuotesPage from "../pages/MyQuotes/MyQuotesPage";
+import EditQuotePage from "../pages/EditQuote/EditQuotePage";
 
 // Import các pages khác khi đã tạo
 // import ProfilePage from "../pages/Profile/ProfilePage";
@@ -63,6 +65,8 @@ function AppRoutes() {
           <Route path="requests/:id/edit" element={<EditRequestPage />} />
           <Route path="post-request" element={<PostRequestPage />} />
           <Route path="my-requests" element={<MyRequestsPage />} />
+          <Route path="my-quotes" element={<MyQuotesPage />} />
+          <Route path="quotes/:id/edit" element={<EditQuotePage />} />
           
           {/* User routes - uncomment khi đã tạo */}
           {/* <Route path="profile" element={<ProfilePage />} /> */}

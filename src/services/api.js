@@ -368,6 +368,37 @@ export const quotesAPI = {
     inMemoryStorage.quotes = allQuotes;
     
     return apiResponse(updated, true, 'Cập nhật báo giá thành công');
+  },
+
+  // DELETE /api/quotes/:id
+  delete: async (id) => {
+    await delay(800);
+    const quoteId = parseInt(id);
+    
+    // Get quote to update request bids count
+    const storedQuotes = inMemoryStorage.quotes;
+    const quote = storedQuotes[quoteId];
+    
+    if (quote) {
+      // Decrease request bids count
+      const requestId = parseInt(quote.requestId);
+      const storedRequests = inMemoryStorage.requests;
+      let request = storedRequests[requestId] || mockData.getRequestById(requestId);
+      if (request && request.bids > 0) {
+        const updatedRequest = {
+          ...request,
+          bids: request.bids - 1
+        };
+        const allRequests = { ...storedRequests, [requestId]: updatedRequest };
+        inMemoryStorage.requests = allRequests;
+      }
+      
+      // Remove quote from storage
+      const { [quoteId]: removed, ...remainingQuotes } = storedQuotes;
+      inMemoryStorage.quotes = remainingQuotes;
+    }
+    
+    return apiResponse(null, true, 'Xóa báo giá thành công');
   }
 };
 
