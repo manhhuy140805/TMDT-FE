@@ -11,6 +11,13 @@ const ActionCard = ({ request, onSubmitQuote, isOwner }) => {
     navigate('/my-requests');
   };
 
+  const handleViewProgress = () => {
+    navigate(`/requests/${request.id}/progress`);
+  };
+
+  // Kiểm tra xem yêu cầu đã chọn freelancer chưa
+  const hasSelectedFreelancer = request.selectedQuoteId && request.selectedFreelancerId;
+
   return (
     <div className="d-card">
       <div className="d-budget-block">
@@ -54,6 +61,18 @@ const ActionCard = ({ request, onSubmitQuote, isOwner }) => {
       {isOwner ? (
         // Giao diện cho người đăng yêu cầu
         <>
+          {hasSelectedFreelancer && (
+            <button 
+              className="bg-btn-primary" 
+              onClick={handleViewProgress}
+              style={{
+                background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                marginBottom: '12px'
+              }}
+            >
+              <i className="fa-solid fa-chart-line"></i> Theo dõi tiến độ
+            </button>
+          )}
           <button className="bg-btn-primary" onClick={handleManageRequest}>
             <i className="fa-solid fa-gear"></i> Quản lý yêu cầu
           </button>

@@ -10,10 +10,10 @@ import EditRequestPage from "../pages/EditRequest/EditRequestPage";
 import MyRequestsPage from "../pages/MyRequests/MyRequestsPage";
 import MyQuotesPage from "../pages/MyQuotes/MyQuotesPage";
 import EditQuotePage from "../pages/EditQuote/EditQuotePage";
+import ProgressPage from "../pages/Progress/ProgressPage";
 
 // Import các pages khác khi đã tạo
 // import ProfilePage from "../pages/Profile/ProfilePage";
-// import ProgressPage from "../pages/Progress/ProgressPage";
 // import AdminPage from "../pages/Admin/AdminPage";
 
 // 404 Page
@@ -63,6 +63,7 @@ function AppRoutes() {
           <Route path="requests" element={<RequestsPage />} />
           <Route path="requests/:id" element={<RequestDetailPage />} />
           <Route path="requests/:id/edit" element={<EditRequestPage />} />
+          <Route path="requests/:id/progress" element={<ProgressPage />} />
           <Route path="post-request" element={<PostRequestPage />} />
           <Route path="my-requests" element={<MyRequestsPage />} />
           <Route path="my-quotes" element={<MyQuotesPage />} />
@@ -70,7 +71,6 @@ function AppRoutes() {
           
           {/* User routes - uncomment khi đã tạo */}
           {/* <Route path="profile" element={<ProfilePage />} /> */}
-          {/* <Route path="progress" element={<ProgressPage />} /> */}
           
           {/* Admin routes - uncomment khi đã tạo */}
           {/* <Route path="admin" element={<AdminPage />} /> */}
