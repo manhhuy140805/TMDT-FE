@@ -47,20 +47,20 @@ const MyRequestsPage = () => {
     if (filter === 'all') return requests;
     if (filter === 'active') {
       return requests.filter(req => 
-        req.status === 'DANG_MOI_THAU' || req.status === 'DA_CHON_BAO_GIA'
+        req.status === 'DangMo' || req.status === 'DA_CHON_BAO_GIA'
       );
     }
     if (filter === 'closed') {
-      return requests.filter(req => req.status === 'DA_DONG');
+      return requests.filter(req => req.status === 'DaDong');
     }
     return requests;
   };
 
   const getStatusBadge = (status) => {
     const statusMap = {
-      'DANG_MOI_THAU': { text: 'Đang nhận hồ sơ', class: 'status-active' },
+      'DangMo': { text: 'Đang nhận hồ sơ', class: 'status-active' },
       'DA_CHON_BAO_GIA': { text: 'Đã chọn báo giá', class: 'status-selected' },
-      'DA_DONG': { text: 'Đã đóng', class: 'status-closed' }
+      'DaDong': { text: 'Đã đóng', class: 'status-closed' }
     };
     const statusInfo = statusMap[status] || { text: status, class: '' };
     return <span className={`status-badge ${statusInfo.class}`}>{statusInfo.text}</span>;
@@ -121,7 +121,7 @@ const MyRequestsPage = () => {
                 </div>
                 <div className="stat-info">
                   <div className="stat-value">
-                    {requests.filter(r => r.status === 'DANG_MOI_THAU').length}
+                    {requests.filter(r => r.status === 'DangMo').length}
                   </div>
                   <div className="stat-label">Đang nhận hồ sơ</div>
                 </div>
@@ -143,7 +143,7 @@ const MyRequestsPage = () => {
                 </div>
                 <div className="stat-info">
                   <div className="stat-value">
-                    {requests.filter(r => r.status === 'DA_DONG').length}
+                    {requests.filter(r => r.status === 'DaDong').length}
                   </div>
                   <div className="stat-label">Đã đóng</div>
                 </div>
@@ -162,13 +162,13 @@ const MyRequestsPage = () => {
                 className={`filter-btn ${filter === 'active' ? 'active' : ''}`}
                 onClick={() => setFilter('active')}
               >
-                Đang hoạt động ({requests.filter(r => r.status === 'DANG_MOI_THAU' || r.status === 'DA_CHON_BAO_GIA').length})
+                Đang hoạt động ({requests.filter(r => r.status === 'DangMo' || r.status === 'DA_CHON_BAO_GIA').length})
               </button>
               <button
                 className={`filter-btn ${filter === 'closed' ? 'active' : ''}`}
                 onClick={() => setFilter('closed')}
               >
-                Đã đóng ({requests.filter(r => r.status === 'DA_DONG').length})
+                Đã đóng ({requests.filter(r => r.status === 'DaDong').length})
               </button>
             </div>
 

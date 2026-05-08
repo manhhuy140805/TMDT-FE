@@ -192,11 +192,12 @@ body {
 }
 
 .d-budget-value {
-  font-size: 25px;
+  font-size: 20px;
   font-weight: 800;
   color: var(--teal);
   letter-spacing: -0.5px;
   line-height: 1.4;
+  word-wrap: break-word;
 }
 
 .d-deadline-item {
@@ -227,6 +228,7 @@ body {
 .bg-btn-primary {
   display: block;
   width: 100%;
+  box-sizing: border-box;
   padding: 16px;
   background: var(--gold);
   color: var(--navy);
@@ -253,6 +255,7 @@ body {
 .bg-btn-outline {
   display: block;
   width: 100%;
+  box-sizing: border-box;
   padding: 16px;
   background: transparent;
   color: var(--navy);

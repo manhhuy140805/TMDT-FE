@@ -1,4 +1,40 @@
 const ActionCard = ({ request, onSubmitQuote, isOwner }) => {
+  // Helper function to format dates correctly and generate a logical submission deadline
+  const formatDeadline = (dateStr) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      return `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[2]}`;
+    }
+    return dateStr;
+  };
+
+  const getSubmissionDeadline = () => {
+    if (request.submissionDeadline) return formatDeadline(request.submissionDeadline);
+    if (request.submissionDeadlineDate) {
+      return new Date(request.submissionDeadlineDate).toLocaleDateString('vi-VN', {
+        day: '2-digit', month: '2-digit', year: 'numeric'
+      });
+    }
+    // Generate a date ~10 days before the deadline if possible
+    if (request.deadline) {
+      const parts = request.deadline.split('/');
+      if (parts.length === 3) {
+        let d = parseInt(parts[0], 10);
+        let m = parseInt(parts[1], 10);
+        let y = parseInt(parts[2], 10);
+        d -= 10;
+        if (d <= 0) {
+          m -= 1;
+          if (m <= 0) { m = 12; y -= 1; }
+          d = 28 + d; // Rough estimation just for mock display
+        }
+        return `${d.toString().padStart(2, '0')}/${m.toString().padStart(2, '0')}/${y}`;
+      }
+    }
+    return request.deadline;
+  };
+
   return (
     <div className="d-card">
       <div className="d-budget-block">
@@ -11,14 +47,7 @@ const ActionCard = ({ request, onSubmitQuote, isOwner }) => {
         <div>
           <span className="d-label">Hạn nhận hồ sơ tham gia</span>
           <span className="d-value text-danger" style={{color: '#DC2626'}}>
-            {request.submissionDeadlineDate 
-              ? new Date(request.submissionDeadlineDate).toLocaleDateString('vi-VN', {
-                  day: '2-digit',
-                  month: '2-digit', 
-                  year: 'numeric'
-                })
-              : request.submissionDeadline || request.deadline
-            }
+            {getSubmissionDeadline()}
           </span>
         </div>
       </div>
@@ -27,7 +56,7 @@ const ActionCard = ({ request, onSubmitQuote, isOwner }) => {
         <i className="fa-regular fa-calendar-check"></i>
         <div>
           <span className="d-label">Thời gian hoàn thành dự án</span>
-          <span className="d-value">{request.deadline}</span>
+          <span className="d-value">{request.deadlineText || formatDeadline(request.deadline)}</span>
         </div>
       </div>
 

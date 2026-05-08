@@ -16,22 +16,142 @@ const apiResponse = (data, success = true, message = '') => ({
   timestamp: new Date().toISOString()
 });
 
+// ==================== DATA MAPPING HELPERS ====================
+// Map dữ liệu từ cấu trúc tiếng Việt sang cấu trúc tiếng Anh để component sử dụng
+
+const mapCategory = (category) => {
+  if (!category) return null;
+  return {
+    id: category.loaiDichVuId,
+    name: category.tenLoai,
+    description: category.moTa,
+    image: category.hinhAnh,
+    count: mockData.requests.filter(r => r.loaiDichVuId === category.loaiDichVuId).length,
+    createdDate: category.ngayTao,
+    updatedDate: category.ngayCapNhat
+  };
+};
+
+const mapUser = (user) => {
+  if (!user) return null;
+  return {
+    id: user.taiKhoanId,
+    username: user.tenDangNhap,
+    email: user.email,
+    fullName: user.hoTen,
+    phone: user.soDienThoai,
+    gender: user.gioiTinh,
+    address: user.diaChi,
+    role: user.vaiTro,
+    status: user.trangThai,
+    createdDate: user.ngayTao,
+    updatedDate: user.ngayCapNhat
+  };
+};
+
+const mapFreelancer = (freelancer) => {
+  if (!freelancer) return null;
+  const user = mockData.getUserById(freelancer.taiKhoanId);
+  return {
+    id: freelancer.freelancerId,
+    userId: freelancer.taiKhoanId,
+    name: user ? user.hoTen : 'Unknown',
+    email: user ? user.email : '',
+    avatar: user ? `/images/avatars/user${freelancer.freelancerId}.jpg` : '/images/avatars/default.jpg',
+    skills: freelancer.kyNang ? freelancer.kyNang.split(', ') : [],
+    experience: freelancer.kinhNghiem,
+    expertise: freelancer.chuyenGia,
+    certifications: freelancer.chungChi ? freelancer.chungChi.split(', ') : [],
+    rating: parseFloat(freelancer.diemDanhGia) || 0,
+    balance: freelancer.soDuTaiKhoan,
+    status: freelancer.trangThai,
+    verified: freelancer.trangThai === 'HoatDong',
+    completedProjects: 0, // TODO: Calculate from jobs
+    reviews: 0, // TODO: Calculate from reviews
+    createdDate: freelancer.ngayTao,
+    updatedDate: freelancer.ngayCapNhat
+  };
+};
+
+const formatCurrency = (amount) => {
+  if (!amount) return '0 VNĐ';
+  return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ';
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('vi-VN');
+};
+
+const getTimeAgo = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Vừa xong';
+  if (diffMins < 60) return `${diffMins} phút trước`;
+  if (diffHours < 24) return `${diffHours} giờ trước`;
+  if (diffDays < 7) return `${diffDays} ngày trước`;
+  return formatDate(dateString);
+};
+
+const mapRequest = (request) => {
+  if (!request) return null;
+  
+  const category = mockData.categories.find(c => c.loaiDichVuId === request.loaiDichVuId);
+  const employer = mockData.getUserById(request.nguoiThueId);
+  const quotes = mockData.getQuotesByRequestId(request.yeuCauId);
+  
+  return {
+    id: request.yeuCauId,
+    employerId: request.nguoiThueId,
+    categoryId: request.loaiDichVuId,
+    title: request.tieuDe,
+    description: request.moTa,
+    budgetMin: request.nganSachMin,
+    budgetMax: request.nganSachMax,
+    budget: `${formatCurrency(request.nganSachMin)} - ${formatCurrency(request.nganSachMax)}`,
+    deadline: request.thoiHan,
+    deadlineDate: request.thoiHan,
+    deadlineText: formatDate(request.thoiHan),
+    requiresSupervision: request.yeuCauGiamSat,
+    status: request.trangThai,
+    statusText: request.trangThai === 'DangMo' ? 'Đang mở' : request.trangThai === 'DaDong' ? 'Đã đóng' : request.trangThai,
+    category: category ? category.tenLoai : 'Chưa phân loại',
+    employer: employer ? mapUser(employer) : null,
+    postedDate: request.ngayTao,
+    postedTime: getTimeAgo(request.ngayTao),
+    updatedDate: request.ngayCapNhat,
+    bids: quotes.length,
+    views: Math.floor(Math.random() * 500) + 50, // Mock views
+    skills: [], // TODO: Extract from description or add to data model
+    location: employer ? employer.diaChi : 'Việt Nam',
+    submissionDeadlineDate: request.thoiHan // Using same as deadline for now
+  };
+};
+
 // ==================== CATEGORIES API ====================
 export const categoriesAPI = {
   // GET /api/categories
   getAll: async () => {
     await delay();
-    return apiResponse(mockData.categories);
+    const mapped = mockData.categories.map(mapCategory);
+    return apiResponse(mapped);
   },
 
   // GET /api/categories/:id
   getById: async (id) => {
     await delay();
-    const category = mockData.categories.find(c => c.id === parseInt(id));
+    const category = mockData.categories.find(c => c.loaiDichVuId === parseInt(id));
     if (!category) {
       return apiResponse(null, false, 'Category not found');
     }
-    return apiResponse(category);
+    return apiResponse(mapCategory(category));
   }
 };
 
@@ -44,18 +164,25 @@ export const requestsAPI = {
 
     // Filter by category
     if (params.categoryId) {
-      results = results.filter(r => r.categoryId === parseInt(params.categoryId));
+      results = results.filter(r => r.loaiDichVuId === parseInt(params.categoryId));
     }
 
     // Filter by status
     if (params.status) {
-      results = results.filter(r => r.status === params.status);
+      results = results.filter(r => r.trangThai === params.status);
     }
 
     // Search
     if (params.search) {
-      results = mockData.searchRequests(params.search);
+      const keyword = params.search.toLowerCase();
+      results = results.filter(r => 
+        r.tieuDe.toLowerCase().includes(keyword) ||
+        r.moTa.toLowerCase().includes(keyword)
+      );
     }
+
+    // Map to frontend format
+    results = results.map(mapRequest);
 
     // Pagination
     const page = parseInt(params.page) || 1;
@@ -82,23 +209,27 @@ export const requestsAPI = {
     if (!request) {
       return apiResponse(null, false, 'Request not found');
     }
-    return apiResponse(request);
+    return apiResponse(mapRequest(request));
   },
 
   // POST /api/requests
   create: async (data) => {
     await delay(800);
     const newRequest = {
-      id: mockData.requests.length + 1,
-      ...data,
-      status: 'MOI_TAO',
-      statusText: 'Mới tạo',
-      views: 0,
-      bids: 0,
-      postedDate: new Date().toISOString(),
-      postedTime: 'Vừa xong'
+      yeuCauId: mockData.requests.length + 1,
+      nguoiThueId: data.employerId || 1,
+      loaiDichVuId: data.categoryId || 1,
+      tieuDe: data.title,
+      moTa: data.description,
+      nganSachMin: data.budgetMin,
+      nganSachMax: data.budgetMax,
+      thoiHan: data.deadline,
+      yeuCauGiamSat: data.requiresSupervision || false,
+      trangThai: 'DangMo',
+      ngayTao: new Date().toISOString(),
+      ngayCapNhat: new Date().toISOString()
     };
-    return apiResponse(newRequest, true, 'Tạo yêu cầu thành công');
+    return apiResponse(mapRequest(newRequest), true, 'Tạo yêu cầu thành công');
   },
 
   // PUT /api/requests/:id
@@ -108,8 +239,16 @@ export const requestsAPI = {
     if (!request) {
       return apiResponse(null, false, 'Request not found');
     }
-    const updated = { ...request, ...data };
-    return apiResponse(updated, true, 'Cập nhật yêu cầu thành công');
+    const updated = { 
+      ...request, 
+      tieuDe: data.title || request.tieuDe,
+      moTa: data.description || request.moTa,
+      nganSachMin: data.budgetMin || request.nganSachMin,
+      nganSachMax: data.budgetMax || request.nganSachMax,
+      thoiHan: data.deadline || request.thoiHan,
+      ngayCapNhat: new Date().toISOString()
+    };
+    return apiResponse(mapRequest(updated), true, 'Cập nhật yêu cầu thành công');
   },
 
   // DELETE /api/requests/:id
@@ -227,6 +366,7 @@ export const jobsAPI = {
       results = results.filter(j => j.status === params.status);
     }
 
+    // Jobs are already in English format in the JSON, return as-is
     return apiResponse(results);
   },
 
@@ -258,6 +398,7 @@ export const messagesAPI = {
   getConversations: async (userId) => {
     await delay();
     const conversations = mockData.getConversationsByUserId(userId);
+    // Conversations are already in English format in the JSON, return as-is
     return apiResponse(conversations);
   },
 
@@ -288,6 +429,7 @@ export const notificationsAPI = {
   getByUserId: async (userId) => {
     await delay();
     const notifications = mockData.getNotificationsByUserId(userId);
+    // Notifications are already in English format in the JSON, return as-is
     return apiResponse(notifications);
   },
 

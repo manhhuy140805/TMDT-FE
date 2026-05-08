@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { api } from '../../utils/api';
+import { useNavigate } from 'react-router-dom';
+import api from '../../services/api';
 import './ProfilePage.css';
 
 const ProfilePage = () => {
@@ -8,39 +9,65 @@ const ProfilePage = () => {
   const [reportReason, setReportReason] = useState('');
   const [reviews, setReviews] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
+  const [freelancerProfile, setFreelancerProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // Giả định User ID = 8 (Freelancer) để demo
-  const userId = 8;
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchProfileData = async () => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
       try {
-        setLoading(true);
-        // 1. Lấy profile người dùng
-        const profileRes = await api.get(`/users/${userId}/profile`);
-        setUserProfile(profileRes);
-
-        // 2. Lấy danh sách đánh giá
-        const reviewsRes = await api.get(`/reviews/user/${userId}`);
-        setReviews(reviewsRes.reviews);
+        const user = JSON.parse(storedUser);
+        fetchProfileData(user.taiKhoanId);
       } catch (error) {
-        console.error('Error fetching profile data:', error);
-      } finally {
-        setLoading(false);
+        console.error('Error parsing user data:', error);
+        navigate('/login');
       }
-    };
+    } else {
+      navigate('/login');
+    }
+  }, [navigate]);
 
-    fetchProfileData();
-  }, [userId]);
+  const fetchProfileData = async (userId) => {
+    try {
+      setLoading(true);
+      
+      // Set user profile from localStorage
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        setUserProfile(user);
+        
+        // If user is a freelancer, fetch freelancer profile
+        if (user.vaiTro === 'Freelancer') {
+          const freelancerRes = await api.freelancers.getAll();
+          if (freelancerRes.success) {
+            const freelancer = freelancerRes.data.data.find(f => f.userId === userId);
+            setFreelancerProfile(freelancer);
+          }
+        }
+      }
+
+      // Fetch reviews - this would need to be implemented in the API
+      // For now, we'll leave it empty
+      setReviews([]);
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmitReport = async () => {
     try {
-      await api.post('/reports', {
-        nguoiBaoCaoId: 10, // Giả định ID người báo cáo (Client)
-        doiTuongId: userId,
-        loaiDoiTuong: 'TaiKhoan',
-        lyDo: reportReason
+      const storedUser = localStorage.getItem('user');
+      const currentUser = storedUser ? JSON.parse(storedUser) : null;
+      
+      await api.reports.create({
+        reporterId: currentUser?.taiKhoanId || 1,
+        reportedId: userProfile?.taiKhoanId,
+        reason: reportReason,
+        evidence: null
       });
       alert('Cảm ơn bạn, báo cáo đã được gửi tới quản trị viên.');
       setShowReportModal(false);
@@ -96,12 +123,12 @@ const ProfilePage = () => {
                 </div>
               </div>
               <div className="profile-titles">
-                <h1 className="user-name">
-                  {userProfile?.user?.hoTen || 'N/A'}
+                <h1 className="profile-user-name">
+                  {userProfile?.hoTen || 'N/A'}
                   <i className="fa-solid fa-circle-check verify-badge" title="Đã xác thực"></i>
                 </h1>
                 <div className="user-role">
-                  {userProfile?.profile?.freelancer?.chuyenGia || 'Chuyên gia Freelancer'}
+                  {freelancerProfile?.expertise || userProfile?.vaiTro || 'Người dùng'}
                 </div>
               </div>
             </div>
@@ -116,19 +143,19 @@ const ProfilePage = () => {
                     <div className="input-group">
                       <label>Họ và Tên</label>
                       <div className="pi-wrapper">
-                        <input type="text" defaultValue={userProfile?.user?.hoTen} />
+                        <input type="text" defaultValue={userProfile?.hoTen} />
                       </div>
                     </div>
                     <div className="input-group">
                       <label>Email</label>
                       <div className="pi-wrapper">
-                        <input type="email" defaultValue={userProfile?.user?.email} />
+                        <input type="email" defaultValue={userProfile?.email} />
                       </div>
                     </div>
                     <div className="input-group full-width">
                       <label>Giới thiệu bản thân</label>
                       <div className="input-wrapper">
-                        <textarea defaultValue={userProfile?.profile?.freelancer?.kyNang || 'Chưa có mô tả kỹ năng.'}></textarea>
+                        <textarea defaultValue={freelancerProfile?.skills?.join(', ') || 'Chưa có mô tả kỹ năng.'}></textarea>
                       </div>
                     </div>
                   </div>
@@ -162,7 +189,7 @@ const ProfilePage = () => {
                               {review.nguoiDanhGia?.hoTen?.[0] || 'U'}
                             </div>
                             <div>
-                              <div style={{ fontWeight: '700', color: 'var(--navy)' }}>{review.nguoiDanhGia?.hoTen}</div>
+                              <div style={{ fontWeight: '700', color: 'var(--navy)' }}>{review.nguoiDanhGia?.hoTen || 'Người dùng'}</div>
                               <div style={{ fontSize: '12px', color: '#64748B' }}>
                                 {new Date(review.ngayTao).toLocaleDateString('vi-VN')}
                               </div>

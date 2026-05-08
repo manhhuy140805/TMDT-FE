@@ -42,7 +42,7 @@ const RequestsPage = () => {
     try {
       const params = {
         search: searchTerm,
-        status: 'DANG_MOI_THAU'
+        status: 'DangMo' // Sửa từ 'DANG_MOI_THAU' sang 'DangMo'
       };
 
       if (filters.categoryId !== 'all') {

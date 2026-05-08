@@ -32,13 +32,15 @@ const RequestCard = ({ request, onClick }) => {
 
       <p className="r-job-desc">{request.description}</p>
 
-      <div className="r-job-skills">
-        {request.skills.map((skill, index) => (
-          <span key={index} className="r-skill-tag">
-            {skill}
-          </span>
-        ))}
-      </div>
+      {request.skills && request.skills.length > 0 && (
+        <div className="r-job-skills">
+          {request.skills.map((skill, index) => (
+            <span key={index} className="r-skill-tag">
+              {skill}
+            </span>
+          ))}
+        </div>
+      )}
 
       <div className="r-job-footer">
         <div className="r-job-info">
@@ -46,7 +48,7 @@ const RequestCard = ({ request, onClick }) => {
             <i className="fa-solid fa-money-bill-wave"></i> {request.budget}
           </span>
           <span className="r-deadline">
-            <i className="fa-solid fa-calendar-days"></i> {request.deadline}
+            <i className="fa-solid fa-calendar-days"></i> {request.deadlineText || request.deadline}
           </span>
         </div>
         <div className="r-bids">

@@ -30,6 +30,20 @@
   margin-bottom: 60px;
 }
 
+.post-request-page.embedded .post-layout {
+  margin-top: 0;
+  margin-bottom: 0;
+  grid-template-columns: 1fr;
+}
+
+.post-request-page.embedded {
+  min-height: auto;
+}
+
+.post-request-page.embedded .post-sidebar {
+  display: none;
+}
+
 .post-request-page .post-main {
   min-width: 0;
 }

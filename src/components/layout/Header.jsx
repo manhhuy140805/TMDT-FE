@@ -6,6 +6,7 @@ const Header = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [hideTimeout, setHideTimeout] = useState(null);
 
   useEffect(() => {
     // Lấy thông tin user từ localStorage
@@ -18,6 +19,21 @@ const Header = () => {
       }
     }
   }, []);
+
+  const handleMouseEnter = () => {
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+      setHideTimeout(null);
+    }
+    setShowDropdown(true);
+  };
+
+  const handleMouseLeave = () => {
+    const timeout = setTimeout(() => {
+      setShowDropdown(false);
+    }, 200);
+    setHideTimeout(timeout);
+  };
 
   const handleLogout = () => {
     // Xóa thông tin user khỏi localStorage
@@ -72,39 +88,56 @@ const Header = () => {
             
             {user ? (
               // Hiển thị khi đã đăng nhập
-              <div className="user-menu">
-                <button 
-                  className="user-menu-btn"
-                  onClick={() => setShowDropdown(!showDropdown)}
-                >
+              <div 
+                className="user-menu"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+              >
+                <button className="user-menu-btn" style={{ padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}>
                   <img 
                     src={user.avatar || 'https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp'} 
-                    alt={user.name}
+                    alt={user.name || user.hoTen}
                     className="user-avatar"
+                    style={{ margin: 0, display: 'block' }}
                     onError={(e) => {
                       e.target.src = 'https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp';
                     }}
                   />
-                  <span className="user-name">{user.name}</span>
-                  <i className="fa-solid fa-chevron-down"></i>
                 </button>
                 
                 {showDropdown && (
                   <div className="user-dropdown">
-                    <Link to="/profile" className="dropdown-item" onClick={() => setShowDropdown(false)}>
+                    <div className="dropdown-user-info">
+                      <img 
+                        src={user.avatar || 'https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp'} 
+                        alt={user.name || user.hoTen}
+                        className="dropdown-avatar"
+                        onError={(e) => {
+                          e.target.src = 'https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp';
+                        }}
+                      />
+                      <div className="dropdown-user-details">
+                        <div className="dropdown-user-name">{user.name || user.hoTen}</div>
+                        <div className="dropdown-user-email">{user.email}</div>
+                        <div className="dropdown-user-role">{user.vaiTro || 'Thành viên'}</div>
+                      </div>
+                    </div>
+                    <div className="dropdown-divider"></div>
+                    
+                    <Link to="/profile" className="dropdown-item">
                       <i className="fa-solid fa-user"></i>
                       Hồ sơ của tôi
                     </Link>
-                    <Link to="/my-requests" className="dropdown-item" onClick={() => setShowDropdown(false)}>
+                    <Link to="/workspace" className="dropdown-item">
                       <i className="fa-solid fa-briefcase"></i>
-                      Yêu cầu của tôi
+                      Không gian làm việc
                     </Link>
-                    <Link to="/settings" className="dropdown-item" onClick={() => setShowDropdown(false)}>
+                    <Link to="/settings" className="dropdown-item">
                       <i className="fa-solid fa-gear"></i>
                       Cài đặt
                     </Link>
                     <div className="dropdown-divider"></div>
-                    <button className="dropdown-item logout" onClick={handleLogout}>
+                    <button className="dropdown-item dropdown-item-logout" onClick={handleLogout}>
                       <i className="fa-solid fa-right-from-bracket"></i>
                       Đăng xuất
                     </button>

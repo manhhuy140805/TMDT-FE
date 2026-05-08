@@ -6,12 +6,15 @@ import SignupPage from "../pages/Auth/SignupPage";
 import RequestsPage from "../pages/Requests/RequestsPage";
 import RequestDetailPage from "../pages/RequestDetail/RequestDetailPage";
 import PostRequestPage from "../pages/PostRequest/PostRequestPage";
-import MyRequestsPage from "../pages/MyRequests/MyRequestsPage";
-
-// Import các pages khác khi đã tạo
-// import ProfilePage from "../pages/Profile/ProfilePage";
-// import ProgressPage from "../pages/Progress/ProgressPage";
-// import AdminPage from "../pages/Admin/AdminPage";
+import ProfilePage from "../pages/Profile/ProfilePage";
+import ProgressPage from "../pages/Progress/ProgressPage";
+import AdminPage from "../pages/Admin/AdminPage";
+import RatingPage from "../pages/Rating/RatingPage";
+import ReportPage from "../pages/Report/ReportPage";
+import PublicProfilePage from "../pages/FreelancerProfile/PublicProfilePage";
+import PublicClientProfilePage from "../pages/FreelancerProfile/PublicClientProfilePage";
+import ReviewsPage from "../pages/FreelancerProfile/ReviewsPage";
+import WorkspacePage from "../pages/Workspace/WorkspacePage";
 
 // 404 Page
 const NotFound = () => {
@@ -60,16 +63,26 @@ function AppRoutes() {
           <Route path="requests" element={<RequestsPage />} />
           <Route path="requests/:id" element={<RequestDetailPage />} />
           <Route path="post-request" element={<PostRequestPage />} />
-          <Route path="my-requests" element={<MyRequestsPage />} />
           
-          {/* User routes - uncomment khi đã tạo */}
-          {/* <Route path="profile" element={<ProfilePage />} /> */}
-          {/* <Route path="progress" element={<ProgressPage />} /> */}
+          {/* Workspace route */}
+          <Route path="workspace" element={<WorkspacePage />} />
           
-          {/* Admin routes - uncomment khi đã tạo */}
-          {/* <Route path="admin" element={<AdminPage />} /> */}
+          {/* User routes */}
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="progress" element={<ProgressPage />} />
           
-          {/* 404 */}
+          {/* Rating and Report routes */}
+          <Route path="rating/:id" element={<RatingPage />} />
+          <Route path="report/:id" element={<ReportPage />} />
+          
+          {/* Public Profile routes */}
+          <Route path="freelancer/:id" element={<PublicProfilePage />} />
+          <Route path="freelancer/:id/reviews" element={<ReviewsPage />} />
+          <Route path="client/:id" element={<PublicClientProfilePage />} />
+          
+          {/* Admin routes */}
+          <Route path="admin" element={<AdminPage />} />
+          
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
