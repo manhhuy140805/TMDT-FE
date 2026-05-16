@@ -6,15 +6,15 @@ import SignupPage from "../pages/Auth/SignupPage";
 import RequestsPage from "../pages/Requests/RequestsPage";
 import RequestDetailPage from "../pages/RequestDetail/RequestDetailPage";
 import PostRequestPage from "../pages/PostRequest/PostRequestPage";
-import ProfilePage from "../pages/Profile/ProfilePage";
+import EditRequestPage from "../pages/EditRequest/EditRequestPage";
+import MyRequestsPage from "../pages/MyRequests/MyRequestsPage";
+import MyQuotesPage from "../pages/MyQuotes/MyQuotesPage";
+import EditQuotePage from "../pages/EditQuote/EditQuotePage";
 import ProgressPage from "../pages/Progress/ProgressPage";
-import AdminPage from "../pages/Admin/AdminPage";
-import RatingPage from "../pages/Rating/RatingPage";
-import ReportPage from "../pages/Report/ReportPage";
-import PublicProfilePage from "../pages/FreelancerProfile/PublicProfilePage";
-import PublicClientProfilePage from "../pages/FreelancerProfile/PublicClientProfilePage";
-import ReviewsPage from "../pages/FreelancerProfile/ReviewsPage";
-import WorkspacePage from "../pages/Workspace/WorkspacePage";
+
+// Import các pages khác khi đã tạo
+// import ProfilePage from "../pages/Profile/ProfilePage";
+// import AdminPage from "../pages/Admin/AdminPage";
 
 // 404 Page
 const NotFound = () => {
@@ -62,10 +62,15 @@ function AppRoutes() {
           {/* Job routes */}
           <Route path="requests" element={<RequestsPage />} />
           <Route path="requests/:id" element={<RequestDetailPage />} />
+          <Route path="requests/:id/edit" element={<EditRequestPage />} />
+          <Route path="requests/:id/progress" element={<ProgressPage />} />
           <Route path="post-request" element={<PostRequestPage />} />
+          <Route path="my-requests" element={<MyRequestsPage />} />
+          <Route path="my-quotes" element={<MyQuotesPage />} />
+          <Route path="quotes/:id/edit" element={<EditQuotePage />} />
           
-          {/* Workspace route */}
-          <Route path="workspace" element={<WorkspacePage />} />
+          {/* User routes - uncomment khi đã tạo */}
+          {/* <Route path="profile" element={<ProfilePage />} /> */}
           
           {/* User routes */}
           <Route path="profile" element={<ProfilePage />} />

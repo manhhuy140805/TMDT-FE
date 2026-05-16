@@ -1,39 +1,22 @@
+import { useNavigate } from 'react-router-dom';
+
 const ActionCard = ({ request, onSubmitQuote, isOwner }) => {
-  // Helper function to format dates correctly and generate a logical submission deadline
-  const formatDeadline = (dateStr) => {
-    if (!dateStr) return '';
-    const parts = dateStr.split('/');
-    if (parts.length === 3) {
-      return `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[2]}`;
-    }
-    return dateStr;
+  const navigate = useNavigate();
+
+  const handleEditRequest = () => {
+    navigate(`/requests/${request.id}/edit`);
   };
 
-  const getSubmissionDeadline = () => {
-    if (request.submissionDeadline) return formatDeadline(request.submissionDeadline);
-    if (request.submissionDeadlineDate) {
-      return new Date(request.submissionDeadlineDate).toLocaleDateString('vi-VN', {
-        day: '2-digit', month: '2-digit', year: 'numeric'
-      });
-    }
-    // Generate a date ~10 days before the deadline if possible
-    if (request.deadline) {
-      const parts = request.deadline.split('/');
-      if (parts.length === 3) {
-        let d = parseInt(parts[0], 10);
-        let m = parseInt(parts[1], 10);
-        let y = parseInt(parts[2], 10);
-        d -= 10;
-        if (d <= 0) {
-          m -= 1;
-          if (m <= 0) { m = 12; y -= 1; }
-          d = 28 + d; // Rough estimation just for mock display
-        }
-        return `${d.toString().padStart(2, '0')}/${m.toString().padStart(2, '0')}/${y}`;
-      }
-    }
-    return request.deadline;
+  const handleManageRequest = () => {
+    navigate('/my-requests');
   };
+
+  const handleViewProgress = () => {
+    navigate(`/requests/${request.id}/progress`);
+  };
+
+  // Kiểm tra xem yêu cầu đã chọn freelancer chưa
+  const hasSelectedFreelancer = request.selectedQuoteId && request.selectedFreelancerId;
 
   return (
     <div className="d-card">
@@ -71,10 +54,22 @@ const ActionCard = ({ request, onSubmitQuote, isOwner }) => {
       {isOwner ? (
         // Giao diện cho người đăng yêu cầu
         <>
-          <button className="bg-btn-primary" onClick={() => alert('Chức năng quản lý yêu cầu')}>
+          {hasSelectedFreelancer && (
+            <button 
+              className="bg-btn-primary" 
+              onClick={handleViewProgress}
+              style={{
+                background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                marginBottom: '12px'
+              }}
+            >
+              <i className="fa-solid fa-chart-line"></i> Theo dõi tiến độ
+            </button>
+          )}
+          <button className="bg-btn-primary" onClick={handleManageRequest}>
             <i className="fa-solid fa-gear"></i> Quản lý yêu cầu
           </button>
-          <button className="bg-btn-outline" onClick={() => alert('Chức năng chỉnh sửa')}>
+          <button className="bg-btn-outline" onClick={handleEditRequest}>
             <i className="fa-solid fa-pen"></i> Chỉnh sửa yêu cầu
           </button>
         </>

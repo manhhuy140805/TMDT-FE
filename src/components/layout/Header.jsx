@@ -128,11 +128,32 @@ const Header = () => {
                       <i className="fa-solid fa-user"></i>
                       Hồ sơ của tôi
                     </Link>
+<<<<<<< HEAD
                     <Link to="/workspace" className="dropdown-item">
                       <i className="fa-solid fa-briefcase"></i>
                       Không gian làm việc
                     </Link>
                     <Link to="/settings" className="dropdown-item">
+=======
+                    
+                    {/* Hiển thị "Yêu cầu của tôi" cho NGUOI_THUE */}
+                    {user.role === 'NGUOI_THUE' && (
+                      <Link to="/my-requests" className="dropdown-item" onClick={() => setShowDropdown(false)}>
+                        <i className="fa-solid fa-briefcase"></i>
+                        Yêu cầu của tôi
+                      </Link>
+                    )}
+                    
+                    {/* Hiển thị "Báo giá của tôi" cho FREELANCER */}
+                    {user.role === 'FREELANCER' && (
+                      <Link to="/my-quotes" className="dropdown-item" onClick={() => setShowDropdown(false)}>
+                        <i className="fa-solid fa-file-invoice"></i>
+                        Báo giá của tôi
+                      </Link>
+                    )}
+                    
+                    <Link to="/settings" className="dropdown-item" onClick={() => setShowDropdown(false)}>
+>>>>>>> 355657d191b7f8bc3af54cda953e3e3b3413189f
                       <i className="fa-solid fa-gear"></i>
                       Cài đặt
                     </Link>
