@@ -1,43 +1,67 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import './Auth.css';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { registerUser } from "../../services/authService";
+import "./Auth.css";
 
 const SignupPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    accountType: 'client',
-    fullname: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
+    accountType: "client",
+    fullname: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
     agree: false,
   });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' || type === 'radio' ? (type === 'checkbox' ? checked : value) : value,
+      [name]:
+        type === "checkbox" || type === "radio"
+          ? type === "checkbox"
+            ? checked
+            : value
+          : value,
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
+    setError("");
+
     if (formData.password !== formData.confirmPassword) {
-      alert('Mật khẩu không khớp!');
+      setError("Mật khẩu không khớp!");
       return;
     }
 
     if (!formData.agree) {
-      alert('Vui lòng đồng ý với điều khoản dịch vụ!');
+      setError("Vui lòng đồng ý với điều khoản dịch vụ!");
       return;
     }
 
-    console.log('Signup data:', formData);
-    // TODO: Implement signup logic
-    // Sau khi signup thành công:
-    // navigate('/login');
+    setLoading(true);
+    try {
+      const role =
+        formData.accountType === "client" ? "NguoiThue" : "Freelancer";
+      await registerUser({
+        fullName: formData.fullname,
+        email: formData.email,
+        password: formData.password,
+        role,
+      });
+
+      navigate("/login");
+    } catch (err) {
+      console.error("Signup error:", err);
+      setError(err.message || "Có lỗi xảy ra. Vui lòng thử lại!");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,7 +75,11 @@ const SignupPage = () => {
       <div className="auth-split-layout">
         {/* Left Side: Interactive Banner */}
         <div className="signup-banner">
-          <img src="/images/signup_bg.png" alt="Premium Network" className="signup-bg" />
+          <img
+            src="/images/signup_bg.png"
+            alt="Premium Network"
+            className="signup-bg"
+          />
           <div className="signup-overlay">
             <h2>
               Kiến tạo sự nghiệp.
@@ -59,13 +87,16 @@ const SignupPage = () => {
               Phát triển doanh nghiệp.
             </h2>
             <p>
-              Tham gia nền tảng kết nối nhân tài cao cấp vững mạnh. Dù bạn ưu tiên chất lượng hay sự tốc độ, chúng tôi luôn đáp ứng ngoài mong đợi.
+              Tham gia nền tảng kết nối nhân tài cao cấp vững mạnh. Dù bạn ưu
+              tiên chất lượng hay sự tốc độ, chúng tôi luôn đáp ứng ngoài mong
+              đợi.
             </p>
 
             <div className="banner-testimonials">
               <div className="b-testimo">
                 <p>
-                  "Hệ thống tuyệt vời cho phép người có đam mê thực sự tìm được cơ hội đáng giá. Tôi đã nâng cao thu nhập gấp đôi."
+                  "Hệ thống tuyệt vời cho phép người có đam mê thực sự tìm được
+                  cơ hội đáng giá. Tôi đã nâng cao thu nhập gấp đôi."
                 </p>
                 <div className="b-author">
                   <img src="/images/avatar_2.png" alt="User Avatar" />
@@ -81,19 +112,47 @@ const SignupPage = () => {
         {/* Right Side: Form */}
         <div className="signup-form-side">
           <div className="form-header text-center">
-            <h2 style={{ textAlign: 'center' }}>Tạo tài khoản mới</h2>
-            <p style={{ textAlign: 'center' }}>Khám phá môi trường làm việc đột phá ngay hôm nay</p>
+            <h2 style={{ textAlign: "center" }}>Tạo tài khoản mới</h2>
+            <p style={{ textAlign: "center" }}>
+              Khám phá môi trường làm việc đột phá ngay hôm nay
+            </p>
           </div>
 
-          <form id="signupForm" className="premium-form" onSubmit={handleSubmit}>
+          <form
+            id="signupForm"
+            className="premium-form"
+            onSubmit={handleSubmit}
+          >
+            {error && (
+              <div
+                style={{
+                  padding: "12px",
+                  background: "#FEF2F2",
+                  border: "1px solid #FCA5A5",
+                  borderRadius: "8px",
+                  color: "#DC2626",
+                  fontSize: "13px",
+                  marginBottom: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                <i className="fa-solid fa-circle-exclamation"></i>
+                <span>{error}</span>
+              </div>
+            )}
             {/* Account Type Selection */}
             <div className="account-type-selection">
-              <label className="account-type-card" title="Tìm người tài cho dự án">
+              <label
+                className="account-type-card"
+                title="Tìm người tài cho dự án"
+              >
                 <input
                   type="radio"
                   name="accountType"
                   value="client"
-                  checked={formData.accountType === 'client'}
+                  checked={formData.accountType === "client"}
                   onChange={handleChange}
                 />
                 <div className="type-card-inner">
@@ -105,12 +164,15 @@ const SignupPage = () => {
                   </span>
                 </div>
               </label>
-              <label className="account-type-card" title="Tìm kiếm công việc freelance">
+              <label
+                className="account-type-card"
+                title="Tìm kiếm công việc freelance"
+              >
                 <input
                   type="radio"
                   name="accountType"
                   value="freelancer"
-                  checked={formData.accountType === 'freelancer'}
+                  checked={formData.accountType === "freelancer"}
                   onChange={handleChange}
                 />
                 <div className="type-card-inner">
@@ -188,10 +250,10 @@ const SignupPage = () => {
 
             <div
               style={{
-                margin: '4px 0 24px',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '10px',
+                margin: "4px 0 24px",
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "10px",
               }}
             >
               <input
@@ -201,41 +263,41 @@ const SignupPage = () => {
                 checked={formData.agree}
                 onChange={handleChange}
                 style={{
-                  width: '18px',
-                  height: '18px',
-                  accentColor: 'var(--teal)',
-                  cursor: 'pointer',
-                  marginTop: '2px',
+                  width: "18px",
+                  height: "18px",
+                  accentColor: "var(--teal)",
+                  cursor: "pointer",
+                  marginTop: "2px",
                 }}
               />
               <label
                 htmlFor="agree"
                 style={{
-                  fontSize: '13px',
-                  color: 'var(--text-muted)',
-                  cursor: 'pointer',
-                  fontWeight: '500',
-                  lineHeight: '1.5',
+                  fontSize: "13px",
+                  color: "var(--text-muted)",
+                  cursor: "pointer",
+                  fontWeight: "500",
+                  lineHeight: "1.5",
                 }}
               >
-                Vâng, tôi đã đọc và đồng ý với các{' '}
+                Vâng, tôi đã đọc và đồng ý với các{" "}
                 <Link
                   to="#"
                   style={{
-                    color: 'var(--teal)',
-                    fontWeight: '600',
-                    textDecoration: 'none',
+                    color: "var(--teal)",
+                    fontWeight: "600",
+                    textDecoration: "none",
                   }}
                 >
                   Điều khoản dịch vụ
-                </Link>{' '}
-                và{' '}
+                </Link>{" "}
+                và{" "}
                 <Link
                   to="#"
                   style={{
-                    color: 'var(--teal)',
-                    fontWeight: '600',
-                    textDecoration: 'none',
+                    color: "var(--teal)",
+                    fontWeight: "600",
+                    textDecoration: "none",
                   }}
                 >
                   Chính sách bảo mật
@@ -244,8 +306,12 @@ const SignupPage = () => {
             </div>
 
             {/* Submit */}
-            <button type="submit" className="btn-signup-premium">
-              Đăng Ký Tài Khoản Miễn Phí
+            <button
+              type="submit"
+              className="btn-signup-premium"
+              disabled={loading}
+            >
+              {loading ? "Đang xử lý..." : "Đăng Ký Tài Khoản Miễn Phí"}
             </button>
 
             {/* Social Auth */}
@@ -253,11 +319,18 @@ const SignupPage = () => {
               <p>Hoặc đăng ký siêu tốc bằng</p>
               <div className="slp-buttons">
                 <button type="button" className="slp-btn">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" />{' '}
+                  <img
+                    src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg"
+                    alt="Google"
+                  />{" "}
                   Google
                 </button>
                 <button type="button" className="slp-btn">
-                  <i className="fa-brands fa-apple" style={{ fontSize: '18px' }}></i> Apple
+                  <i
+                    className="fa-brands fa-apple"
+                    style={{ fontSize: "18px" }}
+                  ></i>{" "}
+                  Apple
                 </button>
               </div>
             </div>

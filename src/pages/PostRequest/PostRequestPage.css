@@ -315,12 +315,21 @@
 /* Responsive */
 @media (max-width: 900px) {
   .post-request-page .post-layout {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
     margin-top: 20px;
+  }
+
+  .post-request-page .post-main {
+    order: 1;
+    width: 100%;
   }
 
   .post-request-page .post-sidebar {
     position: static;
+    order: 2;
+    margin-top: 20px;
+    width: 100%;
   }
 
   .post-request-page .form-grid-2 {

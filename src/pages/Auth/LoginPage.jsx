@@ -1,56 +1,52 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import api from '../../services/api';
-import './Auth.css';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { loginUser } from "../../services/authService";
+import "./Auth.css";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
     remember: false,
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: type === "checkbox" ? checked : value,
     }));
     // Clear error when user types
-    if (error) setError('');
+    if (error) setError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
-      const response = await api.auth.login({
+      const user = await loginUser({
         email: formData.email,
         password: formData.password,
       });
 
-      if (response.success) {
-        // Lưu thông tin user vào localStorage
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        
-        // Nếu chọn "Nhớ đăng nhập", lưu thêm flag
-        if (formData.remember) {
-          localStorage.setItem('rememberMe', 'true');
-        }
+      // Lưu thông tin user vào localStorage
+      localStorage.setItem("user", JSON.stringify(user));
 
-        // Chuyển hướng về trang chủ
-        navigate('/');
-      } else {
-        setError(response.message || 'Đăng nhập thất bại');
+      // Nếu chọn "Nhớ đăng nhập", lưu thêm flag
+      if (formData.remember) {
+        localStorage.setItem("rememberMe", "true");
       }
+
+      // Chuyển hướng về trang chủ
+      navigate("/");
     } catch (err) {
-      console.error('Login error:', err);
-      setError('Có lỗi xảy ra. Vui lòng thử lại!');
+      console.error("Login error:", err);
+      setError(err.message || "Có lỗi xảy ra. Vui lòng thử lại!");
     } finally {
       setLoading(false);
     }
@@ -67,7 +63,11 @@ const LoginPage = () => {
       <div className="auth-split-layout">
         {/* Left Side: Interactive Banner */}
         <div className="signup-banner">
-          <img src="/images/signup_bg.png" alt="Premium Network" className="signup-bg" />
+          <img
+            src="/images/signup_bg.png"
+            alt="Premium Network"
+            className="signup-bg"
+          />
           <div className="signup-overlay">
             <h2>
               Chào mừng
@@ -75,13 +75,15 @@ const LoginPage = () => {
               trở lại!
             </h2>
             <p>
-              Đăng nhập để tiếp tục khám phá hàng nghìn cơ hội việc làm và nâng tầm dự án phát triển của doanh nghiệp bạn.
+              Đăng nhập để tiếp tục khám phá hàng nghìn cơ hội việc làm và nâng
+              tầm dự án phát triển của doanh nghiệp bạn.
             </p>
 
             <div className="banner-testimonials">
               <div className="b-testimo">
                 <p>
-                  "Quét qua hồ sơ, thanh toán an toàn và kết nối siêu tốc tất cả tại một nơi thiết kế tuyệt đẹp."
+                  "Quét qua hồ sơ, thanh toán an toàn và kết nối siêu tốc tất cả
+                  tại một nơi thiết kế tuyệt đẹp."
                 </p>
                 <div className="b-author">
                   <img src="/images/avatar_1.png" alt="User Avatar" />
@@ -97,25 +99,29 @@ const LoginPage = () => {
         {/* Right Side: Form */}
         <div className="signup-form-side">
           <div className="form-header text-center">
-            <h2 style={{ textAlign: 'center' }}>Đăng Nhập</h2>
-            <p style={{ textAlign: 'center' }}>Trở lại công việc của bạn trên Upwork</p>
+            <h2 style={{ textAlign: "center" }}>Đăng Nhập</h2>
+            <p style={{ textAlign: "center" }}>
+              Trở lại công việc của bạn trên Upwork
+            </p>
           </div>
 
           <form id="loginForm" className="premium-form" onSubmit={handleSubmit}>
             {/* Error Message */}
             {error && (
-              <div style={{
-                padding: '12px',
-                background: '#FEF2F2',
-                border: '1px solid #FCA5A5',
-                borderRadius: '8px',
-                color: '#DC2626',
-                fontSize: '13px',
-                marginBottom: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}>
+              <div
+                style={{
+                  padding: "12px",
+                  background: "#FEF2F2",
+                  border: "1px solid #FCA5A5",
+                  borderRadius: "8px",
+                  color: "#DC2626",
+                  fontSize: "13px",
+                  marginBottom: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
                 <i className="fa-solid fa-circle-exclamation"></i>
                 <span>{error}</span>
               </div>
@@ -140,20 +146,20 @@ const LoginPage = () => {
             <div className="premium-input-group">
               <div
                 style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '8px',
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "8px",
                 }}
               >
-                <label style={{ marginBottom: '0' }}>Mật khẩu</label>
+                <label style={{ marginBottom: "0" }}>Mật khẩu</label>
                 <Link
                   to="#"
                   style={{
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    color: 'var(--teal)',
-                    textDecoration: 'none',
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    color: "var(--teal)",
+                    textDecoration: "none",
                   }}
                 >
                   Quên mật khẩu?
@@ -174,10 +180,10 @@ const LoginPage = () => {
 
             <div
               style={{
-                margin: '12px 0 24px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
+                margin: "12px 0 24px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
               }}
             >
               <input
@@ -187,19 +193,19 @@ const LoginPage = () => {
                 checked={formData.remember}
                 onChange={handleChange}
                 style={{
-                  width: '16px',
-                  height: '16px',
-                  accentColor: 'var(--teal)',
-                  cursor: 'pointer',
+                  width: "16px",
+                  height: "16px",
+                  accentColor: "var(--teal)",
+                  cursor: "pointer",
                 }}
               />
               <label
                 htmlFor="remember"
                 style={{
-                  fontSize: '14px',
-                  color: 'var(--text-dark)',
-                  cursor: 'pointer',
-                  fontWeight: '500',
+                  fontSize: "14px",
+                  color: "var(--text-dark)",
+                  cursor: "pointer",
+                  fontWeight: "500",
                 }}
               >
                 Nhớ trạng thái đăng nhập
@@ -207,14 +213,18 @@ const LoginPage = () => {
             </div>
 
             {/* Submit */}
-            <button type="submit" className="btn-signup-premium" disabled={loading}>
+            <button
+              type="submit"
+              className="btn-signup-premium"
+              disabled={loading}
+            >
               {loading ? (
                 <>
                   <i className="fa-solid fa-circle-notch fa-spin"></i>
                   Đang đăng nhập...
                 </>
               ) : (
-                'Đăng Nhập'
+                "Đăng Nhập"
               )}
             </button>
 
@@ -223,11 +233,18 @@ const LoginPage = () => {
               <p>Hoặc đăng nhập siêu tốc bằng</p>
               <div className="slp-buttons">
                 <button type="button" className="slp-btn">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" />{' '}
+                  <img
+                    src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg"
+                    alt="Google"
+                  />{" "}
                   Google
                 </button>
                 <button type="button" className="slp-btn">
-                  <i className="fa-brands fa-apple" style={{ fontSize: '18px' }}></i> Apple
+                  <i
+                    className="fa-brands fa-apple"
+                    style={{ fontSize: "18px" }}
+                  ></i>{" "}
+                  Apple
                 </button>
               </div>
             </div>

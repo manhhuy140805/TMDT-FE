@@ -20,6 +20,15 @@
 7. [Contracts (Hợp đồng)](#7-contracts)
 8. [Supervisors (Đơn vị giám sát)](#8-supervisors)
 9. [Progress (Tiến độ)](#9-progress)
+10. [Freelancers (Freelancer)](#10-freelancers)
+11. [Chat (Tin nhắn)](#11-chat)
+12. [Disputes (Tranh chấp)](#12-disputes)
+13. [Evidences (Bằng chứng)](#13-evidences)
+14. [Notifications (Thông báo)](#14-notifications)
+15. [Payments (Thanh toán)](#15-payments)
+16. [Reviews (Đánh giá)](#16-reviews)
+17. [Reports (Báo cáo)](#17-reports)
+18. [Admin (Quản trị)](#18-admin)
 
 ---
 
@@ -32,6 +41,7 @@ GET /health
 ```
 
 **Response:**
+
 ```json
 {
   "status": "ok",
@@ -50,6 +60,7 @@ POST /auth/register
 ```
 
 **Body:**
+
 ```json
 {
   "tenDangNhap": "user01",
@@ -64,6 +75,7 @@ POST /auth/register
 ```
 
 **Vai trò có thể chọn:**
+
 - `NguoiThue` - Người thuê (mặc định)
 - `Freelancer` - Freelancer
 - `DonViGiamSat` - Đơn vị giám sát
@@ -75,6 +87,7 @@ POST /auth/login
 ```
 
 **Body:**
+
 ```json
 {
   "tenDangNhap": "user01",
@@ -112,13 +125,20 @@ GET /users/:id/profile
 
 Trả về thông tin chi tiết theo vai trò (NguoiThue/Freelancer/DonViGiamSat)
 
-### 3.5. Cập nhật thông tin
+### 3.5. Lấy danh sách yêu cầu của người dùng
+
+```http
+GET /users/:id/jobs
+```
+
+### 3.6. Cập nhật thông tin
 
 ```http
 PUT /users/:id
 ```
 
 **Body:**
+
 ```json
 {
   "hoTen": "Nguyen Van B",
@@ -127,7 +147,7 @@ PUT /users/:id
 }
 ```
 
-### 3.6. Xóa người dùng (soft delete)
+### 3.7. Xóa người dùng (soft delete)
 
 ```http
 DELETE /users/:id
@@ -156,6 +176,7 @@ POST /categories
 ```
 
 **Body:**
+
 ```json
 {
   "tenLoai": "Thiet ke web",
@@ -187,6 +208,7 @@ POST /jobs
 ```
 
 **Body:**
+
 ```json
 {
   "nguoiThueId": 5,
@@ -213,6 +235,7 @@ GET /jobs/search?keyword=website&category=1&budget=7000000
 ```
 
 **Query params:**
+
 - `keyword` - Tìm trong tiêu đề và mô tả
 - `category` - ID loại dịch vụ
 - `budget` - Ngân sách
@@ -236,6 +259,7 @@ PUT /jobs/:id
 ```
 
 **Trạng thái có thể cập nhật:**
+
 - `MoDau` - Mở đầu
 - `DangMo` - Đang mở
 - `DaDong` - Đã đóng
@@ -259,6 +283,7 @@ POST /proposals
 ```
 
 **Body:**
+
 ```json
 {
   "yeuCauId": 15,
@@ -288,6 +313,7 @@ PUT /proposals/:id
 ```
 
 **Trạng thái có thể cập nhật:**
+
 - `DaGui` - Đã gửi
 - `DuocChon` - Được chọn
 - `TuChoi` - Từ chối
@@ -310,6 +336,7 @@ POST /contracts
 ```
 
 **Body:**
+
 ```json
 {
   "yeuCauId": 15,
@@ -346,6 +373,7 @@ PUT /contracts/:id/status
 ```
 
 **Body:**
+
 ```json
 {
   "trangThai": "DangThucHien"
@@ -353,6 +381,7 @@ PUT /contracts/:id/status
 ```
 
 **Trạng thái:**
+
 - `MoiTao` - Mới tạo
 - `DangThucHien` - Đang thực hiện
 - `HoanThanh` - Hoàn thành
@@ -366,6 +395,7 @@ POST /contracts/:id/supervisor
 ```
 
 **Body:**
+
 ```json
 {
   "giamSatId": 1,
@@ -414,6 +444,7 @@ POST /supervisors
 ```
 
 **Body:**
+
 ```json
 {
   "taiKhoanId": 15,
@@ -432,6 +463,7 @@ PUT /supervisors/:id
 ```
 
 **Trạng thái:**
+
 - `HoatDong` - Hoạt động
 - `TamNghi` - Tạm nghỉ
 - `BiKhoa` - Bị khóa
@@ -450,10 +482,11 @@ DELETE /supervisors/:id
 ### 9.1. Tạo tiến độ mới
 
 ```http
-POST /contracts/:id/progress
+POST /progress
 ```
 
 **Body:**
+
 ```json
 {
   "congViecId": 30,
@@ -486,6 +519,7 @@ PUT /progress/:id
 ```
 
 **Body:**
+
 ```json
 {
   "tieuDe": "Hoan thanh thiet ke giao dien - Cap nhat",
@@ -495,6 +529,7 @@ PUT /progress/:id
 ```
 
 **Trạng thái xác nhận:**
+
 - `ChuaXacNhan` - Chưa xác nhận
 - `DaXacNhan` - Đã xác nhận
 - `TuChoi` - Từ chối
@@ -503,6 +538,315 @@ PUT /progress/:id
 
 ```http
 DELETE /progress/:id
+```
+
+---
+
+## 10. Freelancers
+
+### 10.1. Lấy báo giá của freelancer
+
+```http
+GET /freelancers/:id/proposals
+```
+
+---
+
+## 11. Chat
+
+### 11.1. Tạo cuộc trò chuyện
+
+```http
+POST /conversations
+```
+
+**Body:**
+
+```json
+{
+  "contractId": 15,
+  "nguoiThueId": 5,
+  "freelancerId": 8
+}
+```
+
+### 11.2. Lấy thông tin cuộc trò chuyện
+
+```http
+GET /conversations/:id
+```
+
+### 11.3. Lấy danh sách cuộc trò chuyện theo hợp đồng
+
+```http
+GET /contracts/:id/conversations
+```
+
+### 11.4. Gửi tin nhắn
+
+```http
+POST /messages
+```
+
+**Body:**
+
+```json
+{
+  "conversationId": 10,
+  "nguoiGuiId": 5,
+  "noiDung": "Xin chao"
+}
+```
+
+### 11.5. Lấy danh sách tin nhắn theo cuộc trò chuyện
+
+```http
+GET /conversations/:id/messages
+```
+
+---
+
+## 12. Disputes
+
+### 12.1. Tạo tranh chấp
+
+```http
+POST /disputes
+```
+
+**Body:**
+
+```json
+{
+  "contractId": 15,
+  "nguoiTaoId": 5,
+  "lyDo": "Khong dat yeu cau"
+}
+```
+
+### 12.2. Lấy chi tiết tranh chấp
+
+```http
+GET /disputes/:id
+```
+
+### 12.3. Lấy danh sách tranh chấp theo hợp đồng
+
+```http
+GET /contracts/:id/disputes
+```
+
+### 12.4. Duyệt tranh chấp
+
+```http
+PUT /disputes/:id/review
+```
+
+### 12.5. Giải quyết tranh chấp
+
+```http
+PUT /disputes/:id/resolve
+```
+
+---
+
+## 13. Evidences
+
+### 13.1. Tạo bằng chứng cho tranh chấp
+
+```http
+POST /disputes/:id/evidences
+```
+
+**Body:**
+
+```json
+{
+  "tepDinhKem": "https://example.com/files/proof.zip",
+  "moTa": "Tai lieu lien quan"
+}
+```
+
+### 13.2. Lấy danh sách bằng chứng theo tranh chấp
+
+```http
+GET /disputes/:id/evidences
+```
+
+### 13.3. Xóa bằng chứng
+
+```http
+DELETE /evidences/:id
+```
+
+---
+
+## 14. Notifications
+
+### 14.1. Lấy danh sách thông báo theo user
+
+```http
+GET /notifications?userId=5
+```
+
+### 14.2. Đánh dấu đã đọc
+
+```http
+PUT /notifications/:id/read
+```
+
+### 14.3. Xóa thông báo
+
+```http
+DELETE /notifications/:id
+```
+
+---
+
+## 15. Payments
+
+### 15.1. Nạp tiền
+
+```http
+POST /payments/deposit
+```
+
+**Body:**
+
+```json
+{
+  "nguoiThueId": 5,
+  "soTien": 2000000
+}
+```
+
+### 15.2. Lấy chi tiết giao dịch
+
+```http
+GET /payments/:id
+```
+
+### 15.3. Lấy danh sách giao dịch theo hợp đồng
+
+```http
+GET /contracts/:id/payments
+```
+
+### 15.4. Giai ngan
+
+```http
+PUT /payments/:id/release
+```
+
+### 15.5. Hoan tien
+
+```http
+PUT /payments/:id/refund
+```
+
+---
+
+## 16. Reviews
+
+### 16.1. Tao danh gia
+
+```http
+POST /reviews
+```
+
+**Body:**
+
+```json
+{
+  "contractId": 15,
+  "nguoiDanhGiaId": 5,
+  "diem": 5,
+  "noiDung": "Lam viec tot"
+}
+```
+
+### 16.2. Lay chi tiet danh gia
+
+```http
+GET /reviews/:id
+```
+
+### 16.3. Lay danh gia theo user
+
+```http
+GET /users/:id/reviews
+```
+
+### 16.4. Lay danh gia theo hop dong
+
+```http
+GET /contracts/:id/reviews
+```
+
+---
+
+## 17. Reports
+
+### 17.1. Tao bao cao
+
+```http
+POST /reports
+```
+
+**Body:**
+
+```json
+{
+  "nguoiBaoCaoId": 5,
+  "doiTuongId": 8,
+  "noiDung": "Co hanh vi vi pham"
+}
+```
+
+### 17.2. Lay danh sach bao cao
+
+```http
+GET /reports
+```
+
+### 17.3. Giai quyet bao cao
+
+```http
+PUT /reports/:id/resolve
+```
+
+---
+
+## 18. Admin
+
+### 18.1. Lay danh sach user
+
+```http
+GET /admin/users
+```
+
+### 18.2. Khoa user
+
+```http
+PUT /admin/users/:id/ban
+```
+
+### 18.3. Lay danh sach don vi giam sat
+
+```http
+GET /admin/supervisors
+```
+
+### 18.4. Duyet don vi giam sat
+
+```http
+PUT /admin/supervisors/:id/approve
+```
+
+### 18.5. Thong ke
+
+```http
+GET /admin/statistics
 ```
 
 ---
@@ -563,10 +907,10 @@ const register = async () => {
       matKhau: '123456',
       email: 'user01@example.com',
       hoTen: 'Nguyen Van A',
-      vaiTro: 'NguoiThue'
-    })
+      vaiTro: 'NguoiThue',
+    }),
   });
-  
+
   const data = await response.json();
   console.log(data);
 };
@@ -587,7 +931,7 @@ const getJobs = async () => {
 ```javascript
 const searchJobs = async (keyword) => {
   const response = await fetch(
-    `http://localhost:3000/jobs/search?keyword=${keyword}`
+    `http://localhost:3000/jobs/search?keyword=${keyword}`,
   );
   const data = await response.json();
   console.log(data);
@@ -658,7 +1002,7 @@ POST /contracts (tạo hợp đồng)
   ↓
 PUT /contracts/:id/status (bắt đầu thực hiện)
   ↓
-POST /contracts/:id/progress (báo cáo tiến độ)
+POST /progress (báo cáo tiến độ)
   ↓
 PUT /contracts/:id/status (hoàn thành)
 ```
@@ -670,7 +1014,7 @@ POST /contracts/:id/supervisor (chọn giám sát)
   ↓
 PUT /contracts/:id/supervisor/accept (freelancer chấp nhận)
   ↓
-POST /contracts/:id/progress (giám sát xác nhận tiến độ)
+POST /progress (giám sát xác nhận tiến độ)
 ```
 
 ---

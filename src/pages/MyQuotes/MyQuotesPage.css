@@ -405,6 +405,7 @@
   justify-content: center;
   gap: 10px;
   width: 100%;
+  box-sizing: border-box;
   padding: 16px;
   background: var(--teal);
   color: white;
@@ -580,10 +581,7 @@
 @media (max-width: 1024px) {
   .my-quotes-layout {
     grid-template-columns: 1fr;
-  }
-  
-  .quotes-sidebar {
-    order: -1;
+    margin-top: 20px;
   }
   
   .stats-grid {

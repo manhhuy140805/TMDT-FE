@@ -7,6 +7,7 @@ const Header = () => {
   const [user, setUser] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [hideTimeout, setHideTimeout] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     // Lấy thông tin user từ localStorage
@@ -19,6 +20,11 @@ const Header = () => {
       }
     }
   }, []);
+
+  // Đóng mobile menu khi chuyển hướng trang
+  const handleLinkClick = () => {
+    setMobileMenuOpen(false);
+  };
 
   const handleMouseEnter = () => {
     if (hideTimeout) {
@@ -41,11 +47,12 @@ const Header = () => {
     localStorage.removeItem('rememberMe');
     setUser(null);
     setShowDropdown(false);
+    setMobileMenuOpen(false);
     navigate('/');
   };
 
   return (
-    <>
+    <div className="global-header-sticky" style={{ position: 'sticky', top: 0, zIndex: 100, display: 'flex', flexDirection: 'column' }}>
       {/* Promo Banner */}
       <div className="promo-banner">
         <div className="promo-content">
@@ -57,129 +64,137 @@ const Header = () => {
       </div>
 
       {/* Header */}
-      <header className="redesign-header">
+      <header className="redesign-header" style={{ position: 'relative', top: 'auto', zIndex: 'auto' }}>
         <div className="header-container">
-          <Link to="/" className="header-logo" style={{ textDecoration: 'none' }}>
+          <Link to="/" className="header-logo" style={{ textDecoration: 'none' }} onClick={handleLinkClick}>
             <i
               className="fa-brands fa-xing"
               style={{ color: 'var(--teal)', fontSize: '28px' }}
             ></i>
             <span className="logo-text">Upwork</span>
           </Link>
-          <nav className="header-nav">
-            <Link to="#">
-              Tìm nhân tài <i className="fa-solid fa-chevron-down nav-icon"></i>
-            </Link>
-            <Link to="/requests">
-              Tìm việc làm <i className="fa-solid fa-chevron-down nav-icon"></i>
-            </Link>
-            <Link to="#">
-              Tại sao chọn Upwork
-              <i className="fa-solid fa-chevron-down nav-icon"></i>
-            </Link>
-            <Link to="#">Giải pháp doanh nghiệp</Link>
-          </nav>
-          <div className="header-actions">
-            {/* Search simplified for header */}
-            <div className="header-search">
-              <i className="fa-solid fa-search"></i>
-              <input type="text" placeholder="Tìm kiếm..." />
-            </div>
+
+          {/* Toggle Hamburger Button for Mobile View */}
+          <button 
+            className={`mobile-menu-toggle ${mobileMenuOpen ? 'active' : ''}`} 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle Menu"
+          >
+            <span className="bar"></span>
+            <span className="bar"></span>
+            <span className="bar"></span>
+          </button>
+
+          {/* Wrapper for Navigation and Actions */}
+          <div className={`header-menu-wrapper ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+            <nav className="header-nav">
+              <Link to="#" onClick={handleLinkClick}>
+                Tìm nhân tài <i className="fa-solid fa-chevron-down nav-icon"></i>
+              </Link>
+              <Link to="/requests" onClick={handleLinkClick}>
+                Tìm việc làm <i className="fa-solid fa-chevron-down nav-icon"></i>
+              </Link>
+              <Link to="#" onClick={handleLinkClick}>
+                Tại sao chọn Upwork
+                <i className="fa-solid fa-chevron-down nav-icon"></i>
+              </Link>
+              <Link to="#" onClick={handleLinkClick}>Giải pháp doanh nghiệp</Link>
+            </nav>
             
-            {user ? (
-              // Hiển thị khi đã đăng nhập
-              <div 
-                className="user-menu"
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-              >
-                <button className="user-menu-btn" style={{ padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}>
-                  <img 
-                    src={user.avatar || 'https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp'} 
-                    alt={user.name || user.hoTen}
-                    className="user-avatar"
-                    style={{ margin: 0, display: 'block' }}
-                    onError={(e) => {
-                      e.target.src = 'https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp';
-                    }}
-                  />
-                </button>
-                
-                {showDropdown && (
-                  <div className="user-dropdown">
-                    <div className="dropdown-user-info">
-                      <img 
-                        src={user.avatar || 'https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp'} 
-                        alt={user.name || user.hoTen}
-                        className="dropdown-avatar"
-                        onError={(e) => {
-                          e.target.src = 'https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp';
-                        }}
-                      />
-                      <div className="dropdown-user-details">
-                        <div className="dropdown-user-name">{user.name || user.hoTen}</div>
-                        <div className="dropdown-user-email">{user.email}</div>
-                        <div className="dropdown-user-role">{user.vaiTro || 'Thành viên'}</div>
-                      </div>
-                    </div>
-                    <div className="dropdown-divider"></div>
-                    
-                    <Link to="/profile" className="dropdown-item">
-                      <i className="fa-solid fa-user"></i>
-                      Hồ sơ của tôi
-                    </Link>
-<<<<<<< HEAD
-                    <Link to="/workspace" className="dropdown-item">
-                      <i className="fa-solid fa-briefcase"></i>
-                      Không gian làm việc
-                    </Link>
-                    <Link to="/settings" className="dropdown-item">
-=======
-                    
-                    {/* Hiển thị "Yêu cầu của tôi" cho NGUOI_THUE */}
-                    {user.role === 'NGUOI_THUE' && (
-                      <Link to="/my-requests" className="dropdown-item" onClick={() => setShowDropdown(false)}>
-                        <i className="fa-solid fa-briefcase"></i>
-                        Yêu cầu của tôi
-                      </Link>
-                    )}
-                    
-                    {/* Hiển thị "Báo giá của tôi" cho FREELANCER */}
-                    {user.role === 'FREELANCER' && (
-                      <Link to="/my-quotes" className="dropdown-item" onClick={() => setShowDropdown(false)}>
-                        <i className="fa-solid fa-file-invoice"></i>
-                        Báo giá của tôi
-                      </Link>
-                    )}
-                    
-                    <Link to="/settings" className="dropdown-item" onClick={() => setShowDropdown(false)}>
->>>>>>> 355657d191b7f8bc3af54cda953e3e3b3413189f
-                      <i className="fa-solid fa-gear"></i>
-                      Cài đặt
-                    </Link>
-                    <div className="dropdown-divider"></div>
-                    <button className="dropdown-item dropdown-item-logout" onClick={handleLogout}>
-                      <i className="fa-solid fa-right-from-bracket"></i>
-                      Đăng xuất
-                    </button>
-                  </div>
-                )}
+            <div className="header-actions">
+              {/* Search simplified for header */}
+              <div className="header-search">
+                <i className="fa-solid fa-search"></i>
+                <input type="text" placeholder="Tìm kiếm..." />
               </div>
-            ) : (
-              // Hiển thị khi chưa đăng nhập
-              <>
-                <Link to="/login" className="btn-login-text">
-                  Đăng nhập
-                </Link>
-                <Link to="/signup" className="btn-signup-styled">
-                  Đăng ký
-                </Link>
-              </>
-            )}
+              
+              {user ? (
+                // Hiển thị khi đã đăng nhập
+                <div 
+                  className="user-menu"
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
+                >
+                  <button className="user-menu-btn" style={{ padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}>
+                    <img 
+                      src={user.avatar || 'https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp'} 
+                      alt={user.name || user.hoTen}
+                      className="user-avatar"
+                      style={{ margin: 0, display: 'block' }}
+                      onError={(e) => {
+                        e.target.src = 'https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp';
+                      }}
+                    />
+                  </button>
+                  
+                  {showDropdown && (
+                    <div className="user-dropdown">
+                      <div className="dropdown-user-info">
+                        <img 
+                          src={user.avatar || 'https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp'} 
+                          alt={user.name || user.hoTen}
+                          className="dropdown-avatar"
+                          onError={(e) => {
+                            e.target.src = 'https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp';
+                          }}
+                        />
+                        <div className="dropdown-user-details">
+                          <div className="dropdown-user-name">{user.name || user.hoTen}</div>
+                          <div className="dropdown-user-email">{user.email}</div>
+                          <div className="dropdown-user-role">{user.vaiTro || 'Thành viên'}</div>
+                        </div>
+                      </div>
+                      <div className="dropdown-divider"></div>
+                      
+                      <Link to="/profile" className="dropdown-item" onClick={handleLinkClick}>
+                        <i className="fa-solid fa-user"></i>
+                        Hồ sơ của tôi
+                      </Link>
+                      
+                      {/* Hiển thị "Yêu cầu của tôi" cho NGUOI_THUE */}
+                      {user.role === 'NGUOI_THUE' && (
+                        <Link to="/my-requests" className="dropdown-item" onClick={() => { setShowDropdown(false); handleLinkClick(); }}>
+                          <i className="fa-solid fa-briefcase"></i>
+                          Yêu cầu của tôi
+                        </Link>
+                      )}
+                      
+                      {/* Hiển thị "Báo giá của tôi" cho FREELANCER */}
+                      {user.role === 'FREELANCER' && (
+                        <Link to="/my-quotes" className="dropdown-item" onClick={() => { setShowDropdown(false); handleLinkClick(); }}>
+                          <i className="fa-solid fa-file-invoice"></i>
+                          Báo giá của tôi
+                        </Link>
+                      )}
+                      
+                      <Link to="/settings" className="dropdown-item" onClick={() => { setShowDropdown(false); handleLinkClick(); }}>
+                        <i className="fa-solid fa-gear"></i>
+                        Cài đặt
+                      </Link>
+                      <div className="dropdown-divider"></div>
+                      <button className="dropdown-item dropdown-item-logout" onClick={handleLogout}>
+                        <i className="fa-solid fa-right-from-bracket"></i>
+                        Đăng xuất
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                // Hiển thị khi chưa đăng nhập
+                <>
+                  <Link to="/login" className="btn-login-text" onClick={handleLinkClick}>
+                    Đăng nhập
+                  </Link>
+                  <Link to="/signup" className="btn-signup-styled" onClick={handleLinkClick}>
+                    Đăng ký
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>
-    </>
+    </div>
   );
 };
 
