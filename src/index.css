@@ -1,2 +1,5 @@
+/* Import Google Fonts */
+/* Removed Google Fonts - Using system fonts instead */
+
 /* Import common layout styles */
 @import './components/layout/Layout.css';

@@ -1,82 +1,86 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import api from '../../services/api';
-import './MyRequestsPage.css';
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  deleteRequestById,
+  fetchEmployerRequests,
+} from "../../services/requestsService";
+import { getUserRole, isEmployerRole } from "../../utils/role";
+import "./MyRequestsPage.css";
 
 const MyRequestsPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState([]);
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState("all");
   const [currentUser, setCurrentUser] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [requestToDelete, setRequestToDelete] = useState(null);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
-        setCurrentUser(user);
-        fetchMyRequests(user.id);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate('/login');
-      }
-    } else {
-      navigate('/login');
-    }
-  }, [navigate]);
-
-  const fetchMyRequests = async (userId) => {
+  async function fetchMyRequests(userId) {
     setLoading(true);
     try {
-      const response = await api.requests.getAll();
-      if (response.success) {
-        const myRequests = response.data.data.filter(
-          req => req.employer.id === userId
-        );
-        setRequests(myRequests);
-      }
+      const myRequests = await fetchEmployerRequests(userId);
+      setRequests(myRequests);
     } catch (error) {
-      console.error('Error fetching requests:', error);
+      console.error("Error fetching requests:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const getFilteredRequests = () => {
-    if (filter === 'all') return requests;
-    if (filter === 'active') {
-      return requests.filter(req => 
-        req.status === 'DANG_MOI_THAU' || req.status === 'DA_CHON_BAO_GIA'
+    if (filter === "all") return requests;
+    if (filter === "active") {
+      return requests.filter(
+        (req) => req.status === "DangMo" || req.status === "DA_CHON_BAO_GIA",
       );
     }
-    if (filter === 'closed') {
-      return requests.filter(req => req.status === 'DA_DONG');
+    if (filter === "closed") {
+      return requests.filter((req) => req.status === "DaDong");
     }
     return requests;
   };
 
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setCurrentUser(user);
+        const role = getUserRole(user);
+        if (!isEmployerRole(role)) {
+          setLoading(false);
+          return;
+        }
+        fetchMyRequests(user.id);
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        navigate("/login");
+      }
+    } else {
+      navigate("/login");
+    }
+  }, [navigate]);
+
   const getStatusBadge = (status) => {
     const statusMap = {
-      'DANG_MOI_THAU': { text: 'Đang nhận hồ sơ', class: 'status-active' },
-      'DA_CHON_BAO_GIA': { text: 'Đã chọn báo giá', class: 'status-selected' },
-      'DA_DONG': { text: 'Đã đóng', class: 'status-closed' }
+      DangMo: { text: "Đang nhận hồ sơ", class: "status-active" },
+      DA_CHON_BAO_GIA: { text: "Đã chọn báo giá", class: "status-selected" },
+      DaDong: { text: "Đã đóng", class: "status-closed" },
     };
-    const statusInfo = statusMap[status] || { text: status, class: '' };
-    return <span className={`status-badge ${statusInfo.class}`}>{statusInfo.text}</span>;
+    const statusInfo = statusMap[status] || { text: status, class: "" };
+    return (
+      <span className={`status-badge ${statusInfo.class}`}>
+        {statusInfo.text}
+      </span>
+    );
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return "N/A";
     const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN');
-  };
-
-  const formatCurrency = (amount) => {
-    if (!amount) return '0 VNĐ';
-    return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ';
+    return date.toLocaleDateString("vi-VN");
   };
 
   const handleEditRequest = (requestId) => {
@@ -85,21 +89,17 @@ const MyRequestsPage = () => {
 
   const handleDeleteRequest = async () => {
     if (!requestToDelete) return;
-    
+
     try {
-      const response = await api.requests.delete(requestToDelete);
-      if (response.success) {
-        // Remove from local state
-        setRequests(prev => prev.filter(r => r.id !== requestToDelete));
-        alert('Xóa yêu cầu thành công!');
-      } else {
-        alert('Có lỗi xảy ra khi xóa yêu cầu!');
-      }
+      await deleteRequestById(requestToDelete);
+      // Remove from local state
+      setRequests((prev) => prev.filter((r) => r.id !== requestToDelete));
+      alert("Xóa yêu cầu thành công!");
     } catch (error) {
-      console.error('Error deleting request:', error);
-      alert('Có lỗi xảy ra khi xóa yêu cầu!');
+      console.error("Error deleting request:", error);
+      alert("Có lỗi xảy ra khi xóa yêu cầu!");
     }
-    
+
     setShowDeleteModal(false);
     setRequestToDelete(null);
   };
@@ -120,26 +120,58 @@ const MyRequestsPage = () => {
     );
   }
 
+  const userRole = getUserRole(currentUser);
+  const isEmployer = isEmployerRole(userRole);
+
+  if (currentUser && !isEmployer) {
+    return (
+      <div className="my-requests-page" style={{ background: "#F8FAFC" }}>
+        <div
+          className="page-container"
+          style={{ maxWidth: "900px", margin: "0 auto", padding: "60px 20px" }}
+        >
+          <div className="empty-state">
+            <i className="fa-solid fa-lock"></i>
+            <h3>Không có quyền truy cập</h3>
+            <p>
+              Trang này chỉ dành cho Người thuê để quản lý yêu cầu tuyển dụng.
+            </p>
+            <Link to="/requests" className="btn-create-first">
+              <i className="fa-solid fa-arrow-left"></i>
+              Về danh sách yêu cầu
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="my-requests-page" style={{background: '#F8FAFC'}}>
+    <div className="my-requests-page" style={{ background: "#F8FAFC" }}>
       {/* Hero Banner */}
-      <div className="d-hero" style={{paddingBottom: '80px'}}>
-        <div className="d-hero-content" style={{textAlign: 'center'}}>
+      <div className="d-hero">
+        <div className="d-hero-content" style={{ textAlign: "center" }}>
           <h1 className="d-title">Quản lý Yêu cầu của tôi</h1>
-          <p className="d-meta" style={{justifyContent: 'center', maxWidth: '600px', margin: '16px auto 0'}}>
+          <p className="d-meta" style={{ justifyContent: "center" }}>
             Theo dõi và quản lý tất cả các yêu cầu tuyển dụng freelancer của bạn
           </p>
         </div>
       </div>
 
-      <div className="page-container" style={{maxWidth: '1200px', margin: '0 auto', padding: '0 20px'}}>
+      <div
+        className="page-container"
+        style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 20px" }}
+      >
         <div className="my-requests-layout">
           {/* Main Content */}
           <main className="requests-main">
             {/* Stats Cards */}
             <div className="stats-grid">
               <div className="stat-card">
-                <div className="stat-icon" style={{background: '#EFF6FF', color: '#0EA5E9'}}>
+                <div
+                  className="stat-icon"
+                  style={{ background: "#EFF6FF", color: "#0EA5E9" }}
+                >
                   <i className="fa-solid fa-file-lines"></i>
                 </div>
                 <div className="stat-info">
@@ -148,34 +180,46 @@ const MyRequestsPage = () => {
                 </div>
               </div>
               <div className="stat-card">
-                <div className="stat-icon" style={{background: '#F0FDF4', color: '#16A34A'}}>
+                <div
+                  className="stat-icon"
+                  style={{ background: "#F0FDF4", color: "#16A34A" }}
+                >
                   <i className="fa-solid fa-clock"></i>
                 </div>
                 <div className="stat-info">
                   <div className="stat-value">
-                    {requests.filter(r => r.status === 'DANG_MOI_THAU').length}
+                    {requests.filter((r) => r.status === "DangMo").length}
                   </div>
                   <div className="stat-label">Đang nhận hồ sơ</div>
                 </div>
               </div>
               <div className="stat-card">
-                <div className="stat-icon" style={{background: '#FEF3C7', color: '#D97706'}}>
+                <div
+                  className="stat-icon"
+                  style={{ background: "#FEF3C7", color: "#D97706" }}
+                >
                   <i className="fa-solid fa-check-circle"></i>
                 </div>
                 <div className="stat-info">
                   <div className="stat-value">
-                    {requests.filter(r => r.status === 'DA_CHON_BAO_GIA').length}
+                    {
+                      requests.filter((r) => r.status === "DA_CHON_BAO_GIA")
+                        .length
+                    }
                   </div>
                   <div className="stat-label">Đã chọn báo giá</div>
                 </div>
               </div>
               <div className="stat-card">
-                <div className="stat-icon" style={{background: '#F3F4F6', color: '#6B7280'}}>
+                <div
+                  className="stat-icon"
+                  style={{ background: "#F3F4F6", color: "#6B7280" }}
+                >
                   <i className="fa-solid fa-archive"></i>
                 </div>
                 <div className="stat-info">
                   <div className="stat-value">
-                    {requests.filter(r => r.status === 'DA_DONG').length}
+                    {requests.filter((r) => r.status === "DaDong").length}
                   </div>
                   <div className="stat-label">Đã đóng</div>
                 </div>
@@ -185,22 +229,29 @@ const MyRequestsPage = () => {
             {/* Filters */}
             <div className="filters-bar">
               <button
-                className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
-                onClick={() => setFilter('all')}
+                className={`filter-btn ${filter === "all" ? "active" : ""}`}
+                onClick={() => setFilter("all")}
               >
                 Tất cả ({requests.length})
               </button>
               <button
-                className={`filter-btn ${filter === 'active' ? 'active' : ''}`}
-                onClick={() => setFilter('active')}
+                className={`filter-btn ${filter === "active" ? "active" : ""}`}
+                onClick={() => setFilter("active")}
               >
-                Đang hoạt động ({requests.filter(r => r.status === 'DANG_MOI_THAU' || r.status === 'DA_CHON_BAO_GIA').length})
+                Đang hoạt động (
+                {
+                  requests.filter(
+                    (r) =>
+                      r.status === "DangMo" || r.status === "DA_CHON_BAO_GIA",
+                  ).length
+                }
+                )
               </button>
               <button
-                className={`filter-btn ${filter === 'closed' ? 'active' : ''}`}
-                onClick={() => setFilter('closed')}
+                className={`filter-btn ${filter === "closed" ? "active" : ""}`}
+                onClick={() => setFilter("closed")}
               >
-                Đã đóng ({requests.filter(r => r.status === 'DA_DONG').length})
+                Đã đóng ({requests.filter((r) => r.status === "DaDong").length})
               </button>
             </div>
 
@@ -210,32 +261,38 @@ const MyRequestsPage = () => {
                 <div className="empty-state">
                   <i className="fa-regular fa-folder-open"></i>
                   <h3>Chưa có yêu cầu nào</h3>
-                  <p>Bắt đầu bằng cách tạo yêu cầu tuyển dụng freelancer đầu tiên của bạn</p>
-                  <Link to="/post-request" className="btn-create-first">
+                  <p>
+                    Bắt đầu bằng cách tạo yêu cầu tuyển dụng freelancer đầu tiên
+                    của bạn
+                  </p>
+                  <Link to="/workspace/jobs?action=new" className="btn-create-first">
                     <i className="fa-solid fa-plus"></i>
                     Tạo yêu cầu đầu tiên
                   </Link>
                 </div>
               ) : (
-                filteredRequests.map(request => (
+                filteredRequests.map((request) => (
                   <div key={request.id} className="request-card">
                     <div className="request-header">
                       <div className="request-title-section">
-                        <Link to={`/requests/${request.id}`} className="request-title">
+                        <Link
+                          to={`/requests/${request.id}`}
+                          className="request-title"
+                        >
                           {request.title}
                         </Link>
                         {getStatusBadge(request.status)}
                       </div>
                       <div className="request-actions">
-                        <button 
-                          className="btn-icon" 
+                        <button
+                          className="btn-icon"
                           title="Chỉnh sửa"
                           onClick={() => handleEditRequest(request.id)}
                         >
                           <i className="fa-solid fa-pen"></i>
                         </button>
-                        <button 
-                          className="btn-icon" 
+                        <button
+                          className="btn-icon"
                           title="Xóa"
                           onClick={() => openDeleteModal(request.id)}
                         >
@@ -260,20 +317,23 @@ const MyRequestsPage = () => {
                     </div>
 
                     <p className="request-description">
-                      {request.description.length > 150 
-                        ? request.description.substring(0, 150) + '...' 
-                        : request.description
-                      }
+                      {request.description.length > 150
+                        ? request.description.substring(0, 150) + "..."
+                        : request.description}
                     </p>
 
                     {/* Skills */}
                     {request.skills && request.skills.length > 0 && (
                       <div className="request-skills">
                         {request.skills.slice(0, 5).map((skill, idx) => (
-                          <span key={idx} className="skill-tag">{skill}</span>
+                          <span key={idx} className="skill-tag">
+                            {skill}
+                          </span>
                         ))}
                         {request.skills.length > 5 && (
-                          <span className="skill-tag more">+{request.skills.length - 5}</span>
+                          <span className="skill-tag more">
+                            +{request.skills.length - 5}
+                          </span>
                         )}
                       </div>
                     )}
@@ -292,7 +352,9 @@ const MyRequestsPage = () => {
                         <div>
                           <div className="info-label">Hạn nhận hồ sơ</div>
                           <div className="info-value">
-                            {request.submissionDeadlineDate ? formatDate(request.submissionDeadlineDate) : 'N/A'}
+                            {request.submissionDeadlineDate
+                              ? formatDate(request.submissionDeadlineDate)
+                              : "N/A"}
                           </div>
                         </div>
                       </div>
@@ -301,7 +363,9 @@ const MyRequestsPage = () => {
                         <div>
                           <div className="info-label">Thời hạn hoàn thành</div>
                           <div className="info-value">
-                            {request.deadlineDate ? formatDate(request.deadlineDate) : 'N/A'}
+                            {request.deadlineDate
+                              ? formatDate(request.deadlineDate)
+                              : "N/A"}
                           </div>
                         </div>
                       </div>
@@ -318,7 +382,10 @@ const MyRequestsPage = () => {
                           <strong>{request.views}</strong> lượt xem
                         </span>
                       </div>
-                      <Link to={`/requests/${request.id}`} className="btn-view-detail">
+                      <Link
+                        to={`/requests/${request.id}`}
+                        className="btn-view-detail"
+                      >
                         Xem chi tiết
                         <i className="fa-solid fa-arrow-right"></i>
                       </Link>
@@ -332,7 +399,7 @@ const MyRequestsPage = () => {
           {/* Sidebar */}
           <aside className="requests-sidebar">
             <div className="sidebar-card">
-              <Link to="/post-request" className="btn-create-request-full">
+              <Link to="/workspace/jobs?action=new" className="btn-create-request-full">
                 <i className="fa-solid fa-plus"></i>
                 Tạo yêu cầu mới
               </Link>
@@ -340,32 +407,52 @@ const MyRequestsPage = () => {
 
             <div className="sidebar-card">
               <h3 className="sidebar-title">
-                <i className="fa-solid fa-lightbulb" style={{color: '#F59E0B'}}></i>
+                <i
+                  className="fa-solid fa-lightbulb"
+                  style={{ color: "#F59E0B" }}
+                ></i>
                 Mẹo quản lý hiệu quả
               </h3>
               <ul className="check-list">
                 <li>
                   <i className="fa-solid fa-circle-check"></i>
-                  <b>Phản hồi nhanh:</b> Trả lời báo giá trong 24h để giữ độ nóng dự án
+                  <b>Phản hồi nhanh:</b> Trả lời báo giá trong 24h để giữ độ
+                  nóng dự án
                 </li>
                 <li>
                   <i className="fa-solid fa-circle-check"></i>
-                  <b>Đánh giá kỹ:</b> Xem xét hồ sơ và portfolio của freelancer trước khi chọn
+                  <b>Đánh giá kỹ:</b> Xem xét hồ sơ và portfolio của freelancer
+                  trước khi chọn
                 </li>
                 <li>
                   <i className="fa-solid fa-circle-check"></i>
-                  <b>Giao tiếp rõ ràng:</b> Mô tả yêu cầu chi tiết để tránh hiểu lầm
+                  <b>Giao tiếp rõ ràng:</b> Mô tả yêu cầu chi tiết để tránh hiểu
+                  lầm
                 </li>
               </ul>
             </div>
 
-            <div className="sidebar-card" style={{background: '#ECFDF5', borderColor: '#10B981'}}>
-              <h3 className="sidebar-title" style={{color: '#064E3B'}}>
-                <i className="fa-solid fa-shield-halved" style={{color: '#059669', fontSize: '24px'}}></i>
+            <div
+              className="sidebar-card"
+              style={{ background: "#ECFDF5", borderColor: "#10B981" }}
+            >
+              <h3 className="sidebar-title" style={{ color: "#064E3B" }}>
+                <i
+                  className="fa-solid fa-shield-halved"
+                  style={{ color: "#059669", fontSize: "24px" }}
+                ></i>
                 Thanh toán bảo mật
               </h3>
-              <p style={{color: '#047857', fontSize: '14px', lineHeight: '1.6', margin: 0}}>
-                Hệ thống Escrow (ký quỹ) giữ tiền của bạn an toàn. Bạn chỉ giải ngân khi hài lòng với sản phẩm cuối cùng.
+              <p
+                style={{
+                  color: "#047857",
+                  fontSize: "14px",
+                  lineHeight: "1.6",
+                  margin: 0,
+                }}
+              >
+                Hệ thống Escrow (ký quỹ) giữ tiền của bạn an toàn. Bạn chỉ giải
+                ngân khi hài lòng với sản phẩm cuối cùng.
               </p>
             </div>
           </aside>
@@ -374,25 +461,60 @@ const MyRequestsPage = () => {
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setShowDeleteModal(false)}
+        >
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>
-                <i className="fa-solid fa-triangle-exclamation" style={{color: '#DC2626', marginRight: '12px'}}></i>
+                <i
+                  className="fa-solid fa-triangle-exclamation"
+                  style={{ color: "#DC2626", marginRight: "12px" }}
+                ></i>
                 Xác nhận xóa yêu cầu
               </h3>
-              <button className="modal-close" onClick={() => setShowDeleteModal(false)}>
+              <button
+                className="modal-close"
+                onClick={() => setShowDeleteModal(false)}
+              >
                 <i className="fa-solid fa-times"></i>
               </button>
             </div>
             <div className="modal-body">
-              <p style={{fontSize: '15px', lineHeight: '1.6', color: '#475569', marginBottom: '16px'}}>
-                Bạn có chắc chắn muốn xóa yêu cầu này không? Hành động này không thể hoàn tác.
+              <p
+                style={{
+                  fontSize: "15px",
+                  lineHeight: "1.6",
+                  color: "#475569",
+                  marginBottom: "16px",
+                }}
+              >
+                Bạn có chắc chắn muốn xóa yêu cầu này không? Hành động này không
+                thể hoàn tác.
               </p>
-              <div style={{background: '#FEF2F2', padding: '16px', borderRadius: '8px', border: '1px solid #FEE2E2'}}>
-                <p style={{fontSize: '14px', color: '#991B1B', margin: 0, lineHeight: '1.6'}}>
-                  <i className="fa-solid fa-info-circle" style={{marginRight: '8px'}}></i>
-                  <b>Lưu ý:</b> Tất cả báo giá liên quan sẽ bị xóa và không thể khôi phục.
+              <div
+                style={{
+                  background: "#FEF2F2",
+                  padding: "16px",
+                  borderRadius: "8px",
+                  border: "1px solid #FEE2E2",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: "14px",
+                    color: "#991B1B",
+                    margin: 0,
+                    lineHeight: "1.6",
+                  }}
+                >
+                  <i
+                    className="fa-solid fa-info-circle"
+                    style={{ marginRight: "8px" }}
+                  ></i>
+                  <b>Lưu ý:</b> Tất cả báo giá liên quan sẽ bị xóa và không thể
+                  khôi phục.
                 </p>
               </div>
             </div>
@@ -403,10 +525,7 @@ const MyRequestsPage = () => {
               >
                 Hủy bỏ
               </button>
-              <button
-                className="btn-danger"
-                onClick={handleDeleteRequest}
-              >
+              <button className="btn-danger" onClick={handleDeleteRequest}>
                 <i className="fa-solid fa-trash"></i>
                 Xóa yêu cầu
               </button>

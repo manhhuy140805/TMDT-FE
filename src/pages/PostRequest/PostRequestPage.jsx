@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import './PostRequestPage.css';
 
-const PostRequestPage = () => {
+const PostRequestPage = ({ isEmbedded = false, onCancel }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -148,7 +148,11 @@ const PostRequestPage = () => {
         }
 
         setTimeout(() => {
-          navigate('/my-requests');
+          if (isEmbedded && onCancel) {
+            onCancel(); // Return to workspace jobs tab
+          } else {
+            navigate('/my-requests');
+          }
         }, 2000);
       } else {
         alert('Có lỗi xảy ra. Vui lòng thử lại!');
@@ -162,18 +166,37 @@ const PostRequestPage = () => {
   };
 
   return (
-    <div className="post-request-page" style={{background: '#F8FAFC'}}>
-      {/* Hero Banner */}
-      <div className="d-hero" style={{paddingBottom: '80px'}}>
-        <div className="d-hero-content" style={{textAlign: 'center'}}>
-          <h1 className="d-title">Khởi tạo Dự án của bạn</h1>
-          <p className="d-meta" style={{justifyContent: 'center', maxWidth: '600px', margin: '16px auto 0'}}>
-            Hoàn thiện biểu mẫu dưới đây để thuật toán của chúng tôi kết nối bạn với những chuyên gia hàng đầu trên toàn cầu.
-          </p>
+    <div className={`post-request-page ${isEmbedded ? 'embedded' : ''}`} style={{background: isEmbedded ? 'transparent' : '#F8FAFC', paddingBottom: isEmbedded ? '20px' : '0'}}>
+      {/* Hero Banner - Hide if embedded */}
+      {!isEmbedded && (
+        <div className="d-hero" style={{paddingBottom: '80px'}}>
+          <div className="d-hero-content" style={{textAlign: 'center'}}>
+            <h1 className="d-title">Khởi tạo Dự án của bạn</h1>
+            <p className="d-meta" style={{justifyContent: 'center', maxWidth: '600px', margin: '16px auto 0'}}>
+              Hoàn thiện biểu mẫu dưới đây để thuật toán của chúng tôi kết nối bạn với những chuyên gia hàng đầu trên toàn cầu.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="page-container" style={{maxWidth: '1200px', margin: '0 auto', padding: '0 20px'}}>
+      <div className="page-container" style={{maxWidth: '1200px', margin: '0 auto', padding: isEmbedded ? '0' : '0 20px', marginTop: isEmbedded ? '0' : '-40px'}}>
+        {isEmbedded && (
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '24px', flexWrap: 'wrap'}}>
+            <div style={{fontSize: '18px', fontWeight: 600, color: '#64748B', display: 'flex', alignItems: 'center'}}>
+              <span style={{cursor: 'pointer', transition: 'color 0.2s'}} onClick={onCancel} onMouseOver={(e) => e.target.style.color = 'var(--teal)'} onMouseOut={(e) => e.target.style.color = '#64748B'}>
+                Dự án
+              </span>
+              <i className="fa-solid fa-chevron-right" style={{margin: '0 12px', fontSize: '14px', color: '#CBD5E1'}}></i>
+              <span style={{color: 'var(--navy)'}}>
+                <i className="fa-solid fa-pen-to-square" style={{color: 'var(--teal)', marginRight: '8px'}}></i>
+                Tạo yêu cầu thuê mới
+              </span>
+            </div>
+            <button className="btn-outline" onClick={onCancel} style={{padding: '10px 24px', borderRadius: '12px', whiteSpace: 'nowrap', width: 'fit-content', height: 'fit-content', display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid #CBD5E1', background: '#fff', color: 'var(--navy)'}}>
+              <i className="fa-solid fa-arrow-left"></i> Trở về trang dự án
+            </button>
+          </div>
+        )}
         <div className="post-layout">
           {/* Main Form */}
           <main className="post-main">

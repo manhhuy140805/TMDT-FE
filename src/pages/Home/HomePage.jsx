@@ -1,13 +1,17 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import api from '../../services/api';
-import './HomePage.css';
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import api from "../../services/api";
+import { getStoredUser, getUserRole, isEmployerRole } from "../../utils/role";
+import "./HomePage.css";
 
 const HomePage = () => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const currentUser = getStoredUser();
+  const userRole = getUserRole(currentUser);
+  const isEmployer = isEmployerRole(userRole);
 
   useEffect(() => {
     fetchCategories();
@@ -20,7 +24,7 @@ const HomePage = () => {
         setCategories(response.data);
       }
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.error("Error fetching categories:", error);
     } finally {
       setLoading(false);
     }
@@ -38,16 +42,16 @@ const HomePage = () => {
 
   const getIconForCategory = (categoryName) => {
     const iconMap = {
-      'Công nghệ & Lập trình': 'fa-code',
-      'Thiết kế & Đồ họa': 'fa-pen-nib',
-      'Digital Marketing': 'fa-bullhorn',
-      'Viết lách & Dịch thuật': 'fa-language',
-      'Video & Animation': 'fa-video',
-      'Âm thanh & Nhạc': 'fa-music',
-      'Kinh doanh & Tư vấn': 'fa-briefcase',
-      'Dữ liệu & Phân tích': 'fa-chart-line'
+      "Công nghệ & Lập trình": "fa-code",
+      "Thiết kế & Đồ họa": "fa-pen-nib",
+      "Digital Marketing": "fa-bullhorn",
+      "Viết lách & Dịch thuật": "fa-language",
+      "Video & Animation": "fa-video",
+      "Âm thanh & Nhạc": "fa-music",
+      "Kinh doanh & Tư vấn": "fa-briefcase",
+      "Dữ liệu & Phân tích": "fa-chart-line",
     };
-    return iconMap[categoryName] || 'fa-star';
+    return iconMap[categoryName] || "fa-star";
   };
   return (
     <div className="landing-body">
@@ -64,27 +68,53 @@ const HomePage = () => {
 
         <div className="hero-content">
           <h1 className="hero-title">
-            Kết nối doanh nghiệp với những freelancer xuất sắc
+            {isEmployer
+              ? "Tuyển freelancer phù hợp cho dự án của bạn"
+              : "Kết nối doanh nghiệp với những freelancer xuất sắc"}
           </h1>
 
           <div className="hero-action-box">
-            <div className="action-tabs">
-              <button className="active">Tìm nhân tài</button>
-              <button>Tìm việc làm</button>
-            </div>
-            <div className="action-search">
-              <i className="fa-solid fa-search search-icon"></i>
-              <input 
-                type="text" 
-                placeholder="Kỹ năng hoặc vị trí"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              />
-              <button className="btn-search-submit" onClick={handleSearch}>
-                <i className="fa-solid fa-magnifying-glass"></i> Tìm kiếm
-              </button>
-            </div>
+            {isEmployer ? (
+              <div className="action-tabs">
+                <button className="active">Tìm freelancer</button>
+              </div>
+            ) : (
+              <div className="action-tabs">
+                <button className="active">Tìm nhân tài</button>
+                <button>Tìm việc làm</button>
+              </div>
+            )}
+            {isEmployer ? (
+              <div className="action-employer-btns">
+                <button
+                  className="btn-search-submit"
+                  onClick={() => navigate("/workspace/jobs?action=new")}
+                >
+                  <i className="fa-solid fa-plus"></i> Đăng yêu cầu
+                </button>
+                <button
+                  className="btn-search-submit"
+                  onClick={() => navigate("/workspace/jobs")}
+                  style={{ background: "#0f172a" }}
+                >
+                  <i className="fa-solid fa-list-check"></i> Quản lý yêu cầu
+                </button>
+              </div>
+            ) : (
+              <div className="action-search">
+                <i className="fa-solid fa-search search-icon"></i>
+                <input
+                  type="text"
+                  placeholder="Kỹ năng hoặc vị trí"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                />
+                <button className="btn-search-submit" onClick={handleSearch}>
+                  <i className="fa-solid fa-magnifying-glass"></i> Tìm kiếm
+                </button>
+              </div>
+            )}
             <div className="action-suggestions">
               <span className="suggestion-label">Phổ biến:</span>
               <Link to="#">Thiết kế Web</Link>
@@ -101,21 +131,28 @@ const HomePage = () => {
         <div className="container">
           <h2 className="section-title">Khám phá hàng triệu chuyên gia</h2>
           {loading ? (
-            <div className="text-center" style={{ padding: '40px' }}>
-              <i className="fa-solid fa-circle-notch fa-spin" style={{ fontSize: '32px', color: 'var(--teal)' }}></i>
-              <p style={{ marginTop: '16px', color: '#64748B' }}>Đang tải danh mục...</p>
+            <div className="text-center" style={{ padding: "40px" }}>
+              <i
+                className="fa-solid fa-circle-notch fa-spin"
+                style={{ fontSize: "32px", color: "var(--teal)" }}
+              ></i>
+              <p style={{ marginTop: "16px", color: "#64748B" }}>
+                Đang tải danh mục...
+              </p>
             </div>
           ) : (
             <div className="categories-grid">
               {categories.map((category) => (
-                <div 
+                <div
                   key={category.id}
                   className="category-card"
                   onClick={() => handleCategoryClick(category.id)}
-                  style={{ cursor: 'pointer' }}
+                  style={{ cursor: "pointer" }}
                 >
                   <div className="cat-icon-wrapper">
-                    <i className={`fa-solid ${getIconForCategory(category.name)}`}></i>
+                    <i
+                      className={`fa-solid ${getIconForCategory(category.name)}`}
+                    ></i>
                   </div>
                   <h3>{category.name}</h3>
                   <div className="cat-rating">
@@ -146,8 +183,8 @@ const HomePage = () => {
               </div>
               <h3>Tham gia miễn phí</h3>
               <p>
-                Đăng ký và duyệt các chuyên gia, khám phá các dự án hoặc đặt lịch
-                tư vấn.
+                Đăng ký và duyệt các chuyên gia, khám phá các dự án hoặc đặt
+                lịch tư vấn.
               </p>
             </div>
             <div className="process-card">
@@ -156,8 +193,8 @@ const HomePage = () => {
               </div>
               <h3>Đăng việc và thuê nhân tài hàng đầu</h3>
               <p>
-                Việc tìm kiếm nhân tài không hề khó khăn. Hãy đăng việc hoặc chúng
-                tôi sẽ tìm kiếm giúp bạn!
+                Việc tìm kiếm nhân tài không hề khó khăn. Hãy đăng việc hoặc
+                chúng tôi sẽ tìm kiếm giúp bạn!
               </p>
             </div>
             <div className="process-card">
@@ -165,7 +202,9 @@ const HomePage = () => {
                 <img src="/images/process_3.png" alt="Work securely" />
               </div>
               <h3>Làm việc với những người giỏi nhất — chi phí hợp lý</h3>
-              <p>Upwork giúp bạn tiết kiệm chi phí với mức phí giao dịch thấp.</p>
+              <p>
+                Upwork giúp bạn tiết kiệm chi phí với mức phí giao dịch thấp.
+              </p>
             </div>
           </div>
         </div>
@@ -177,8 +216,8 @@ const HomePage = () => {
           <div className="inc-content">
             <h2 className="inc-title">Tìm hiểu chi phí thuê freelancer</h2>
             <p className="inc-desc">
-              Hỏi đáp, so sánh giá cả và thuê những chuyên gia giỏi nhất cho dự án
-              tiếp theo của bạn.
+              Hỏi đáp, so sánh giá cả và thuê những chuyên gia giỏi nhất cho dự
+              án tiếp theo của bạn.
             </p>
             <div className="inc-search">
               <i className="fa-solid fa-magnifying-glass"></i>
@@ -209,11 +248,19 @@ const HomePage = () => {
               <h3 className="plan-name">Cơ bản</h3>
               <p className="plan-price">Tham gia miễn phí</p>
               <ul className="plan-features">
-                <li><i className="fa-solid fa-check"></i> Duyệt chuyên gia</li>
-                <li><i className="fa-solid fa-check"></i> Đăng tin tuyển dụng</li>
-                <li><i className="fa-solid fa-check"></i> Xem xét báo giá</li>
+                <li>
+                  <i className="fa-solid fa-check"></i> Duyệt chuyên gia
+                </li>
+                <li>
+                  <i className="fa-solid fa-check"></i> Đăng tin tuyển dụng
+                </li>
+                <li>
+                  <i className="fa-solid fa-check"></i> Xem xét báo giá
+                </li>
               </ul>
-              <button className="btn-plan btn-plan-outline">Bắt đầu miễn phí</button>
+              <button className="btn-plan btn-plan-outline">
+                Bắt đầu miễn phí
+              </button>
             </div>
             <div className="pricing-card recommended">
               <div className="rec-badge">Khuyên dùng</div>
@@ -221,17 +268,23 @@ const HomePage = () => {
               <p className="plan-price">Trả theo mức sử dụng</p>
               <ul className="plan-features">
                 <li>
-                  <i className="fa-solid fa-check"></i> Mọi thứ ở bản Cơ bản, cộng
-                  thêm:
+                  <i className="fa-solid fa-check"></i> Mọi thứ ở bản Cơ bản,
+                  cộng thêm:
                 </li>
-                <li><i className="fa-solid fa-check"></i> Quản lý tài khoản</li>
                 <li>
-                  <i className="fa-solid fa-check"></i> Chuyên viên nhân sự chuyên
-                  trách
+                  <i className="fa-solid fa-check"></i> Quản lý tài khoản
                 </li>
-                <li><i className="fa-solid fa-check"></i> Chuyên gia đã xác minh</li>
+                <li>
+                  <i className="fa-solid fa-check"></i> Chuyên viên nhân sự
+                  chuyên trách
+                </li>
+                <li>
+                  <i className="fa-solid fa-check"></i> Chuyên gia đã xác minh
+                </li>
               </ul>
-              <button className="btn-plan btn-plan-solid">Liên hệ kinh doanh</button>
+              <button className="btn-plan btn-plan-solid">
+                Liên hệ kinh doanh
+              </button>
             </div>
           </div>
         </div>
@@ -244,14 +297,16 @@ const HomePage = () => {
           <div className="testimo-grid">
             <div className="testimo-card">
               <div className="t-rating">
-                <i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i>
-                <i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i>
+                <i className="fa-solid fa-star"></i>
+                <i className="fa-solid fa-star"></i>
+                <i className="fa-solid fa-star"></i>
+                <i className="fa-solid fa-star"></i>
                 <i className="fa-solid fa-star"></i>
               </div>
               <p className="t-text">
-                "Nhân tài trên Upwork thực sự đẳng cấp. Tôi cần một lập trình viên
-                chuyên nghiệp và nhận được báo giá chỉ trong vài giờ. Dự án hoàn
-                thành hoàn hảo và trước thời hạn."
+                "Nhân tài trên Upwork thực sự đẳng cấp. Tôi cần một lập trình
+                viên chuyên nghiệp và nhận được báo giá chỉ trong vài giờ. Dự án
+                hoàn thành hoàn hảo và trước thời hạn."
               </p>
               <div className="t-client">
                 <img src="/images/avatar_1.png" alt="Client 1" />
@@ -263,14 +318,16 @@ const HomePage = () => {
             </div>
             <div className="testimo-card t-raised">
               <div className="t-rating">
-                <i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i>
-                <i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i>
+                <i className="fa-solid fa-star"></i>
+                <i className="fa-solid fa-star"></i>
+                <i className="fa-solid fa-star"></i>
+                <i className="fa-solid fa-star"></i>
                 <i className="fa-solid fa-star"></i>
               </div>
               <p className="t-text">
-                "Là một startup, Upwork giúp chúng tôi tiếp cận nhân tài đẳng cấp
-                thế giới mà không tốn nhiều chi phí. Chúng tôi đã xây dựng toàn bộ
-                bộ nhận diện thương hiệu với các freelancer ở đây."
+                "Là một startup, Upwork giúp chúng tôi tiếp cận nhân tài đẳng
+                cấp thế giới mà không tốn nhiều chi phí. Chúng tôi đã xây dựng
+                toàn bộ bộ nhận diện thương hiệu với các freelancer ở đây."
               </p>
               <div className="t-client">
                 <img src="/images/avatar_2.png" alt="Client 2" />
@@ -282,8 +339,10 @@ const HomePage = () => {
             </div>
             <div className="testimo-card">
               <div className="t-rating">
-                <i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i>
-                <i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i>
+                <i className="fa-solid fa-star"></i>
+                <i className="fa-solid fa-star"></i>
+                <i className="fa-solid fa-star"></i>
+                <i className="fa-solid fa-star"></i>
                 <i className="fa-solid fa-star"></i>
               </div>
               <p className="t-text">

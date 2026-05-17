@@ -38,11 +38,17 @@ const RequestInfo = ({ request }) => {
       <hr style={{border: 'none', borderTop: '1px solid var(--border-light)', margin: '30px 0'}} />
 
       <h3 className="d-section-title">Kỹ năng chuyên môn yêu cầu</h3>
-      <div className="large-tags">
-        {request.skills.map((skill, index) => (
-          <span key={index} className="job-tag outline">{skill}</span>
-        ))}
-      </div>
+      {request.skills && request.skills.length > 0 ? (
+        <div className="large-tags">
+          {request.skills.map((skill, index) => (
+            <span key={index} className="job-tag outline">{skill}</span>
+          ))}
+        </div>
+      ) : (
+        <p style={{color: '#94A3B8', fontSize: '14px', fontStyle: 'italic'}}>
+          Không có kỹ năng cụ thể được yêu cầu
+        </p>
+      )}
 
       <hr style={{border: 'none', borderTop: '1px solid var(--border-light)', margin: '30px 0'}} />
 

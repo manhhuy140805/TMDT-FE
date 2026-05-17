@@ -384,15 +384,23 @@
 }
 
 @media (max-width: 900px) {
+  .auth-fullscreen {
+    overflow-y: auto;
+    height: auto;
+    min-height: 100vh;
+  }
   .auth-split-layout {
     flex-direction: column;
+    height: auto;
+    min-height: 100vh;
   }
   .signup-banner {
-    flex: 0 0 35vh;
+    flex: 0 0 300px;
     min-height: 300px;
   }
   .signup-form-side {
-    padding: 40px 30px;
+    padding: 80px 40px 40px; /* Prevent overlap with home button */
+    min-height: calc(100vh - 300px);
   }
   .premium-form .premium-row {
     flex-direction: column;
@@ -403,12 +411,25 @@
     left: 20px;
     padding: 8px 16px;
     font-size: 13px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+
+@media (max-width: 768px) {
+  /* Hide the huge banner on standard mobile view for best UX */
+  .signup-banner {
+    display: none;
+  }
+  .signup-form-side {
+    padding: 100px 30px 40px;
+    min-height: 100vh;
+    width: 100%;
   }
 }
 
 @media (max-width: 600px) {
   .signup-form-side {
-    padding: 30px 20px;
+    padding: 90px 20px 30px;
   }
   .form-header h2 {
     font-size: 22px;
@@ -421,5 +442,6 @@
     height: 40px;
     padding: 0;
     justify-content: center;
+    border-radius: 50%;
   }
 }

@@ -65,19 +65,58 @@ const ProgressPage = () => {
 
       setRequest(requestData);
       
-      // Load progress and milestones from localStorage
-      const progressKey = `progress_${id}`;
-      const milestonesKey = `milestones_${id}`;
-      
-      const savedProgress = localStorage.getItem(progressKey);
-      const savedMilestones = localStorage.getItem(milestonesKey);
-      
-      if (savedProgress) {
-        setProgress(parseInt(savedProgress));
-      }
-      
-      if (savedMilestones) {
-        setMilestones(JSON.parse(savedMilestones));
+      // Fetch progress from API
+      try {
+        const progressResponse = await api.progress.getByContractId(id);
+        if (progressResponse.success && progressResponse.data.length > 0) {
+          // Get latest progress
+          const latestProgress = progressResponse.data[0];
+          setProgress(latestProgress.phanTram || 0);
+          
+          // Map progress items to milestones
+          const mappedMilestones = progressResponse.data.map(item => ({
+            id: item.tienDoId,
+            title: item.tieuDe,
+            description: item.moTa,
+            date: new Date(item.ngayTao).toLocaleDateString('vi-VN'),
+            status: item.trangThaiXacNhan === 'DaXacNhan' ? 'done' : 'current',
+            createdBy: 'Freelancer',
+            percentage: item.phanTram,
+            attachment: item.tepDinhKem
+          }));
+          setMilestones(mappedMilestones);
+        } else {
+          // Fallback to localStorage if API fails
+          const progressKey = `progress_${id}`;
+          const milestonesKey = `milestones_${id}`;
+          
+          const savedProgress = localStorage.getItem(progressKey);
+          const savedMilestones = localStorage.getItem(milestonesKey);
+          
+          if (savedProgress) {
+            setProgress(parseInt(savedProgress));
+          }
+          
+          if (savedMilestones) {
+            setMilestones(JSON.parse(savedMilestones));
+          }
+        }
+      } catch (apiError) {
+        console.error('API error, using localStorage:', apiError);
+        // Fallback to localStorage
+        const progressKey = `progress_${id}`;
+        const milestonesKey = `milestones_${id}`;
+        
+        const savedProgress = localStorage.getItem(progressKey);
+        const savedMilestones = localStorage.getItem(milestonesKey);
+        
+        if (savedProgress) {
+          setProgress(parseInt(savedProgress));
+        }
+        
+        if (savedMilestones) {
+          setMilestones(JSON.parse(savedMilestones));
+        }
       }
       
     } catch (error) {
@@ -89,13 +128,27 @@ const ProgressPage = () => {
     }
   };
 
-  const handleUpdateProgress = (e) => {
+  const handleUpdateProgress = async (e) => {
     const newProgress = parseInt(e.target.value);
     setProgress(newProgress);
+    
+    // Save to localStorage as backup
     localStorage.setItem(`progress_${id}`, newProgress.toString());
+    
+    // Update via API
+    try {
+      await api.progress.updateProgress(id, {
+        phanTram: newProgress,
+        freelancerId: currentUser?.id,
+        congViecId: id
+      });
+    } catch (error) {
+      console.error('Error updating progress:', error);
+      // Continue even if API fails - localStorage backup exists
+    }
   };
 
-  const handleAddMilestone = () => {
+  const handleAddMilestone = async () => {
     if (!newMilestone.title.trim()) {
       alert('Vui lòng nhập tiêu đề!');
       return;
@@ -112,7 +165,24 @@ const ProgressPage = () => {
 
     const updatedMilestones = [milestone, ...milestones];
     setMilestones(updatedMilestones);
+    
+    // Save to localStorage as backup
     localStorage.setItem(`milestones_${id}`, JSON.stringify(updatedMilestones));
+    
+    // Create via API
+    try {
+      await api.progress.create({
+        congViecId: id,
+        freelancerId: currentUser?.id,
+        tieuDe: newMilestone.title,
+        moTa: newMilestone.description,
+        phanTram: progress,
+        tepDinhKem: null
+      });
+    } catch (error) {
+      console.error('Error creating milestone:', error);
+      // Continue even if API fails - localStorage backup exists
+    }
     
     setNewMilestone({ title: '', description: '' });
     setShowAddMilestone(false);

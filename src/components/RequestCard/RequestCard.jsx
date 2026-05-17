@@ -1,19 +1,26 @@
 import './RequestCard.css';
 
 const RequestCard = ({ request, onClick }) => {
-  const handleSaveClick = (e) => {
-    e.stopPropagation();
-    // TODO: Implement save functionality
-    console.log('Save request:', request.id);
+  // Get status badge style
+  const getStatusBadge = () => {
+    const statusMap = {
+      'DangMo': { text: 'Đang nhận hồ sơ', class: 'status-open' },
+      'MoDau': { text: 'Đang nhận hồ sơ', class: 'status-open' },
+      'DaDong': { text: 'Đã đóng', class: 'status-closed' },
+      'DaHuy': { text: 'Đã hủy', class: 'status-cancelled' },
+    };
+    return statusMap[request.status] || { text: request.statusText || 'Không xác định', class: 'status-default' };
   };
+
+  const statusBadge = getStatusBadge();
 
   return (
     <div className="r-job-card" onClick={() => onClick(request.id)}>
       <div className="r-job-header">
         <h3 className="r-job-title">{request.title}</h3>
-        <button className="r-save-btn" onClick={handleSaveClick}>
-          <i className="fa-regular fa-heart"></i>
-        </button>
+        <span className={`r-status-badge ${statusBadge.class}`}>
+          {statusBadge.text}
+        </span>
       </div>
 
       <div className="r-job-meta">
@@ -32,13 +39,15 @@ const RequestCard = ({ request, onClick }) => {
 
       <p className="r-job-desc">{request.description}</p>
 
-      <div className="r-job-skills">
-        {request.skills.map((skill, index) => (
-          <span key={index} className="r-skill-tag">
-            {skill}
-          </span>
-        ))}
-      </div>
+      {request.skills && request.skills.length > 0 && (
+        <div className="r-job-skills">
+          {request.skills.map((skill, index) => (
+            <span key={index} className="r-skill-tag">
+              {skill}
+            </span>
+          ))}
+        </div>
+      )}
 
       <div className="r-job-footer">
         <div className="r-job-info">
@@ -46,7 +55,7 @@ const RequestCard = ({ request, onClick }) => {
             <i className="fa-solid fa-money-bill-wave"></i> {request.budget}
           </span>
           <span className="r-deadline">
-            <i className="fa-solid fa-calendar-days"></i> {request.deadline}
+            <i className="fa-solid fa-calendar-check"></i> Hạn nộp: {request.submissionDeadlineText || request.deadlineText || 'Chưa xác định'}
           </span>
         </div>
         <div className="r-bids">
