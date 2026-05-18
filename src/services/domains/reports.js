@@ -36,6 +36,19 @@ const reportsAPI = {
       return apiResponse([], false, error.message || "API Error");
     }
   },
+
+  create: async (data) => {
+    try {
+      const payload = await http.post("/reports", {
+        nguoiBaoCaoId: data.reporterId ?? data.nguoiBaoCaoId,
+        doiTuongId: data.reportedId ?? data.doiTuongId,
+        noiDung: data.reason ?? data.noiDung,
+      });
+      return apiResponse(unwrapData(payload), true, "Gửi báo cáo vi phạm thành công");
+    } catch (error) {
+      return apiResponse(null, false, error.message || "API Error");
+    }
+  },
 };
 
 export default reportsAPI;

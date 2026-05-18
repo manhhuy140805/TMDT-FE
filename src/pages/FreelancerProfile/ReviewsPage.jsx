@@ -1,10 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import api from '../../services/api';
 import './ReviewsPage.css';
 
 const ReviewsPage = () => {
+  const { id } = useParams();
   const [activeNav, setActiveNav] = useState('rating');
   const [replyingToId, setReplyingToId] = useState(null);
   const [replyText, setReplyText] = useState('');
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const distribution = [
     { label: '5 sao', count: 36, percentage: 85 },
@@ -47,17 +52,59 @@ const ReviewsPage = () => {
     }
   ];
 
-  const [reviews, setReviews] = useState(initialReviews);
+  useEffect(() => {
+    const fetchReviews = async () => {
+      setLoading(true);
+      try {
+        const storedUser = localStorage.getItem('user');
+        const currentUser = storedUser ? JSON.parse(storedUser) : null;
+        const userId = id || currentUser?.taiKhoanId || currentUser?.id || 1;
+        
+        const response = await api.reviews.getAll({ userId });
+        if (response.success && response.data && response.data.length > 0) {
+          const parsed = response.data.map((r, index) => ({
+            id: r.id || index + 10,
+            client: r.reviewerName || 'Khách hàng',
+            avatar: 'https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp',
+            project: r.contract?.title || 'Dự án Freelancer',
+            rating: r.score || r.diem || 5,
+            date: r.createdAt ? new Date(r.createdAt).toLocaleDateString('vi-VN') : 'Mới đây',
+            text: r.content || r.noiDung || 'Đánh giá chất lượng dịch vụ tốt.',
+            reply: r.reply || null
+          }));
+          setReviews([...parsed, ...initialReviews]);
+        } else {
+          setReviews(initialReviews);
+        }
+      } catch (error) {
+        console.error('Error fetching reviews:', error);
+        setReviews(initialReviews);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchReviews();
+  }, []);
 
-  const handleReplySubmit = (id) => {
+  const handleReplySubmit = async (id) => {
     if (!replyText.trim()) return;
     
+    // Perform local state update for quick interaction
     setReviews(prev => prev.map(r => 
       r.id === id ? { ...r, reply: replyText } : r
     ));
     setReplyingToId(null);
     setReplyText('');
   };
+
+  if (loading) {
+    return (
+      <div className="loading-state py-5 text-center" style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '15px' }}>
+        <i className="fa-solid fa-circle-notch fa-spin" style={{ fontSize: '40px', color: 'var(--teal)' }}></i>
+        <p style={{ color: '#64748b', fontSize: '15px', fontWeight: '500' }}>Đang tải đánh giá...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="freelancer-reviews-container">

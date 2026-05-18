@@ -88,17 +88,28 @@ const Header = () => {
           {/* Wrapper for Navigation and Actions */}
           <div className={`header-menu-wrapper ${mobileMenuOpen ? 'mobile-open' : ''}`}>
             <nav className="header-nav">
-              <Link to="#" onClick={handleLinkClick}>
-                Tìm nhân tài <i className="fa-solid fa-chevron-down nav-icon"></i>
-              </Link>
-              <Link to="/requests" onClick={handleLinkClick}>
-                Tìm việc làm <i className="fa-solid fa-chevron-down nav-icon"></i>
-              </Link>
-              <Link to="#" onClick={handleLinkClick}>
-                Tại sao chọn Upwork
-                <i className="fa-solid fa-chevron-down nav-icon"></i>
-              </Link>
-              <Link to="#" onClick={handleLinkClick}>Giải pháp doanh nghiệp</Link>
+              {user && (user.role === 'FREELANCER' || user.vaiTro === 'FREELANCER') ? (
+                <>
+                  <Link to="/requests" onClick={handleLinkClick}>Tìm việc làm</Link>
+                  <Link to="/progress" onClick={handleLinkClick}>Dự án của tôi</Link>
+                  <Link to="/profile" onClick={handleLinkClick}>Hồ sơ</Link>
+                  <Link to="/workspace/messages" onClick={handleLinkClick}>Tin nhắn</Link>
+                </>
+              ) : (
+                <>
+                  <Link to="#" onClick={handleLinkClick}>
+                    Tìm nhân tài <i className="fa-solid fa-chevron-down nav-icon"></i>
+                  </Link>
+                  <Link to="/requests" onClick={handleLinkClick}>
+                    Tìm việc làm <i className="fa-solid fa-chevron-down nav-icon"></i>
+                  </Link>
+                  <Link to="#" onClick={handleLinkClick}>
+                    Tại sao chọn Upwork
+                    <i className="fa-solid fa-chevron-down nav-icon"></i>
+                  </Link>
+                  <Link to="#" onClick={handleLinkClick}>Giải pháp doanh nghiệp</Link>
+                </>
+              )}
             </nav>
             
             <div className="header-actions">
@@ -115,7 +126,7 @@ const Header = () => {
                   onMouseEnter={handleMouseEnter}
                   onMouseLeave={handleMouseLeave}
                 >
-                  <button className="user-menu-btn" style={{ padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}>
+                  <button className="user-menu-btn" style={{ padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <img 
                       src={user.avatar || 'https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp'} 
                       alt={user.name || user.hoTen}
@@ -125,6 +136,9 @@ const Header = () => {
                         e.target.src = 'https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp';
                       }}
                     />
+                    {(user.role === 'FREELANCER' || user.vaiTro === 'FREELANCER') && (
+                      <span className="header-username-text" style={{ fontSize: '14px', fontWeight: '500', color: '#1e293b' }}>Freelancer</span>
+                    )}
                   </button>
                   
                   {showDropdown && (
@@ -149,6 +163,11 @@ const Header = () => {
                       <Link to="/profile" className="dropdown-item" onClick={handleLinkClick}>
                         <i className="fa-solid fa-user"></i>
                         Hồ sơ của tôi
+                      </Link>
+                      
+                      <Link to="/progress" className="dropdown-item" onClick={() => { setShowDropdown(false); handleLinkClick(); }}>
+                        <i className="fa-solid fa-chart-line"></i>
+                        Tiến độ công việc
                       </Link>
                       
                       {/* Hiển thị "Yêu cầu của tôi" cho NGUOI_THUE */}

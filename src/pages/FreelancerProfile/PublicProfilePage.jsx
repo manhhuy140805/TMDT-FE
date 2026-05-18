@@ -44,7 +44,7 @@ const PublicProfilePage = () => {
             </button>
             <button 
               className="btn-report-profile" 
-              onClick={() => navigate('/client/report')}
+              onClick={() => navigate('/report/freelancer')}
             >
               <i className="fa-solid fa-flag"></i> Báo cáo
             </button>
