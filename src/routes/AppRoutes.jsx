@@ -105,7 +105,7 @@ function AppRoutes() {
           {/* Public Profile routes */}
           <Route path="view-freelancer" element={<PublicProfilePage />} />
           <Route path="view-client" element={<PublicClientProfilePage />} />
-          <Route path="freelancer/reviews" element={<ReviewsPage />} />
+          <Route path="reviews/freelancer" element={<ReviewsPage />} />
           <Route path="freelancer/:id" element={<PublicProfilePage />} />
           <Route path="freelancer/:id/reviews" element={<ReviewsPage />} />
           <Route path="client/:id" element={<PublicClientProfilePage />} />
