@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { registerUser } from "../../services/authService";
+import authService from "../../services/authService";
 import "./Auth.css";
 
 const SignupPage = () => {
@@ -48,11 +48,11 @@ const SignupPage = () => {
     try {
       const role =
         formData.accountType === "client" ? "NguoiThue" : "Freelancer";
-      await registerUser({
-        fullName: formData.fullname,
+      await authService.register({
+        hoTen: formData.fullname,
         email: formData.email,
-        password: formData.password,
-        role,
+        matKhau: formData.password,
+        vaiTro: role,
       });
 
       navigate("/login");

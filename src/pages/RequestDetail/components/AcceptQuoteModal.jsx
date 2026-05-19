@@ -1,99 +1,89 @@
-import React from "react";
-import "./AcceptQuoteModal.css";
+const DEFAULT_AVATAR = (name = 'F') =>
+  `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0EA5E9&color=fff&size=56`;
 
-const AcceptQuoteModal = ({ show, selectedQuote, onClose, onConfirm }) => {
+const AcceptQuoteModal = ({ show, selectedQuote, onClose, onConfirm, accepting = false }) => {
   if (!show || !selectedQuote) return null;
 
+  const { freelancer, minPrice, maxPrice, amount, duration } = selectedQuote;
+  const avatarSrc = freelancer.avatar || DEFAULT_AVATAR(freelancer.name);
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div
-        className="modal-content accept-quote-modal"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-header">
+    <div className="rd-modal-overlay" onClick={onClose}>
+      <div className="rd-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="rd-modal-header">
           <h3>
-            <i
-              className="fa-solid fa-check-circle"
-              style={{ color: "#16A34A", marginRight: "12px" }}
-            ></i>
+            <i className="fa-solid fa-circle-check" style={{ color: '#16A34A' }}></i>
             Xác nhận chấp nhận báo giá
           </h3>
-          <button className="modal-close" onClick={onClose}>
-            <i className="fa-solid fa-times"></i>
+          <button className="rd-modal-close" onClick={onClose} disabled={accepting}>
+            <i className="fa-solid fa-xmark"></i>
           </button>
         </div>
 
-        <div className="modal-body">
-          {/* Freelancer Info */}
-          <div className="accept-quote-info">
-            <div className="freelancer-card">
-              <img
-                src={
-                  selectedQuote.freelancer.avatar ||
-                  "https://png.pngtree.com/png-vector/20191101/ourmid/pngtree-cartoon-color-simple-male-avatar-png-image_1934459.jpg"
-                }
-                alt={selectedQuote.freelancer.name}
-                className="freelancer-avatar"
-              />
-              <div className="freelancer-details">
-                <h4 className="freelancer-name">
-                  {selectedQuote.freelancer.name}
-                </h4>
-                <div className="freelancer-rating">
-                  <i className="fa-solid fa-star"></i>
-                  <span>{selectedQuote.freelancer.rating || 0} / 5.0</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="quote-details-grid">
-              <div className="detail-item">
-                <div className="detail-label">Giá đề xuất</div>
-                <div className="detail-value">
-                  {selectedQuote.amount.toLocaleString("vi-VN")} VNĐ
-                </div>
-              </div>
-              <div className="detail-item">
-                <div className="detail-label">Thời gian</div>
-                <div className="detail-value">{selectedQuote.duration}</div>
+        <div className="rd-modal-body">
+          {/* Freelancer info */}
+          <div className="rd-aq-freelancer">
+            <img
+              src={avatarSrc}
+              alt={freelancer.name}
+              className="rd-aq-avatar"
+              onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_AVATAR(freelancer.name); }}
+            />
+            <div>
+              <div className="rd-aq-name">{freelancer.name}</div>
+              <div className="rd-aq-rating">
+                <i className="fa-solid fa-star"></i>
+                {(freelancer.rating || 0).toFixed(1)} / 5.0
               </div>
             </div>
           </div>
 
-          {/* Confirmation Text */}
-          <p className="confirmation-text">
-            Bạn có chắc chắn muốn chấp nhận báo giá này không? Sau khi chấp
-            nhận:
-          </p>
+          {/* Price grid */}
+          <div className="rd-aq-price-grid">
+            <div className="rd-aq-price-item">
+              <div className="rd-aq-price-label">Giá tối thiểu</div>
+              <div className="rd-aq-price-value">
+                {Number(minPrice ?? amount).toLocaleString('vi-VN')} đ
+              </div>
+            </div>
+            <div className="rd-aq-price-item">
+              <div className="rd-aq-price-label">Giá tối đa</div>
+              <div className="rd-aq-price-value">
+                {Number(maxPrice ?? amount).toLocaleString('vi-VN')} đ
+              </div>
+            </div>
+            <div className="rd-aq-price-item">
+              <div className="rd-aq-price-label">Thời gian</div>
+              <div className="rd-aq-price-value">{duration}</div>
+            </div>
+          </div>
 
-          <ul className="confirmation-list">
+          <p className="rd-confirm-text">
+            Bạn có chắc chắn muốn chấp nhận báo giá này? Sau khi xác nhận:
+          </p>
+          <ul className="rd-confirm-list">
             <li>Freelancer sẽ được thông báo và bắt đầu làm việc</li>
             <li>Các báo giá khác sẽ bị từ chối tự động</li>
-            <li>Trạng thái yêu cầu sẽ chuyển sang "Đã chọn báo giá"</li>
+            <li>Trạng thái yêu cầu chuyển sang "Đã chọn báo giá"</li>
             <li>Bạn có thể theo dõi tiến độ công việc</li>
           </ul>
 
-          {/* Warning Box */}
-          <div className="warning-box">
-            <p className="warning-text">
-              <i
-                className="fa-solid fa-info-circle"
-                style={{ marginRight: "8px" }}
-              ></i>
-              <b>Lưu ý:</b> Hãy đảm bảo bạn đã trao đổi kỹ với freelancer trước
-              khi chấp nhận.
+          <div className="rd-warning-box">
+            <p>
+              <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: '6px', color: '#D97706' }}></i>
+              <strong>Lưu ý:</strong> Hãy đảm bảo bạn đã trao đổi kỹ với freelancer trước khi chấp nhận.
             </p>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="modal-footer">
-          <button className="btn-secondary" onClick={onClose}>
+        <div className="rd-modal-footer">
+          <button className="rd-mf-btn cancel" onClick={onClose} disabled={accepting}>
             Hủy bỏ
           </button>
-          <button className="btn-accept" onClick={onConfirm}>
-            <i className="fa-solid fa-check"></i>
-            Xác nhận chấp nhận
+          <button className="rd-mf-btn accept" onClick={onConfirm} disabled={accepting}>
+            {accepting
+              ? <><i className="fa-solid fa-circle-notch fa-spin"></i> Đang xử lý...</>
+              : <><i className="fa-solid fa-check"></i> Xác nhận chấp nhận</>}
           </button>
         </div>
       </div>

@@ -3,3 +3,31 @@
 
 /* Import common layout styles */
 @import './components/layout/Layout.css';
+
+
+/* ============ App Shell (Layout root) ============ */
+.app-default {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.app-default-main {
+  flex: 1 0 auto;
+}
+
+/* App-shell: chỉ dùng cho /workspace.
+   Khoá toàn bộ chiều cao viewport, vô hiệu scroll cấp document,
+   để header + banner luôn hiển thị. Chỉ vùng .wl-content cuộn. */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+.app-shell-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}

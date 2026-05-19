@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { loginUser } from "../../services/authService";
+import authService from "../../services/authService";
 import "./Auth.css";
 
 const LoginPage = () => {
@@ -29,13 +29,14 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      const user = await loginUser({
+      const res = await authService.login({
         email: formData.email,
-        password: formData.password,
+        matKhau: formData.password,
       });
 
-      // Lưu thông tin user vào localStorage
-      localStorage.setItem("user", JSON.stringify(user));
+      // API trả về { message, user } — chỉ lưu phần user
+      const userData = res?.user ?? res;
+      localStorage.setItem("user", JSON.stringify(userData));
 
       // Nếu chọn "Nhớ đăng nhập", lưu thêm flag
       if (formData.remember) {

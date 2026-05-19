@@ -1,96 +1,108 @@
-const QuoteItem = ({ quote, isOwner, onAccept, hasAcceptedQuote }) => {
-  const defaultAvatar = 'https://png.pngtree.com/png-vector/20191101/ourmid/pngtree-cartoon-color-simple-male-avatar-png-image_1934459.jpg';
-  
-  const isAccepted = quote.status === 'DA_CHAP_NHAN';
-  
+// Dùng UI Avatars làm fallback — không phụ thuộc external image host
+const getAvatarFallback = (name = 'F') =>
+  `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0EA5E9&color=fff&size=56`;
+
+const QuoteItem = ({ quote, isOwner, onAccept, onChat, hasAcceptedQuote }) => {
+  const isAccepted = quote.status === 'DuocChon' || quote.status === 'DA_CHAP_NHAN';
+  const rating = Number(quote.freelancer?.rating ?? 0);
+  const name = quote.freelancer?.name || 'Freelancer';
+
+  const avatarSrc = quote.freelancer?.avatar || getAvatarFallback(name);
+
   return (
-    <div className={`bid-item ${isAccepted ? 'accepted' : ''}`}>
-      {/* User Column */}
-      <div className="bid-user-col">
-        <img 
-          src={quote.freelancer.avatar || defaultAvatar} 
-          alt={quote.freelancer.name}
-          className="bid-avatar"
+    <div className={`rd-quote-item ${isAccepted ? 'accepted' : ''}`}>
+      {/* Avatar col */}
+      <div className="rd-quote-avatar-col">
+        <img
+          src={avatarSrc}
+          alt={name}
+          className="rd-quote-avatar"
           onError={(e) => {
-            e.target.src = defaultAvatar;
+            e.target.onerror = null;
+            e.target.src = getAvatarFallback(name);
           }}
         />
-        <div className="stars">
+        <div className="rd-quote-rating">
           <i className="fa-solid fa-star"></i>
-          <span>{quote.freelancer.rating || 0}</span>
+          <span>{rating.toFixed(1)}</span>
         </div>
       </div>
 
-      {/* Main Column */}
-      <div className="bid-main-col">
-        <div className="bid-header">
-          <div className="bid-name-wrap">
-            <a href="#" className="bid-name">
-              {quote.freelancer.name}
-              {quote.freelancer.verified && (
-                <i className="fa-solid fa-circle-check verified"></i>
-              )}
-            </a>
+      {/* Main col */}
+      <div className="rd-quote-main">
+        <div className="rd-quote-header">
+          <div className="rd-quote-name-row">
+            <a href="#" className="rd-quote-name">{name}</a>
+            {quote.freelancer?.verified && (
+              <i className="fa-solid fa-circle-check rd-quote-verified"></i>
+            )}
             {isAccepted && (
-              <span className="accepted-badge">
-                <i className="fa-solid fa-check-circle"></i>
-                Đã chấp nhận
+              <span className="rd-accepted-badge">
+                <i className="fa-solid fa-check"></i> Đã chấp nhận
               </span>
             )}
           </div>
           {isOwner && !hasAcceptedQuote && (
-            <button 
-              className="btn-success"
-              onClick={() => onAccept(quote)}
-            >
-              Chấp nhận
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button className="rd-btn-accept" onClick={() => onAccept(quote)}>
+                Chấp nhận
+              </button>
+              <button className="rd-btn-chat" onClick={() => onChat(quote)}
+                title="Nhắn tin với freelancer">
+                <i className="fa-regular fa-comment-dots"></i>
+              </button>
+            </div>
+          )}
+          {isOwner && hasAcceptedQuote && !isAccepted && (
+            <button className="rd-btn-chat" onClick={() => onChat(quote)}
+              title="Nhắn tin với freelancer">
+              <i className="fa-regular fa-comment-dots"></i>
+            </button>
+          )}
+          {isOwner && isAccepted && (
+            <button className="rd-btn-chat rd-btn-chat-active" onClick={() => onChat(quote)}>
+              <i className="fa-regular fa-comment-dots"></i> Nhắn tin
             </button>
           )}
         </div>
 
-        <p className="bid-desc">{quote.description}</p>
-        
-        {/* Skills */}
-        {quote.freelancer.skills && quote.freelancer.skills.length > 0 && (
-          <div className="freelancer-skills">
-            {quote.freelancer.skills.slice(0, 5).map((skill, idx) => (
-              <span key={idx} className="skill-badge">{skill}</span>
+        <p className="rd-quote-desc">{quote.description}</p>
+
+        {quote.freelancer?.skills?.length > 0 && (
+          <div className="rd-skill-chips">
+            {quote.freelancer.skills.slice(0, 5).map((s, i) => (
+              <span key={i} className="rd-skill-chip">{s}</span>
             ))}
             {quote.freelancer.skills.length > 5 && (
-              <span className="skill-badge more">+{quote.freelancer.skills.length - 5}</span>
+              <span className="rd-skill-chip more">
+                +{quote.freelancer.skills.length - 5}
+              </span>
             )}
           </div>
         )}
       </div>
 
-      {/* Stats Column - Chỉ hiển thị cho owner */}
+      {/* Stats col */}
       {isOwner ? (
-        <div className="bid-stats-col">
-          <div className="stat-row">
-            <span>Giá đề xuất:</span>
-            <span className="stat-value">{quote.amount.toLocaleString('vi-VN')} VNĐ</span>
+        <div className="rd-quote-stats">
+          <div className="rd-stat-row">
+            <span>Giá đề xuất</span>
+            <span>{Number(quote.amount ?? 0).toLocaleString('vi-VN')} đ</span>
           </div>
-          <div className="stat-row">
-            <span>Thời gian:</span>
-            <span className="stat-value">{quote.duration}</span>
+          <div className="rd-stat-row">
+            <span>Thời gian</span>
+            <span>{quote.duration}</span>
           </div>
-          <div className="stat-row">
-            <span>Gửi lúc:</span>
-            <span className="stat-value">{quote.submittedTime}</span>
+          <div className="rd-stat-row">
+            <span>Gửi lúc</span>
+            <span>{quote.submittedTime}</span>
           </div>
         </div>
       ) : (
-        <div className="bid-stats-col">
-          <div style={{
-            padding: '20px',
-            background: '#F8FAFC',
-            borderRadius: '8px',
-            textAlign: 'center',
-            color: '#64748B',
-            fontSize: '13px'
-          }}>
-            <i className="fa-solid fa-lock" style={{fontSize: '24px', marginBottom: '8px', display: 'block', color: '#94A3B8'}}></i>
-            <p style={{margin: 0}}>Thông tin giá và thời gian được bảo mật</p>
+        <div className="rd-quote-stats">
+          <div className="rd-stat-locked">
+            <i className="fa-solid fa-lock"></i>
+            Thông tin giá được bảo mật
           </div>
         </div>
       )}

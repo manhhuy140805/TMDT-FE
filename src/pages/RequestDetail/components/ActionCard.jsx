@@ -1,114 +1,89 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
 
-const ActionCard = ({
-  request,
-  onSubmitQuote,
-  isOwner,
-  canSubmitQuote = true,
-}) => {
+const fmt = (d) => {
+  if (!d) return 'N/A';
+  const date = new Date(d);
+  if (isNaN(date)) return d;
+  return date.toLocaleDateString('vi-VN');
+};
+
+const ActionCard = ({ request, onSubmitQuote, isOwner, canSubmitQuote = true }) => {
   const navigate = useNavigate();
+  const hasSelectedFreelancer = request.selectedQuoteId && request.selectedFreelancerId;
 
-  const formatDeadline = (deadline) => {
-    if (!deadline) return "N/A";
-    const date = new Date(deadline);
-    if (Number.isNaN(date.getTime())) return deadline;
-    return date.toLocaleDateString("vi-VN");
-  };
-
-  const getSubmissionDeadline = () => {
-    const submissionDate =
-      request?.submissionDeadlineDate ||
-      request?.deadlineDate ||
-      request?.deadline;
-    return formatDeadline(submissionDate);
-  };
-
-  const handleEditRequest = () => {
-    navigate(`/requests/${request.id}/edit`);
-  };
-
-  const handleManageRequest = () => {
-    navigate("/my-requests");
-  };
-
-  const handleViewProgress = () => {
-    navigate(`/requests/${request.id}/progress`);
-  };
-
-  // Kiểm tra xem yêu cầu đã chọn freelancer chưa
-  const hasSelectedFreelancer =
-    request.selectedQuoteId && request.selectedFreelancerId;
+  const budget = typeof request.budget === 'string'
+    ? request.budget
+    : `${Number(request.budget?.min ?? 0).toLocaleString('vi-VN')} – ${Number(request.budget?.max ?? 0).toLocaleString('vi-VN')} VNĐ`;
 
   return (
-    <div className="d-card">
-      <div className="d-budget-block">
-        <span className="d-budget-label">Ngân sách dự kiến</span>
-        <div className="d-budget-value">{request.budget}</div>
+    <div className="ac-card">
+      {/* Budget */}
+      <div className="ac-budget">
+        <span className="ac-budget-label">Ngân sách dự án</span>
+        <span className="ac-budget-val">{budget}</span>
       </div>
 
-      <div className="d-deadline-item">
-        <i className="fa-regular fa-clock"></i>
-        <div>
-          <span className="d-label">Hạn nhận hồ sơ tham gia</span>
-          <span className="d-value text-danger" style={{ color: "#DC2626" }}>
-            {getSubmissionDeadline()}
-          </span>
-        </div>
-      </div>
+      {/* Info */}
+      <ul className="ac-meta">
+        <li className="ac-meta-item">
+          <i className="fa-regular fa-calendar-xmark ac-meta-ico"></i>
+          <span className="ac-meta-label">Hạn nhận hồ sơ</span>
+          <span className="ac-meta-val red">{fmt(request.deadline)}</span>
+        </li>
+        <li className="ac-meta-item">
+          <i className="fa-regular fa-calendar-check ac-meta-ico"></i>
+          <span className="ac-meta-label">Thời hạn hoàn thành</span>
+          <span className="ac-meta-val">{fmt(request.deadline)}</span>
+        </li>
+        <li className="ac-meta-item">
+          <i className="fa-solid fa-user-group ac-meta-ico"></i>
+          <span className="ac-meta-label">Ứng viên quan tâm</span>
+          <span className="ac-meta-val">{request.bids} Freelancer</span>
+        </li>
+        {request.requiresSupervision && (
+          <li className="ac-meta-item">
+            <i className="fa-solid fa-shield-halved ac-meta-ico"></i>
+            <span className="ac-meta-label">Giám sát</span>
+            <span className="ac-meta-val">Có giám sát</span>
+          </li>
+        )}
+      </ul>
 
-      <div className="d-deadline-item">
-        <i className="fa-regular fa-calendar-check"></i>
-        <div>
-          <span className="d-label">Thời gian hoàn thành dự án</span>
-          <span className="d-value">
-            {request.deadlineText || formatDeadline(request.deadline)}
-          </span>
-        </div>
-      </div>
-
-      <div className="d-deadline-item" style={{ marginBottom: "24px" }}>
-        <i className="fa-solid fa-users"></i>
-        <div>
-          <span className="d-label">Lượng ứng viên quan tâm</span>
-          <span className="d-value">{request.bids} Freelancer</span>
-        </div>
-      </div>
-
-      {isOwner ? (
-        // Giao diện cho người đăng yêu cầu
-        <>
-          {hasSelectedFreelancer && (
-            <button
-              className="bg-btn-primary"
-              onClick={handleViewProgress}
-              style={{
-                background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
-                marginBottom: "12px",
-              }}
-            >
-              <i className="fa-solid fa-chart-line"></i> Theo dõi tiến độ
-            </button>
-          )}
-          <button className="bg-btn-primary" onClick={handleManageRequest}>
-            <i className="fa-solid fa-gear"></i> Quản lý yêu cầu
-          </button>
-          <button className="bg-btn-outline" onClick={handleEditRequest}>
-            <i className="fa-solid fa-pen"></i> Chỉnh sửa yêu cầu
-          </button>
-        </>
-      ) : (
-        canSubmitQuote && (
-          // Giao diện cho freelancer/người xem khác
+      {/* Actions */}
+      <div className="ac-actions">
+        {isOwner ? (
           <>
-            <button className="bg-btn-primary" onClick={onSubmitQuote}>
-              Nộp Hồ Sơ Báo Giá
+            {hasSelectedFreelancer && (
+              <button className="ac-btn-primary green"
+                onClick={() => navigate(`/requests/${request.id}/progress`)}>
+                <i className="fa-solid fa-chart-line"></i> Theo dõi tiến độ
+              </button>
+            )}
+            <button className="ac-btn-primary"
+              onClick={() => navigate('/my-requests')}>
+              <i className="fa-solid fa-gear"></i> Quản lý yêu cầu
             </button>
-            <button className="bg-btn-outline">
-              <i className="fa-regular fa-bookmark"></i> Lưu tâm dự án này
+            <button className="ac-btn-outline"
+              onClick={() => navigate(`/requests/${request.id}/edit`)}>
+              <i className="fa-solid fa-pen"></i> Chỉnh sửa
             </button>
           </>
-        )
-      )}
+        ) : canSubmitQuote ? (
+          <>
+            <button className="ac-btn-primary" onClick={onSubmitQuote}>
+              <i className="fa-solid fa-paper-plane"></i> Nộp Hồ Sơ Báo Giá
+            </button>
+            <button className="ac-btn-outline">
+              <i className="fa-regular fa-bookmark"></i> Lưu dự án
+            </button>
+          </>
+        ) : (
+          <div className="ac-closed">
+            <i className="fa-solid fa-lock"></i>
+            Dự án đã ngừng nhận hồ sơ
+          </div>
+        )}
+      </div>
     </div>
   );
 };

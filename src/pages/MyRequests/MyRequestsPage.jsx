@@ -1,9 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  deleteRequestById,
-  fetchEmployerRequests,
-} from "../../services/requestsService";
+import jobService from "../../services/jobService";
 import { getUserRole, isEmployerRole } from "../../utils/role";
 import "./MyRequestsPage.css";
 
@@ -19,8 +16,8 @@ const MyRequestsPage = () => {
   async function fetchMyRequests(userId) {
     setLoading(true);
     try {
-      const myRequests = await fetchEmployerRequests(userId);
-      setRequests(myRequests);
+      const response = await jobService.getByUserId(userId);
+      setRequests(response.data || []);
     } catch (error) {
       console.error("Error fetching requests:", error);
     } finally {
@@ -91,7 +88,7 @@ const MyRequestsPage = () => {
     if (!requestToDelete) return;
 
     try {
-      await deleteRequestById(requestToDelete);
+      await jobService.delete(requestToDelete);
       // Remove from local state
       setRequests((prev) => prev.filter((r) => r.id !== requestToDelete));
       alert("Xóa yêu cầu thành công!");

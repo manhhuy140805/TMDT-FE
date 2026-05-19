@@ -1,29 +1,18 @@
-import api from "./api";
+import { api } from "../utils/api";
 
-export const loginUser = async ({ email, password }) => {
-  const response = await api.auth.login({
-    email,
-    password,
-  });
+/**
+ * Auth Service
+ * POST /auth/register
+ * POST /auth/login
+ *
+ * Vai trò: KhachVangLai | NguoiThue | Freelancer | DonViGiamSat | Admin
+ */
+const authService = {
+  register: (data) => api.post("/auth/register", data),
+  // data: { tenDangNhap, matKhau, email, hoTen, soDienThoai?, gioiTinh?, diaChi?, vaiTro?, tenDonVi? }
 
-  if (!response.success) {
-    throw new Error(response.message || "Login failed");
-  }
-
-  return response.data.user;
+  login: (data) => api.post("/auth/login", data),
+  // data: { email, matKhau }  ← API mới dùng email thay vì tenDangNhap
 };
 
-export const registerUser = async ({ fullName, email, password, role }) => {
-  const response = await api.auth.register({
-    hoTen: fullName,
-    email,
-    matKhau: password,
-    vaiTro: role,
-  });
-
-  if (!response.success) {
-    throw new Error(response.message || "Register failed");
-  }
-
-  return response.data.user;
-};
+export default authService;

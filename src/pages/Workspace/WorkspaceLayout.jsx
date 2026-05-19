@@ -22,9 +22,15 @@ const WorkspaceLayout = () => {
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
-      const user = JSON.parse(storedUser);
-      setCurrentUser(user);
-      fetchWorkspaceData(user);
+      try {
+        const parsed = JSON.parse(storedUser);
+        // Handle cả data cũ dạng { message, user } lẫn data mới dạng user trực tiếp
+        const user = parsed?.user ?? parsed;
+        setCurrentUser(user);
+        fetchWorkspaceData(user);
+      } catch {
+        navigate("/login");
+      }
     } else {
       navigate("/login");
     }

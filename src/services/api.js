@@ -1,45 +1,49 @@
 /**
- * Real API Service (Main Export)
- * This file aggregates all domain APIs for convenient access
- *
- * Architecture: Domain-based API separation
- * Each domain is in: src/services/domains/[domain].js
- * Shared utilities in: src/services/domains/utils.js
+ * API Service - Main Export
+ * Base URL: http://localhost:8080
  */
 
-import authAPI from "./domains/auth";
-import categoriesAPI from "./domains/categories";
-import requestsAPI from "./domains/requests";
-import quotesAPI from "./domains/quotes";
-import freelancersAPI from "./domains/freelancers";
-import usersAPI from "./domains/users";
-import jobsAPI from "./domains/jobs";
-import messagesAPI from "./domains/messages";
-import notificationsAPI from "./domains/notifications";
-import paymentsAPI from "./domains/payments";
-import reviewsAPI from "./domains/reviews";
-import reportsAPI from "./domains/reports";
-import complaintsAPI from "./domains/complaints";
-import progressAPI from "./domains/progress";
-import statisticsAPI from "./domains/statistics";
+import authService from "./authService";
+import userService from "./userService";
+import categoryService from "./categoryService";
+import skillService from "./skillService";
+import jobService from "./jobService";
+import proposalService from "./proposalService";
+import freelancerService from "./freelancerService";
+import contractService from "./contractService";
+import supervisorService from "./supervisorService";
+import progressService from "./progressService";
+import chatService from "./chatService";
+import disputeService from "./disputeService";
+import evidenceService from "./evidenceService";
+import notificationService from "./notificationService";
+import paymentService from "./paymentService";
+import reviewService from "./reviewService";
+import reportService from "./reportService";
+import adminService from "./adminService";
 
-// ==================== AGGREGATED API ====================
 const api = {
-  auth: authAPI,
-  categories: categoriesAPI,
-  requests: requestsAPI,
-  quotes: quotesAPI,
-  freelancers: freelancersAPI,
-  users: usersAPI,
-  jobs: jobsAPI,
-  messages: messagesAPI,
-  notifications: notificationsAPI,
-  payments: paymentsAPI,
-  reviews: reviewsAPI,
-  reports: reportsAPI,
-  complaints: complaintsAPI,
-  progress: progressAPI,
-  statistics: statisticsAPI,
+  auth: authService,
+  users: userService,
+  categories: categoryService,
+  skills: skillService,
+  jobs: jobService,
+  requests: jobService,          // alias → jobService
+  proposals: proposalService,
+  quotes: proposalService,       // alias → proposalService
+  freelancers: freelancerService,
+  contracts: contractService,
+  supervisors: supervisorService,
+  progress: progressService,
+  chat: chatService,
+  messages: chatService,         // alias → chatService
+  disputes: disputeService,
+  evidences: evidenceService,
+  notifications: notificationService,
+  payments: paymentService,
+  reviews: reviewService,
+  reports: reportService,
+  admin: adminService,
 };
 
 export default api;

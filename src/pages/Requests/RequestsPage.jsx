@@ -50,21 +50,24 @@ const RequestsPage = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await api.categories.getAll();
-      if (response.success) {
-        const requestsResponse = await api.requests.getAll({
-          status: "DangMo",
-        });
-        const allRequests = requestsResponse.data.data || [];
+      const catResponse = await api.categories.getAll();
+      const jobsResponse = await api.jobs.getAll({ trangThai: "DangMo" });
 
-        const categoriesWithCount = response.data.map((cat) => ({
-          ...cat,
-          count: allRequests.filter((req) => req.categoryId === cat.id).length,
-        }));
+      // API trả về { categories: [...], total: N } và { jobs: [...], total: N }
+      const cats = catResponse.categories || catResponse.data || [];
+      const allJobs = jobsResponse.jobs || jobsResponse.data || [];
 
-        categoriesWithCount.sort((a, b) => b.count - a.count);
-        setCategories(categoriesWithCount);
-      }
+      const categoriesWithCount = cats.map((cat) => ({
+        ...cat,
+        id: cat.loaiDichVuId,
+        name: cat.tenLoai,
+        count: allJobs.filter(
+          (job) => job.loaiDichVuId === cat.loaiDichVuId
+        ).length,
+      }));
+
+      categoriesWithCount.sort((a, b) => b.count - a.count);
+      setCategories(categoriesWithCount);
     } catch (error) {
       console.error("Error fetching categories:", error);
     }
@@ -84,21 +87,94 @@ const RequestsPage = () => {
   const fetchRequests = async () => {
     setLoading(true);
     try {
-      const response = await api.requests.getAll({
-        search: searchTerm,
-        categories: filters.categories,
-        status: filters.status === "ALL" ? "DangMo" : filters.status,
-      });
+      const params = {};
 
-      if (response.success) {
-        setRequests(response.data.data || []);
+      if (searchTerm) {
+        params.keyword = searchTerm;
       }
+
+      if (filters.status !== "ALL") {
+        params.trangThai = filters.status;
+      } else {
+        params.trangThai = "DangMo";
+      }
+
+      const response = searchTerm
+        ? await api.jobs.search(params)
+        : await api.jobs.getAll(params);
+
+      // API trả về { jobs: [...], total: N }
+      let jobs = [];
+      if (Array.isArray(response)) {
+        jobs = response;
+      } else if (Array.isArray(response?.jobs)) {
+        jobs = response.jobs;
+      } else if (Array.isArray(response?.data)) {
+        jobs = response.data;
+      }
+
+      // Map từ API format sang format mà RequestCard đang dùng
+      const mapped = jobs.map((job) => mapJobToRequest(job));
+
+      // Lọc theo category ở client nếu có
+      const filtered =
+        filters.categories.length > 0
+          ? mapped.filter((req) =>
+              filters.categories.includes(req.categoryId)
+            )
+          : mapped;
+
+      setRequests(filtered);
     } catch (error) {
       console.error("Error fetching requests:", error);
       setRequests([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Map job từ API format sang format component đang dùng
+  const mapJobToRequest = (job) => {
+    const formatBudget = (min, max) => {
+      if (!min && !max) return "Thỏa thuận";
+      const fmt = (n) =>
+        new Intl.NumberFormat("vi-VN").format(n) + " VNĐ";
+      if (min && max) return `${fmt(min)} - ${fmt(max)}`;
+      if (min) return `Từ ${fmt(min)}`;
+      return `Đến ${fmt(max)}`;
+    };
+
+    const getPostedTime = (dateStr) => {
+      if (!dateStr) return "Vừa đăng";
+      const diff = Date.now() - new Date(dateStr).getTime();
+      const days = Math.floor(diff / 86400000);
+      if (days === 0) return "Hôm nay";
+      if (days === 1) return "1 ngày trước";
+      if (days < 30) return `${days} ngày trước`;
+      return new Date(dateStr).toLocaleDateString("vi-VN");
+    };
+
+    const formatDeadline = (dateStr) => {
+      if (!dateStr) return "Chưa xác định";
+      return new Date(dateStr).toLocaleDateString("vi-VN");
+    };
+
+    return {
+      id: job.yeuCauId,
+      title: job.tieuDe,
+      description: job.moTa,
+      status: job.trangThai,
+      category: job.loaiDichVu?.tenLoai || "Chưa phân loại",
+      categoryId: job.loaiDichVuId,
+      budget: formatBudget(job.nganSachMin, job.nganSachMax),
+      bids: job.soLuongBaoGia || 0,
+      postedTime: getPostedTime(job.ngayTao),
+      deadlineText: formatDeadline(job.thoiHan),
+      submissionDeadlineText: formatDeadline(job.thoiHan),
+      requiresSupervision: job.yeuCauGiamSat,
+      skills: [],
+      location: null,
+    };
   };
 
   const handleCategoryToggle = (categoryId) => {

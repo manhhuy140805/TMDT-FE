@@ -1,8 +1,12 @@
-/* Professional Dashboard Layout CSS */
+/* Professional Dashboard Layout CSS — App-shell mode
+   Toàn bộ workspace fill 100% chiều cao của <main>.
+   Chỉ vùng .wl-content được phép cuộn. */
 .wl-container {
   background-color: #F8FAFC;
-  min-height: calc(100vh - 76px);
-  padding-bottom: 60px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   font-family: 'Inter', Arial, sans-serif;
 }
 
@@ -10,16 +14,14 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 24px;
+  width: 100%;
 }
 
 .wl-header-strip {
   background: #0F172A;
   color: white;
   padding: 16px 0;
-  margin-bottom: 32px;
-  position: sticky;
-  top: 96px; /* Approx height of global header */
-  z-index: 90;
+  flex-shrink: 0;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
@@ -50,13 +52,18 @@
   display: grid;
   grid-template-columns: 240px 1fr;
   gap: 32px;
-  align-items: start;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding-top: 24px;
+  padding-bottom: 24px;
 }
 
-/* Sidebar */
+/* Sidebar — ghim cứng, không cuộn cùng content */
 .wl-sidebar {
-  position: sticky;
-  top: 190px; /* 96px global header + ~60px header strip + margin */
+  height: 100%;
+  overflow-y: auto;
 }
 
 .wl-nav {
@@ -167,12 +174,22 @@
   background: #0284C7;
 }
 
+/* Vùng content — phần duy nhất được phép cuộn */
+.wl-content {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+
 @media (max-width: 992px) {
   .wl-main-grid {
     grid-template-columns: 1fr;
+    overflow-y: auto;
   }
   .wl-sidebar {
-    position: static;
+    height: auto;
+    overflow: visible;
   }
   .wl-nav {
     flex-direction: row;
@@ -181,5 +198,9 @@
   }
   .wl-nav-item {
     white-space: nowrap;
+  }
+  .wl-content {
+    height: auto;
+    overflow: visible;
   }
 }

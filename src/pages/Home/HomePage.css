@@ -352,6 +352,53 @@ a {
   color: #B91C1C;
 }
 
+/* === Workspace Section === */
+.dropdown-workspace-toggle {
+  justify-content: flex-start;
+}
+
+.dropdown-chevron {
+  margin-left: auto;
+  font-size: 12px !important;
+  width: auto !important;
+  color: #94A3B8 !important;
+  transition: transform 0.2s ease;
+}
+
+.dropdown-workspace-list {
+  background: #F8FAFC;
+  border-radius: 8px;
+  margin: 2px 4px 4px;
+  overflow: hidden;
+  border: 1px solid #E2E8F0;
+}
+
+.dropdown-workspace-item {
+  padding: 9px 16px 9px 20px !important;
+  font-size: 13px !important;
+  color: #475569 !important;
+  border-radius: 0 !important;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.dropdown-workspace-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-workspace-item:hover {
+  background: #EFF6FF !important;
+  color: #1D4ED8 !important;
+}
+
+.dropdown-workspace-item i {
+  color: #64748B !important;
+  font-size: 14px !important;
+}
+
+.dropdown-workspace-item:hover i {
+  color: #1D4ED8 !important;
+}
+
 /* === Hero Section === */
 .hero-section {
   position: relative;
