@@ -15,7 +15,7 @@
     "id": 2,
     "username": "nguyenvana",
     "email": "manhhuy2@gmail.com",
-    "name": "Nguyễn Văn A",
+    "name": "Nguyễn Văn An",
     "phone": "0912345678",
     "avatar": null,
     "role": "NGUOI_THUE",
@@ -50,7 +50,14 @@
       "identity": true
     },
     "bio": "Full-stack Developer với 5 năm kinh nghiệm. Chuyên về React, Node.js, và MongoDB.",
-    "skills": ["React.js", "Node.js", "MongoDB", "TypeScript", "Next.js", "Express.js"],
+    "skills": [
+      "React.js",
+      "Node.js",
+      "MongoDB",
+      "TypeScript",
+      "Next.js",
+      "Express.js"
+    ],
     "hourlyRate": 500000,
     "rating": 4.8,
     "completedProjects": 45,

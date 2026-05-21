@@ -16,7 +16,13 @@
     "statusText": "Đang nhận hồ sơ",
     "views": 145,
     "bids": 12,
-    "skills": ["React.js", "TypeScript", "Redux Toolkit", "Tailwind CSS", "Node.js"],
+    "skills": [
+      "React.js",
+      "TypeScript",
+      "Redux Toolkit",
+      "Tailwind CSS",
+      "Node.js"
+    ],
     "postedTime": "2 giờ trước",
     "postedDate": "2026-04-26T10:00:00Z",
     "attachments": [
@@ -35,8 +41,9 @@
     ],
     "employer": {
       "id": 2,
-      "name": "Nguyễn Văn A",
-      "avatar": "/images/avatars/user1.jpg",
+      "name": "Nguyễn Văn An",
+      "email": "manhhuy2@gmail.com",
+      "avatar": "https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp",
       "verified": true
     }
   },
@@ -113,7 +120,12 @@
     "statusText": "Đang nhận hồ sơ",
     "views": 123,
     "bids": 10,
-    "skills": ["Facebook Ads", "Digital Marketing", "Google Analytics", "ROAS Optimization"],
+    "skills": [
+      "Facebook Ads",
+      "Digital Marketing",
+      "Google Analytics",
+      "ROAS Optimization"
+    ],
     "postedTime": "8 giờ trước",
     "postedDate": "2026-04-26T04:00:00Z",
     "employer": {
@@ -138,7 +150,13 @@
     "statusText": "Đang nhận hồ sơ",
     "views": 201,
     "bids": 18,
-    "skills": ["React Native", "Flutter", "Mobile Development", "Firebase", "Payment Integration"],
+    "skills": [
+      "React Native",
+      "Flutter",
+      "Mobile Development",
+      "Firebase",
+      "Payment Integration"
+    ],
     "postedTime": "12 giờ trước",
     "postedDate": "2026-04-26T00:00:00Z",
     "attachments": [
@@ -183,7 +201,13 @@
     "statusText": "Đang nhận hồ sơ",
     "views": 78,
     "bids": 9,
-    "skills": ["Video Editing", "Motion Graphics", "After Effects", "Premiere Pro", "Color Grading"],
+    "skills": [
+      "Video Editing",
+      "Motion Graphics",
+      "After Effects",
+      "Premiere Pro",
+      "Color Grading"
+    ],
     "postedTime": "15 giờ trước",
     "postedDate": "2026-04-25T21:00:00Z",
     "employer": {
@@ -208,7 +232,13 @@
     "statusText": "Đang nhận hồ sơ",
     "views": 156,
     "bids": 14,
-    "skills": ["UI/UX Design", "Figma", "Wireframing", "Prototyping", "Mobile Design"],
+    "skills": [
+      "UI/UX Design",
+      "Figma",
+      "Wireframing",
+      "Prototyping",
+      "Mobile Design"
+    ],
     "postedTime": "2 ngày trước",
     "postedDate": "2026-04-24T12:00:00Z",
     "employer": {
@@ -233,7 +263,13 @@
     "statusText": "Đang nhận hồ sơ",
     "views": 189,
     "bids": 11,
-    "skills": ["SEO", "Keyword Research", "Link Building", "Google Analytics", "SEMrush"],
+    "skills": [
+      "SEO",
+      "Keyword Research",
+      "Link Building",
+      "Google Analytics",
+      "SEMrush"
+    ],
     "postedTime": "3 ngày trước",
     "postedDate": "2026-04-23T12:00:00Z",
     "employer": {
@@ -258,7 +294,13 @@
     "statusText": "Đang nhận hồ sơ",
     "views": 92,
     "bids": 13,
-    "skills": ["Translation", "English", "Vietnamese", "E-commerce", "Proofreading"],
+    "skills": [
+      "Translation",
+      "English",
+      "Vietnamese",
+      "E-commerce",
+      "Proofreading"
+    ],
     "postedTime": "4 ngày trước",
     "postedDate": "2026-04-22T12:00:00Z",
     "employer": {
@@ -283,7 +325,13 @@
     "statusText": "Đang nhận hồ sơ",
     "views": 134,
     "bids": 7,
-    "skills": ["Machine Learning", "Python", "TensorFlow", "scikit-learn", "Data Science"],
+    "skills": [
+      "Machine Learning",
+      "Python",
+      "TensorFlow",
+      "scikit-learn",
+      "Data Science"
+    ],
     "postedTime": "5 ngày trước",
     "postedDate": "2026-04-21T12:00:00Z",
     "employer": {
@@ -333,7 +381,12 @@
     "statusText": "Đã chọn báo giá",
     "views": 167,
     "bids": 12,
-    "skills": ["Photoshop", "Product Photography", "Image Editing", "Mockup Design"],
+    "skills": [
+      "Photoshop",
+      "Product Photography",
+      "Image Editing",
+      "Mockup Design"
+    ],
     "postedTime": "8 ngày trước",
     "postedDate": "2026-04-18T12:00:00Z",
     "employer": {
@@ -358,7 +411,12 @@
     "statusText": "Đã chọn báo giá",
     "views": 145,
     "bids": 9,
-    "skills": ["Social Media Management", "Facebook Ads", "Content Creation", "Community Management"],
+    "skills": [
+      "Social Media Management",
+      "Facebook Ads",
+      "Content Creation",
+      "Community Management"
+    ],
     "postedTime": "7 ngày trước",
     "postedDate": "2026-04-19T12:00:00Z",
     "employer": {
@@ -408,7 +466,12 @@
     "statusText": "Đã đóng",
     "views": 112,
     "bids": 6,
-    "skills": ["Video Production", "Motion Graphics", "Voice Over", "Video Editing"],
+    "skills": [
+      "Video Production",
+      "Motion Graphics",
+      "Voice Over",
+      "Video Editing"
+    ],
     "postedTime": "45 ngày trước",
     "postedDate": "2026-03-12T12:00:00Z",
     "employer": {

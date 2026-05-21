@@ -1,9 +1,36 @@
 /**
- * Mock API Service
- * Mô phỏng các API calls với mock data
+ * API Service
+ * Gọi backend API từ localhost:8080
+ * Fallback về mock data nếu API fail
  */
 
-import mockData from '../mock';
+import mockData from "../mock";
+
+// API Configuration
+const API_BASE_URL = "http://localhost:8080";
+const API_TIMEOUT = 5000;
+
+// Helper function for API calls với timeout
+const fetchWithTimeout = async (url, options = {}, timeoutMs = API_TIMEOUT) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+};
 
 // Helper functions for localStorage
 const getFromLocalStorage = (key, defaultValue = {}) => {
@@ -11,7 +38,7 @@ const getFromLocalStorage = (key, defaultValue = {}) => {
     const item = localStorage.getItem(key);
     return item ? JSON.parse(item) : defaultValue;
   } catch (error) {
-    console.error('Error reading from localStorage:', error);
+    console.error("Error reading from localStorage:", error);
     return defaultValue;
   }
 };
@@ -20,47 +47,47 @@ const saveToLocalStorage = (key, value) => {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (error) {
-    console.error('Error saving to localStorage:', error);
+    console.error("Error saving to localStorage:", error);
   }
 };
 
 // In-memory storage for updated data (now backed by localStorage)
 const inMemoryStorage = {
   get requests() {
-    return getFromLocalStorage('mock_requests', {});
+    return getFromLocalStorage("mock_requests", {});
   },
   set requests(value) {
-    saveToLocalStorage('mock_requests', value);
+    saveToLocalStorage("mock_requests", value);
   },
   get quotes() {
-    return getFromLocalStorage('mock_quotes', {});
+    return getFromLocalStorage("mock_quotes", {});
   },
   set quotes(value) {
-    saveToLocalStorage('mock_quotes', value);
+    saveToLocalStorage("mock_quotes", value);
   },
   get jobs() {
-    return getFromLocalStorage('mock_jobs', {});
+    return getFromLocalStorage("mock_jobs", {});
   },
   set jobs(value) {
-    saveToLocalStorage('mock_jobs', value);
+    saveToLocalStorage("mock_jobs", value);
   },
   get nextQuoteId() {
-    return getFromLocalStorage('mock_nextQuoteId', 100);
+    return getFromLocalStorage("mock_nextQuoteId", 100);
   },
   set nextQuoteId(value) {
-    saveToLocalStorage('mock_nextQuoteId', value);
-  }
+    saveToLocalStorage("mock_nextQuoteId", value);
+  },
 };
 
 // Simulate API delay
-const delay = (ms = 500) => new Promise(resolve => setTimeout(resolve, ms));
+const delay = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // API Response wrapper
-const apiResponse = (data, success = true, message = '') => ({
+const apiResponse = (data, success = true, message = "") => ({
   success,
   data,
   message,
-  timestamp: new Date().toISOString()
+  timestamp: new Date().toISOString(),
 });
 
 // ==================== CATEGORIES API ====================
@@ -74,12 +101,12 @@ export const categoriesAPI = {
   // GET /api/categories/:id
   getById: async (id) => {
     await delay();
-    const category = mockData.categories.find(c => c.id === parseInt(id));
+    const category = mockData.categories.find((c) => c.id === parseInt(id));
     if (!category) {
-      return apiResponse(null, false, 'Category not found');
+      return apiResponse(null, false, "Category not found");
     }
     return apiResponse(category);
-  }
+  },
 };
 
 // ==================== REQUESTS API ====================
@@ -89,28 +116,34 @@ export const requestsAPI = {
     await delay();
     // Merge mock data with localStorage updates
     const storedRequests = inMemoryStorage.requests;
-    let results = mockData.requests.map(req => {
-      const updated = storedRequests[req.id];
-      return updated || req;
-    }).filter(req => !req.deleted); // Filter out deleted items
+    let results = mockData.requests
+      .map((req) => {
+        const updated = storedRequests[req.id];
+        return updated || req;
+      })
+      .filter((req) => !req.deleted); // Filter out deleted items
 
     // Filter by category
     if (params.categoryId) {
-      results = results.filter(r => r.categoryId === parseInt(params.categoryId));
+      results = results.filter(
+        (r) => r.categoryId === parseInt(params.categoryId),
+      );
     }
 
     // Filter by status
     if (params.status) {
-      results = results.filter(r => r.status === params.status);
+      results = results.filter((r) => r.status === params.status);
     }
 
     // Search
     if (params.search) {
       const keyword = params.search.toLowerCase();
-      results = results.filter(r => 
-        r.title.toLowerCase().includes(keyword) ||
-        r.description.toLowerCase().includes(keyword) ||
-        (r.skills && r.skills.some(skill => skill.toLowerCase().includes(keyword)))
+      results = results.filter(
+        (r) =>
+          r.title.toLowerCase().includes(keyword) ||
+          r.description.toLowerCase().includes(keyword) ||
+          (r.skills &&
+            r.skills.some((skill) => skill.toLowerCase().includes(keyword))),
       );
     }
 
@@ -127,8 +160,8 @@ export const requestsAPI = {
         page,
         limit,
         total: results.length,
-        totalPages: Math.ceil(results.length / limit)
-      }
+        totalPages: Math.ceil(results.length / limit),
+      },
     });
   },
 
@@ -143,7 +176,7 @@ export const requestsAPI = {
     }
     const request = mockData.getRequestById(requestId);
     if (!request) {
-      return apiResponse(null, false, 'Request not found');
+      return apiResponse(null, false, "Request not found");
     }
     return apiResponse(request);
   },
@@ -154,14 +187,14 @@ export const requestsAPI = {
     const newRequest = {
       id: mockData.requests.length + 1,
       ...data,
-      status: 'MOI_TAO',
-      statusText: 'Mới tạo',
+      status: "MOI_TAO",
+      statusText: "Mới tạo",
       views: 0,
       bids: 0,
       postedDate: new Date().toISOString(),
-      postedTime: 'Vừa xong'
+      postedTime: "Vừa xong",
     };
-    return apiResponse(newRequest, true, 'Tạo yêu cầu thành công');
+    return apiResponse(newRequest, true, "Tạo yêu cầu thành công");
   },
 
   // PUT /api/requests/:id
@@ -170,21 +203,22 @@ export const requestsAPI = {
     const requestId = parseInt(id);
     // Get original request
     const storedRequests = inMemoryStorage.requests;
-    let request = storedRequests[requestId] || mockData.getRequestById(requestId);
+    let request =
+      storedRequests[requestId] || mockData.getRequestById(requestId);
     if (!request) {
-      return apiResponse(null, false, 'Request not found');
+      return apiResponse(null, false, "Request not found");
     }
     // Merge with new data
-    const updated = { 
-      ...request, 
+    const updated = {
+      ...request,
       ...data,
-      id: requestId // Ensure ID stays the same
+      id: requestId, // Ensure ID stays the same
     };
     // Store in localStorage
     const allRequests = { ...storedRequests, [requestId]: updated };
     inMemoryStorage.requests = allRequests;
-    console.log('Updated request in localStorage:', updated);
-    return apiResponse(updated, true, 'Cập nhật yêu cầu thành công');
+    console.log("Updated request in localStorage:", updated);
+    return apiResponse(updated, true, "Cập nhật yêu cầu thành công");
   },
 
   // DELETE /api/requests/:id
@@ -195,29 +229,33 @@ export const requestsAPI = {
     const request = mockData.getRequestById(requestId);
     if (request) {
       const storedRequests = inMemoryStorage.requests;
-      const allRequests = { ...storedRequests, [requestId]: { ...request, deleted: true } };
+      const allRequests = {
+        ...storedRequests,
+        [requestId]: { ...request, deleted: true },
+      };
       inMemoryStorage.requests = allRequests;
     }
-    return apiResponse(null, true, 'Xóa yêu cầu thành công');
+    return apiResponse(null, true, "Xóa yêu cầu thành công");
   },
 
   // POST /api/requests/:id/cancel
   cancel: async (id) => {
-    console.log('API cancel called with ID:', id, 'Type:', typeof id);
+    console.log("API cancel called with ID:", id, "Type:", typeof id);
     await delay(800);
     const requestId = parseInt(id);
     const storedRequests = inMemoryStorage.requests;
-    let request = storedRequests[requestId] || mockData.getRequestById(requestId);
-    console.log('Found request:', request);
+    let request =
+      storedRequests[requestId] || mockData.getRequestById(requestId);
+    console.log("Found request:", request);
     if (!request) {
-      return apiResponse(null, false, 'Request not found');
+      return apiResponse(null, false, "Request not found");
     }
-    const cancelled = { ...request, status: 'DA_HUY', statusText: 'Đã hủy' };
+    const cancelled = { ...request, status: "DA_HUY", statusText: "Đã hủy" };
     const allRequests = { ...storedRequests, [requestId]: cancelled };
     inMemoryStorage.requests = allRequests;
-    console.log('Cancelled request stored:', cancelled);
-    return apiResponse(cancelled, true, 'Hủy yêu cầu thành công');
-  }
+    console.log("Cancelled request stored:", cancelled);
+    return apiResponse(cancelled, true, "Hủy yêu cầu thành công");
+  },
 };
 
 // ==================== FREELANCERS API ====================
@@ -234,17 +272,23 @@ export const freelancersAPI = {
 
     // Filter by skills
     if (params.skills) {
-      const skills = Array.isArray(params.skills) ? params.skills : [params.skills];
-      results = results.filter(fl => 
-        skills.some(skill => 
-          fl.skills.some(flSkill => flSkill.toLowerCase().includes(skill.toLowerCase()))
-        )
+      const skills = Array.isArray(params.skills)
+        ? params.skills
+        : [params.skills];
+      results = results.filter((fl) =>
+        skills.some((skill) =>
+          fl.skills.some((flSkill) =>
+            flSkill.toLowerCase().includes(skill.toLowerCase()),
+          ),
+        ),
       );
     }
 
     // Filter by rating
     if (params.minRating) {
-      results = results.filter(fl => fl.rating >= parseFloat(params.minRating));
+      results = results.filter(
+        (fl) => fl.rating >= parseFloat(params.minRating),
+      );
     }
 
     // Pagination
@@ -260,8 +304,8 @@ export const freelancersAPI = {
         page,
         limit,
         total: results.length,
-        totalPages: Math.ceil(results.length / limit)
-      }
+        totalPages: Math.ceil(results.length / limit),
+      },
     });
   },
 
@@ -270,10 +314,10 @@ export const freelancersAPI = {
     await delay();
     const freelancer = mockData.getFreelancerById(id);
     if (!freelancer) {
-      return apiResponse(null, false, 'Freelancer not found');
+      return apiResponse(null, false, "Freelancer not found");
     }
     return apiResponse(freelancer);
-  }
+  },
 };
 
 // ==================== QUOTES API ====================
@@ -282,124 +326,126 @@ export const quotesAPI = {
   getByRequestId: async (requestId) => {
     await delay();
     const reqId = parseInt(requestId);
-    
+
     // Get quotes from mock data
     const mockQuotes = mockData.getQuotesByRequestId(reqId);
-    
+
     // Get quotes from localStorage
     const storedQuotes = inMemoryStorage.quotes;
     const memoryQuotes = Object.values(storedQuotes).filter(
-      quote => quote.requestId === reqId
+      (quote) => quote.requestId === reqId,
     );
-    
+
     // Merge both
     const allQuotes = [...mockQuotes, ...memoryQuotes];
-    
-    console.log('Getting quotes for request', reqId, ':', allQuotes);
+
+    console.log("Getting quotes for request", reqId, ":", allQuotes);
     return apiResponse(allQuotes);
   },
 
   // POST /api/quotes
   create: async (data) => {
     await delay(800);
-    
+
     // Generate new ID
     let nextId = inMemoryStorage.nextQuoteId;
     const newId = nextId;
     inMemoryStorage.nextQuoteId = nextId + 1;
-    
+
     const newQuote = {
       id: newId,
       ...data,
-      status: 'DA_GUI',
-      statusText: 'Đã gửi',
+      status: "DA_GUI",
+      statusText: "Đã gửi",
       submittedDate: new Date().toISOString(),
-      submittedTime: 'Vừa xong'
+      submittedTime: "Vừa xong",
     };
-    
+
     // Store in localStorage
     const storedQuotes = inMemoryStorage.quotes;
     const allQuotes = { ...storedQuotes, [newId]: newQuote };
     inMemoryStorage.quotes = allQuotes;
-    
+
     // Update request bids count
     const requestId = parseInt(data.requestId);
     const storedRequests = inMemoryStorage.requests;
-    let request = storedRequests[requestId] || mockData.getRequestById(requestId);
+    let request =
+      storedRequests[requestId] || mockData.getRequestById(requestId);
     if (request) {
       const updatedRequest = {
         ...request,
-        bids: (request.bids || 0) + 1
+        bids: (request.bids || 0) + 1,
       };
       const allRequests = { ...storedRequests, [requestId]: updatedRequest };
       inMemoryStorage.requests = allRequests;
-      console.log('Updated request bids count:', updatedRequest.bids);
+      console.log("Updated request bids count:", updatedRequest.bids);
     }
-    
-    console.log('Created new quote:', newQuote);
-    console.log('All quotes in localStorage:', allQuotes);
-    
-    return apiResponse(newQuote, true, 'Gửi báo giá thành công');
+
+    console.log("Created new quote:", newQuote);
+    console.log("All quotes in localStorage:", allQuotes);
+
+    return apiResponse(newQuote, true, "Gửi báo giá thành công");
   },
 
   // PUT /api/quotes/:id
   update: async (id, data) => {
     await delay(800);
     const quoteId = parseInt(id);
-    
+
     // Get existing quote
     const storedQuotes = inMemoryStorage.quotes;
     let quote = storedQuotes[quoteId];
     if (!quote) {
       // Try to find in mock data
-      const mockQuote = mockData.quotes.find(q => q.id === quoteId);
+      const mockQuote = mockData.quotes.find((q) => q.id === quoteId);
       if (mockQuote) {
         quote = mockQuote;
       }
     }
-    
+
     if (!quote) {
-      return apiResponse(null, false, 'Quote not found');
+      return apiResponse(null, false, "Quote not found");
     }
-    
+
     // Update quote
     const updated = { ...quote, ...data };
     const allQuotes = { ...storedQuotes, [quoteId]: updated };
     inMemoryStorage.quotes = allQuotes;
-    
-    return apiResponse(updated, true, 'Cập nhật báo giá thành công');
+
+    return apiResponse(updated, true, "Cập nhật báo giá thành công");
   },
 
   // DELETE /api/quotes/:id
   delete: async (id) => {
     await delay(800);
     const quoteId = parseInt(id);
-    
+
     // Get quote to update request bids count
     const storedQuotes = inMemoryStorage.quotes;
     const quote = storedQuotes[quoteId];
-    
+
     if (quote) {
       // Decrease request bids count
       const requestId = parseInt(quote.requestId);
       const storedRequests = inMemoryStorage.requests;
-      let request = storedRequests[requestId] || mockData.getRequestById(requestId);
+      let request =
+        storedRequests[requestId] || mockData.getRequestById(requestId);
       if (request && request.bids > 0) {
         const updatedRequest = {
           ...request,
-          bids: request.bids - 1
+          bids: request.bids - 1,
         };
         const allRequests = { ...storedRequests, [requestId]: updatedRequest };
         inMemoryStorage.requests = allRequests;
       }
-      
+
       // Remove quote from storage
       const { [quoteId]: removed, ...remainingQuotes } = storedQuotes;
       inMemoryStorage.quotes = remainingQuotes;
     }
-    
-    return apiResponse(null, true, 'Xóa báo giá thành công');
-  }
+
+    return apiResponse(null, true, "Xóa báo giá thành công");
+  },
 };
 
 // ==================== JOBS API ====================
@@ -421,7 +467,7 @@ export const jobsAPI = {
 
     // Filter by status
     if (params.status) {
-      results = results.filter(j => j.status === params.status);
+      results = results.filter((j) => j.status === params.status);
     }
 
     return apiResponse(results);
@@ -432,7 +478,7 @@ export const jobsAPI = {
     await delay();
     const job = mockData.getJobById(id);
     if (!job) {
-      return apiResponse(null, false, 'Job not found');
+      return apiResponse(null, false, "Job not found");
     }
     return apiResponse(job);
   },
@@ -442,11 +488,11 @@ export const jobsAPI = {
     await delay(800);
     const job = mockData.getJobById(id);
     if (!job) {
-      return apiResponse(null, false, 'Job not found');
+      return apiResponse(null, false, "Job not found");
     }
     const updated = { ...job, ...data };
-    return apiResponse(updated, true, 'Cập nhật công việc thành công');
-  }
+    return apiResponse(updated, true, "Cập nhật công việc thành công");
+  },
 };
 
 // ==================== MESSAGES API ====================
@@ -473,10 +519,10 @@ export const messagesAPI = {
       ...data,
       read: false,
       sentDate: new Date().toISOString(),
-      sentTime: 'Vừa xong'
+      sentTime: "Vừa xong",
     };
-    return apiResponse(newMessage, true, 'Gửi tin nhắn thành công');
-  }
+    return apiResponse(newMessage, true, "Gửi tin nhắn thành công");
+  },
 };
 
 // ==================== NOTIFICATIONS API ====================
@@ -498,14 +544,14 @@ export const notificationsAPI = {
   // PUT /api/notifications/:id/read
   markAsRead: async (id) => {
     await delay(300);
-    return apiResponse(null, true, 'Đánh dấu đã đọc');
+    return apiResponse(null, true, "Đánh dấu đã đọc");
   },
 
   // PUT /api/notifications/read-all
   markAllAsRead: async (userId) => {
     await delay(500);
-    return apiResponse(null, true, 'Đánh dấu tất cả đã đọc');
-  }
+    return apiResponse(null, true, "Đánh dấu tất cả đã đọc");
+  },
 };
 
 // ==================== PAYMENTS API ====================
@@ -532,13 +578,13 @@ export const paymentsAPI = {
     const newPayment = {
       id: mockData.payments.length + 1,
       ...data,
-      status: 'CHO_THANH_TOAN',
-      statusText: 'Chờ thanh toán',
+      status: "CHO_THANH_TOAN",
+      statusText: "Chờ thanh toán",
       createdDate: new Date().toISOString(),
-      createdTime: 'Vừa xong'
+      createdTime: "Vừa xong",
     };
-    return apiResponse(newPayment, true, 'Tạo thanh toán thành công');
-  }
+    return apiResponse(newPayment, true, "Tạo thanh toán thành công");
+  },
 };
 
 // ==================== REVIEWS API ====================
@@ -570,10 +616,10 @@ export const reviewsAPI = {
       id: mockData.reviews.length + 1,
       ...data,
       createdDate: new Date().toISOString(),
-      createdTime: 'Vừa xong'
+      createdTime: "Vừa xong",
     };
-    return apiResponse(newReview, true, 'Gửi đánh giá thành công');
-  }
+    return apiResponse(newReview, true, "Gửi đánh giá thành công");
+  },
 };
 
 // ==================== REPORTS & COMPLAINTS API ====================
@@ -596,13 +642,13 @@ export const reportsAPI = {
     const newReport = {
       id: mockData.reports.length + 1,
       ...data,
-      status: 'CHO_XU_LY',
-      statusText: 'Chờ xử lý',
+      status: "CHO_XU_LY",
+      statusText: "Chờ xử lý",
       createdDate: new Date().toISOString(),
-      createdTime: 'Vừa xong'
+      createdTime: "Vừa xong",
     };
-    return apiResponse(newReport, true, 'Gửi báo cáo thành công');
-  }
+    return apiResponse(newReport, true, "Gửi báo cáo thành công");
+  },
 };
 
 export const complaintsAPI = {
@@ -624,13 +670,13 @@ export const complaintsAPI = {
     const newComplaint = {
       id: mockData.complaints.length + 1,
       ...data,
-      status: 'CHO_XU_LY',
-      statusText: 'Chờ xử lý',
+      status: "CHO_XU_LY",
+      statusText: "Chờ xử lý",
       createdDate: new Date().toISOString(),
-      createdTime: 'Vừa xong'
+      createdTime: "Vừa xong",
     };
-    return apiResponse(newComplaint, true, 'Gửi khiếu nại thành công');
-  }
+    return apiResponse(newComplaint, true, "Gửi khiếu nại thành công");
+  },
 };
 
 // ==================== STATISTICS API ====================
@@ -657,7 +703,154 @@ export const statisticsAPI = {
   getRevenueByMonth: async () => {
     await delay();
     return apiResponse(mockData.statistics.revenueByMonth);
-  }
+  },
+};
+
+// ==================== WORKSPACE API ====================
+export const workspaceAPI = {
+  // GET /api/workspace/projects - Lấy dự án của user theo tab
+  getProjects: async (userId, role, params = {}) => {
+    const userIdNum = userId ? parseInt(userId) : userId;
+    const page = parseInt(params.page) || 1;
+    const limit = parseInt(params.limit) || 10;
+
+    try {
+      // Try gọi backend API
+      const url = new URL(`${API_BASE_URL}/api/workspace/projects`);
+      url.searchParams.append("userId", userIdNum);
+      url.searchParams.append("role", role);
+      url.searchParams.append("tab", params.tab || "client");
+      url.searchParams.append("page", page);
+      url.searchParams.append("limit", limit);
+
+      const response = await fetchWithTimeout(url.toString());
+      if (response.ok) {
+        const data = await response.json();
+        console.log("✓ Backend API response:", data);
+        return apiResponse(data);
+      }
+    } catch (error) {
+      console.warn(
+        "⚠ Backend API unavailable, using mock data:",
+        error.message,
+      );
+    }
+
+    // Fallback: dùng mock data
+    await delay();
+
+    let results = [...mockData.requests];
+
+    // Logic filtering:
+    // - client tab (Khách hàng): dự án user tạo (employer.id === userId)
+    // - freelancer tab (Freelancer): dự án user nhận (có freelancer ID trong quotes)
+    if (params.tab === "client") {
+      // Khách hàng: dự án của họ tạo
+      results = results.filter(
+        (r) => r.employer?.id === userIdNum || r.employer?.id === userId,
+      );
+    } else if (params.tab === "freelancer") {
+      // Freelancer: dự án mà user có quotes/bids
+      const userQuotes = mockData.quotes.filter(
+        (q) =>
+          q.freelancerId === userIdNum || q.freelancerId === parseInt(userId),
+      );
+      const requestIds = new Set(userQuotes.map((q) => q.requestId));
+      results = results.filter((r) => requestIds.has(r.id));
+    }
+
+    // Filter by status nếu có
+    if (params.status) {
+      results = results.filter((r) => r.status === params.status);
+    }
+
+    // Pagination
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedResults = results.slice(startIndex, endIndex);
+
+    return apiResponse({
+      data: paginatedResults,
+      pagination: {
+        page,
+        limit,
+        total: results.length,
+        totalPages: Math.ceil(results.length / limit),
+      },
+    });
+  },
+
+  // GET /api/workspace/stats - Lấy thống kê workspace
+  getStats: async (userId, role) => {
+    try {
+      // Try gọi backend API
+      const url = `${API_BASE_URL}/api/workspace/stats?userId=${userId}&role=${role}`;
+      const response = await fetchWithTimeout(url);
+      if (response.ok) {
+        const data = await response.json();
+        console.log("✓ Stats API response:", data);
+        return apiResponse(data);
+      }
+    } catch (error) {
+      console.warn("⚠ Stats API unavailable, using mock data:", error.message);
+    }
+
+    // Fallback: dùng mock data
+    await delay();
+
+    let projectCount = 0;
+    let completedCount = 0;
+    let activeCount = 0;
+    const userIdNum = parseInt(userId);
+
+    const projects = mockData.requests;
+
+    if (role === "NGUOI_THUE") {
+      const userProjects = projects.filter(
+        (r) => r.employer?.id === userIdNum || r.employer?.id === userId,
+      );
+      projectCount = userProjects.length;
+      completedCount = userProjects.filter(
+        (r) => r.status === "HOAN_THANH",
+      ).length;
+      activeCount = userProjects.filter(
+        (r) => r.status === "DANG_THUC_HIEN",
+      ).length;
+    } else if (role === "FREELANCER") {
+      // Freelancer: đếm dự án họ nhận
+      const userQuotes = mockData.quotes.filter(
+        (q) =>
+          q.freelancerId === userIdNum || q.freelancerId === parseInt(userId),
+      );
+      const requestIds = new Set(userQuotes.map((q) => q.requestId));
+      const userProjects = projects.filter((r) => requestIds.has(r.id));
+      projectCount = userProjects.length;
+      activeCount = userProjects.filter(
+        (r) => r.status === "DANG_THUC_HIEN",
+      ).length;
+    }
+
+    return apiResponse({
+      projectCount,
+      completedCount,
+      activeCount,
+      totalEarnings: 0,
+    });
+  },
+
+  // GET /api/workspace/messages - Lấy tin nhắn gần đây
+  getRecentMessages: async (userId, limit = 5) => {
+    await delay();
+    const conversations = mockData.getConversationsByUserId(userId);
+    return apiResponse(conversations.slice(0, limit));
+  },
+
+  // GET /api/workspace/notifications - Lấy thông báo gần đây
+  getRecentNotifications: async (userId, limit = 5) => {
+    await delay();
+    const notifications = mockData.getNotificationsByUserId(userId);
+    return apiResponse(notifications.slice(0, limit));
+  },
 };
 
 // ==================== AUTH API ====================
@@ -666,13 +859,17 @@ export const authAPI = {
   login: async (credentials) => {
     await delay(1000);
     // Mock login - tìm user theo email
-    const user = mockData.users.find(u => u.email === credentials.email);
+    const user = mockData.users.find((u) => u.email === credentials.email);
     if (!user) {
-      return apiResponse(null, false, 'Email hoặc mật khẩu không đúng');
+      return apiResponse(null, false, "Email hoặc mật khẩu không đúng");
     }
-    return apiResponse({
-      user
-    }, true, 'Đăng nhập thành công');
+    return apiResponse(
+      {
+        user,
+      },
+      true,
+      "Đăng nhập thành công",
+    );
   },
 
   // POST /api/auth/register
@@ -681,19 +878,23 @@ export const authAPI = {
     const newUser = {
       id: mockData.users.length + 1,
       ...data,
-      status: 'CHO_XAC_MINH',
-      createdDate: new Date().toISOString()
+      status: "CHO_XAC_MINH",
+      createdDate: new Date().toISOString(),
     };
-    return apiResponse({
-      user: newUser
-    }, true, 'Đăng ký thành công');
+    return apiResponse(
+      {
+        user: newUser,
+      },
+      true,
+      "Đăng ký thành công",
+    );
   },
 
   // POST /api/auth/logout
   logout: async () => {
     await delay(500);
-    return apiResponse(null, true, 'Đăng xuất thành công');
-  }
+    return apiResponse(null, true, "Đăng xuất thành công");
+  },
 };
 
 // Export all APIs
@@ -710,5 +911,6 @@ export default {
   reports: reportsAPI,
   complaints: complaintsAPI,
   statistics: statisticsAPI,
-  auth: authAPI
+  workspace: workspaceAPI,
+  auth: authAPI,
 };
