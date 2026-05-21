@@ -1,145 +1,316 @@
-/* Accept Quote Modal Styles */
-.accept-quote-modal {
-  max-width: 600px;
+/* ============================================================
+   ACCEPT QUOTE MODAL — 2-step payment flow
+   ============================================================ */
+
+.aq-modal {
+  max-width: 580px;
 }
 
-.accept-quote-info {
-  background: #f0fdf4;
-  padding: 20px;
-  border-radius: 12px;
-  border: 1px solid #bbf7d0;
-  margin-bottom: 20px;
-}
-
-.freelancer-card {
+/* ── Step Indicator ── */
+.aq-steps {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
+  justify-content: center;
+  gap: 0;
+  padding: 16px 24px 0;
 }
 
-.freelancer-avatar {
-  width: 60px;
-  height: 60px;
+.aq-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.4;
+  transition: opacity 0.2s;
+}
+.aq-step.active {
+  opacity: 1;
+}
+
+.aq-step-num {
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  object-fit: cover;
+  background: #E2E8F0;
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+.aq-step.active .aq-step-num {
+  background: #0EA5E9;
+  color: #fff;
+}
+
+.aq-step span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748B;
+}
+.aq-step.active span {
+  color: #0F172A;
+}
+
+.aq-step-line {
+  width: 40px;
+  height: 2px;
+  background: #E2E8F0;
+  margin: 0 12px;
+}
+
+/* ── Section Title ── */
+.aq-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0F172A;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.aq-section-title i {
+  color: #0EA5E9;
+  font-size: 14px;
+}
+
+/* ── Payment Summary ── */
+.aq-payment-summary {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 18px;
+}
+
+.aq-payment-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aq-payment-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px dashed #E2E8F0;
+}
+.aq-payment-row:last-child {
+  border-bottom: none;
+}
+.aq-payment-row.total {
+  border-top: 2px solid #0EA5E9;
+  border-bottom: none;
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+.aq-payment-label {
+  font-size: 14px;
+  color: #475569;
+  font-weight: 500;
+}
+.aq-payment-row.total .aq-payment-label {
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.aq-payment-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0F172A;
+}
+.aq-payment-row.total .aq-payment-value {
+  font-size: 18px;
+  color: #0EA5E9;
+}
+
+/* ── Distribution ── */
+.aq-distribution {
+  background: #F0FDF4;
+  border: 1px solid #BBF7D0;
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 18px;
+}
+
+.aq-dist-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aq-dist-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #E2E8F0;
+}
+
+.aq-dist-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
   flex-shrink: 0;
 }
+.aq-dist-icon.freelancer {
+  background: #DBEAFE;
+  color: #2563EB;
+}
+.aq-dist-icon.supervisor {
+  background: #FEF3C7;
+  color: #D97706;
+}
+.aq-dist-icon.platform {
+  background: #F1F5F9;
+  color: #64748B;
+}
 
-.freelancer-details {
+.aq-dist-info {
+  flex: 1;
+  min-width: 0;
+}
+.aq-dist-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0F172A;
+}
+.aq-dist-sublabel {
+  display: block;
+  font-size: 11px;
+  color: #94A3B8;
+  margin-top: 2px;
+}
+
+.aq-dist-amount {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0F172A;
+  white-space: nowrap;
+}
+
+/* ── Payment Method ── */
+.aq-payment-method {
+  margin-bottom: 18px;
+}
+
+.aq-method-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aq-method-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+.aq-method-item:hover {
+  border-color: #94A3B8;
+  background: #F8FAFC;
+}
+.aq-method-item.selected {
+  border-color: #0EA5E9;
+  background: #F0F9FF;
+}
+
+.aq-method-item input[type="radio"] {
+  display: none;
+}
+
+.aq-method-item i:first-of-type {
+  font-size: 18px;
+  color: #64748B;
+  width: 24px;
+  text-align: center;
+}
+.aq-method-item.selected i:first-of-type {
+  color: #0EA5E9;
+}
+
+.aq-method-item span {
+  font-size: 14px;
+  font-weight: 500;
+  color: #334155;
   flex: 1;
 }
 
-.freelancer-name {
-  margin: 0 0 4px 0;
-  font-size: 18px;
-  color: #064e3b;
-  font-weight: 600;
+.aq-method-check {
+  color: #0EA5E9;
+  font-size: 16px;
 }
 
-.freelancer-rating {
+/* ── Escrow Notice ── */
+.aq-escrow-notice {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #059669;
-}
-
-.quote-details-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: 12px;
+  padding: 14px 16px;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 10px;
 }
-
-.detail-item {
-  padding: 8px 0;
+.aq-escrow-notice > i {
+  font-size: 18px;
+  color: #2563EB;
+  margin-top: 2px;
+  flex-shrink: 0;
 }
-
-.detail-label {
+.aq-escrow-notice strong {
+  display: block;
   font-size: 13px;
-  color: #059669;
-  margin-bottom: 4px;
-  font-weight: 500;
-}
-
-.detail-value {
-  font-size: 18px;
   font-weight: 700;
-  color: #064e3b;
+  color: #1E40AF;
+  margin-bottom: 4px;
 }
-
-.confirmation-text {
-  font-size: 15px;
-  line-height: 1.6;
-  color: #475569;
-  margin-bottom: 16px;
-}
-
-.confirmation-list {
-  font-size: 14px;
-  line-height: 1.8;
-  color: #475569;
-  padding-left: 20px;
-  margin-bottom: 16px;
-}
-
-.confirmation-list li {
-  margin-bottom: 8px;
-}
-
-.warning-box {
-  background: #fef3c7;
-  padding: 16px;
-  border-radius: 8px;
-  border: 1px solid #fde68a;
-}
-
-.warning-text {
-  font-size: 14px;
-  color: #92400e;
+.aq-escrow-notice p {
+  font-size: 12px;
+  color: #3B82F6;
+  line-height: 1.5;
   margin: 0;
-  line-height: 1.6;
 }
 
-.modal-footer {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  padding-top: 20px;
-  border-top: 1px solid #e2e8f0;
+/* ── Pay Button ── */
+.aq-pay-btn {
+  background: #0EA5E9 !important;
+  color: #fff !important;
+}
+.aq-pay-btn:hover:not(:disabled) {
+  background: #0284C7 !important;
 }
 
-.btn-secondary {
-  padding: 12px 24px;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 14px;
-  background: #f1f5f9;
-  color: #475569;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btn-secondary:hover {
-  background-color: #e2e8f0;
-}
-
-.btn-accept {
-  padding: 12px 24px;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 14px;
-  background: #16a34a;
-  color: white;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: background-color 0.2s;
-}
-
-.btn-accept:hover {
-  background-color: #15803d;
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .aq-modal {
+    max-width: 100%;
+  }
+  .aq-steps {
+    padding: 12px 16px 0;
+  }
+  .aq-step span {
+    font-size: 12px;
+  }
+  .aq-dist-row {
+    flex-wrap: wrap;
+  }
+  .aq-dist-amount {
+    width: 100%;
+    text-align: right;
+    margin-top: 4px;
+  }
 }

@@ -25,6 +25,9 @@ const jobService = {
   },
   // params: { skip, take, trangThai }
 
+  getByUserId: (userId) => api.get(`/users/${userId}/jobs`),
+  // params: { skip, take, trangThai }
+
   search: (params = {}) => {
     const query = new URLSearchParams(params).toString();
     return api.get(`/jobs/search?${query}`);

@@ -3,7 +3,7 @@ const getAvatarFallback = (name = 'F') =>
   `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0EA5E9&color=fff&size=56`;
 
 const QuoteItem = ({ quote, isOwner, onAccept, onChat, hasAcceptedQuote }) => {
-  const isAccepted = quote.status === 'DuocChon' || quote.status === 'DA_CHAP_NHAN';
+  const isAccepted = quote.status === 'DuocChon' || quote.status === 'DaChapNhan' || quote.status === 'DA_CHAP_NHAN';
   const rating = Number(quote.freelancer?.rating ?? 0);
   const name = quote.freelancer?.name || 'Freelancer';
 

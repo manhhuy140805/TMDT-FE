@@ -121,25 +121,33 @@ const PostRequestPage = ({ isEmbedded = false, onCancel }) => {
     setLoading(true);
 
     try {
-      // Parse skills from comma-separated string
-      const skillsArray = formData.skills
-        ? formData.skills.split(',').map(s => s.trim()).filter(s => s)
-        : [];
+      const storedUser = localStorage.getItem('user');
+      const user = storedUser ? JSON.parse(storedUser) : null;
+      // Get user object if wrapped in { message, user }
+      const currentUser = user?.user || user;
+      const nguoiThueId = currentUser?.taiKhoanId || currentUser?.id;
+
+      if (!nguoiThueId) {
+        alert('Vui lòng đăng nhập lại để tạo yêu cầu.');
+        return;
+      }
+
+      // We don't have skill lookup by default, but we can pass an empty array or 
+      // if the backend accepts skill names we'd pass them. The API takes kyNangIds.
+      // We will pass them if possible, or omit since it's optional.
 
       const response = await api.requests.create({
-        title: formData.title,
-        categoryId: parseInt(formData.category),
-        location: formData.location || 'Remote',
-        description: formData.description,
-        skills: skillsArray,
-        budgetMin: parseInt(formData.budgetMin),
-        budgetMax: parseInt(formData.budgetMax),
-        submissionDeadlineDate: formData.submissionDeadline,
-        deadlineDate: formData.deadline,
-        attachments: formData.attachments
+        nguoiThueId: nguoiThueId,
+        tieuDe: formData.title,
+        loaiDichVuId: parseInt(formData.category),
+        moTa: formData.description,
+        nganSachMin: parseInt(formData.budgetMin),
+        nganSachMax: parseInt(formData.budgetMax),
+        thoiHan: new Date(formData.submissionDeadline).toISOString(),
+        yeuCauGiamSat: false
       });
 
-      if (response.success) {
+      if (response) {
         // Show success toast
         const toast = document.getElementById('success-toast');
         if (toast) {

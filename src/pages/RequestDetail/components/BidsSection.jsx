@@ -13,7 +13,7 @@ const BidsSection = ({ quotes, isOwner, onAcceptQuote, onChat }) => {
     };
   })();
 
-  const hasAcceptedQuote = quotes.some(q => q.status === 'DuocChon' || q.status === 'DA_CHAP_NHAN');
+  const hasAcceptedQuote = quotes.some(q => q.status === 'DuocChon' || q.status === 'DaChapNhan' || q.status === 'DA_CHAP_NHAN');
 
   return (
     <div className="rd-bids-wrap">

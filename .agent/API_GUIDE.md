@@ -1,3682 +1,4032 @@
-# 📚 HƯỚNG DẪN API - FRAS TMDT (Freelance Service Marketplace)
+# FRAS-TMDT Backend API Guide
 
-## 📌 Mục lục
+> Complete API documentation for the Freelancer Marketplace (FRAS-TMDT) backend.
+> Base URL: `http://localhost:8080`
 
-1. [Thông tin chung](#1-thông-tin-chung)
-2. [Xác thực (Authentication)](#2-xác-thực)
-3. [Người dùng (Users)](#3-người-dùng)
-4. [Loại dịch vụ (Categories)](#4-loại-dịch-vụ)
-5. [Kỹ năng (Skills)](#5-kỹ-năng) ⭐ MỚI
-6. [Yêu cầu (Jobs/Requests)](#6-yêu-cầu)
-7. [Báo giá (Proposals)](#7-báo-giá)
-8. [Freelancer](#8-freelancer)
-9. [Hợp đồng (Contracts)](#9-hợp-đồng)
-10. [Đơn vị giám sát (Supervisors)](#10-đơn-vị-giám-sát)
-11. [Tiến độ (Progress)](#11-tiến-độ)
-12. [Tin nhắn (Chat/Messages)](#12-tin-nhắn)
-13. [Tranh chấp (Disputes)](#13-tranh-chấp)
-14. [Bằng chứng (Evidences)](#14-bằng-chứng)
-15. [Thông báo (Notifications)](#15-thông-báo)
-16. [Thanh toán (Payments)](#16-thanh-toán)
-17. [Đánh giá (Reviews)](#17-đánh-giá)
-18. [Báo cáo (Reports)](#18-báo-cáo)
+---
+
+## Table of Contents
+
+1. [Health](#1-health)
+2. [Auth](#2-auth)
+3. [Users](#3-users)
+4. [Categories](#4-categories)
+5. [Skills](#5-skills)
+6. [Jobs](#6-jobs)
+7. [Proposals](#7-proposals)
+8. [Freelancers](#8-freelancers)
+9. [Contracts](#9-contracts)
+10. [Supervisors](#10-supervisors)
+11. [Progress](#11-progress)
+12. [Chat](#12-chat)
+13. [Payments](#13-payments)
+14. [Disputes](#14-disputes)
+15. [Evidences](#15-evidences)
+16. [Reviews](#16-reviews)
+17. [Notifications](#17-notifications)
+18. [Reports](#18-reports)
 19. [Admin](#19-admin)
 
 ---
 
-## 1. Thông tin chung
+## General Information
 
-### 1.1 Base URL
-
+### Authentication
+Most endpoints require a valid JWT token in the `Authorization` header:
 ```
-http://localhost:3000
+Authorization: Bearer <token>
 ```
 
-### 1.2 Cấu hình chung
+### Common Error Response Format
+```json
+{
+  "statusCode": 400,
+  "message": "Error description",
+  "error": "Bad Request"
+}
+```
 
-- **Port mặc định**: `3000` (có thể cấu hình qua biến `PORT`)
-- **Content-Type**: `application/json`
-- **Validation**: GlobalValidationPipe kích hoạt với:
-  - `whitelist: true` - chỉ chấp nhận trường đã định nghĩa
-  - `forbidNonWhitelisted: true` - từ chối các trường không được phép
-  - `transform: true` - tự động chuyển đổi kiểu dữ liệu
+### Enum Values Reference
 
-### 1.3 HTTP Status Codes
-
-| Mã  | Ý nghĩa                             |
-| --- | ----------------------------------- |
-| 200 | OK - Thành công                     |
-| 201 | Created - Tạo thành công            |
-| 400 | Bad Request - Dữ liệu không hợp lệ  |
-| 401 | Unauthorized - Không xác thực       |
-| 403 | Forbidden - Không có quyền truy cập |
-| 404 | Not Found - Không tìm thấy          |
-| 409 | Conflict - Dữ liệu bị trùng lặp     |
-| 500 | Internal Server Error - Lỗi máy chủ |
-
-### 1.4 Enum & Hằng số
-
-#### Vai trò tài khoản (VaiTroTaiKhoan)
-
-- `KhachVangLai` - Khách vãng lai
-- `NguoiThue` - Người thuê
-- `Freelancer` - Freelancer
-- `DonViGiamSat` - Đơn vị giám sát
-- `Admin` - Quản trị viên
-
-#### Giới tính (GioiTinh)
-
-- `Nam` - Nam
-- `Nu` - Nữ
-- `Khac` - Khác
-
-#### Trạng thái tài khoản (TrangThaiTaiKhoan)
-
-- `HoatDong` - Hoạt động
-- `BiKhoa` - Bị khóa
-- `ChoDuyet` - Chờ duyệt
-- `DaBi` - Đã bị (vô hiệu hóa)
-
-#### Trạng thái yêu cầu (TrangThaiYeuCau)
-
-- `MoDau` - Mở đầu
-- `DangMo` - Đang mở
-- `DaDong` - Đã đóng
-- `DaHuy` - Đã hủy
-- `HoanThanh` - Hoàn thành
-
-#### Trạng thái báo giá (TrangThaiBaoGia)
-
-- `DaGui` - Đã gửi
-- `DuocChon` - Được chọn
-- `TuChoi` - Từ chối
-- `HetHan` - Hết hạn
-
-#### Trạng thái công việc (TrangThaiCongViec)
-
-- `MoiTao` - Mới tạo
-- `DangThucHien` - Đang thực hiện
-- `HoanThanh` - Hoàn thành
-- `DaHuy` - Đã hủy
-- `TranhChap` - Tranh chấp
+| Enum | Values |
+|------|--------|
+| VaiTroTaiKhoan | `KhachVangLai`, `NguoiThue`, `Freelancer`, `DonViGiamSat`, `Admin` |
+| TrangThaiTaiKhoan | `HoatDong`, `Khoa`, `TamNgung` |
+| GioiTinh | `Nam`, `Nu`, `Khac` |
+| TrangThaiYeuCau | `MoiTao`, `DangNhan`, `HoanThanh`, `DaHuy` |
+| TrangThaiBaoGia | `ChoXacNhan`, `DaChapNhan`, `DaTuChoi`, `DaHuy` |
+| TrangThaiCongViec | `DangThucHien`, `HoanThanh`, `DaHuy`, `TamDung` |
+| TrangThaiGiamSatCongViec | `ChuaYeuCau`, `ChoChapNhan`, `DaChapNhan`, `DaTuChoi` |
+| TrangThaiDonViGiamSat | `ChoDuyet`, `DaDuyet`, `TuChoi`, `TamNgung` |
+| TrangThaiXacNhanTienDo | `ChoXacNhan`, `DaXacNhan`, `TuChoi` |
+| TrangThaiTranhChap | `DangMo`, `DangXuLy`, `DaDong` |
+| KetQuaTranhChap | `HoanTien`, `KhongHoanTien`, `HoanMotPhan` |
+| BenChiuPhiKetLuan | `NguoiThue`, `Freelancer`, `ChiaDeu` |
+| LoaiThanhToan | `DatCoc`, `ThanhToan`, `HoanTien` |
+| PhuongThucThanhToan | `ViDienTu`, `ChuyenKhoan`, `TheTinDung` |
+| TrangThaiThanhToan | `ChoXuLy`, `ThanhCong`, `ThatBai`, `DaHoan` |
+| LoaiTinNhan | `VanBan`, `HinhAnh`, `TepTin` |
+| TrangThaiCuocHoiThoai | `DangMo`, `DaDong` |
+| LoaiBangChung | `HinhAnh`, `Video`, `TaiLieu`, `VanBan` |
+| LoaiDanhGia | `NguoiThue_DanhGia_Freelancer`, `Freelancer_DanhGia_NguoiThue` |
+| LoaiThongBao | `HeThong`, `CongViec`, `ThanhToan`, `TranhChap` |
+| TrangThaiBaoCao | `ChoXuLy`, `DaXuLy`, `TuChoi` |
 
 ---
 
-## 2. Xác thực
 
-### 2.1 Kiểm tra trạng thái server
+## 1. Health
 
-```http
-GET /health
-```
+### GET /health
+
+Check if the API server is running and healthy.
+
+**Request:**
+- No parameters required.
 
 **Response 200:**
-
 ```json
 {
   "status": "ok",
-  "timestamp": "2026-04-22T12:00:00.000Z"
+  "timestamp": "2025-01-15T10:30:00.000Z"
 }
 ```
 
 ---
 
-### 2.2 Đăng ký tài khoản
+## 2. Auth
 
-```http
-POST /auth/register
-```
+### POST /auth/register
 
-**Body:**
+Register a new user account.
 
+**Request:**
+- Body:
 ```json
 {
-  "tenDangNhap": "user01",
-  "matKhau": "123456",
-  "email": "user01@example.com",
+  "tenDangNhap": "nguyenvana",
+  "matKhau": "password123",
+  "email": "nguyenvana@email.com",
   "hoTen": "Nguyen Van A",
-  "soDienThoai": "0901000001",
+  "soDienThoai": "0901234567",
   "gioiTinh": "Nam",
-  "diaChi": "Ha Noi",
-  "vaiTro": "NguoiThue",
-  "tenDonVi": "Cong ty giam sat A"
+  "diaChi": "Ho Chi Minh City",
+  "vaiTro": "Freelancer",
+  "tenDonVi": "ABC Supervision Co."
 }
 ```
 
-**Trường bắt buộc:**
-
-- `tenDangNhap` - Tên đăng nhập (duy nhất, 3-50 ký tự)
-- `matKhau` - Mật khẩu (tối thiểu 6 ký tự)
-- `email` - Email (duy nhất)
-- `hoTen` - Họ tên đầy đủ
-
-**Trường tùy chọn:**
-
-- `soDienThoai` - Số điện thoại
-- `gioiTinh` - Giới tính: `Nam` | `Nu` | `Khac`
-- `diaChi` - Địa chỉ
-- `vaiTro` - Vai trò: `KhachVangLai` | `NguoiThue` (mặc định) | `Freelancer` | `DonViGiamSat`
-- `tenDonVi` - Tên đơn vị (bắt buộc khi `vaiTro=DonViGiamSat`)
+> Note: `tenDonVi` is only required when `vaiTro` is `DonViGiamSat`.
 
 **Response 201:**
-
 ```json
 {
-  "message": "Dang ky thanh cong",
+  "message": "Registration successful",
   "user": {
-    "taiKhoanId": 10,
-    "tenDangNhap": "user01",
-    "email": "user01@example.com",
+    "taiKhoanId": 1,
+    "tenDangNhap": "nguyenvana",
+    "email": "nguyenvana@email.com",
     "hoTen": "Nguyen Van A",
-    "soDienThoai": "0901000001",
+    "soDienThoai": "0901234567",
     "gioiTinh": "Nam",
-    "diaChi": "Ha Noi",
-    "vaiTro": "NguoiThue",
+    "diaChi": "Ho Chi Minh City",
+    "vaiTro": "Freelancer",
     "trangThai": "HoatDong",
-    "ngayTao": "2026-04-22T12:10:00.000Z"
+    "ngayTao": "2025-01-15T10:30:00.000Z"
   }
 }
 ```
 
-**Lỗi thường gặp (400):**
-
-- `tenDangNhap is required` - Tên đăng nhập không được để trống
-- `Email da ton tai` - Email đã được đăng ký
-- `Ten dang nhap da ton tai` - Tên đăng nhập đã được sử dụng
-- `GioiTinh khong hop le` - Giới tính không hợp lệ
-- `VaiTro khong hop le` - Vai trò không hợp lệ
+**Errors:**
+- `400` - Missing required fields or invalid data
+- `409` - Email or username already exists
 
 ---
 
-### 2.3 Đăng nhập
 
-```http
-POST /auth/login
-```
+### POST /auth/login
 
-**Body:**
+Authenticate a user and return user info.
 
+**Request:**
+- Body:
 ```json
 {
-  "email": "user01@example.com",
-  "matKhau": "123456"
+  "email": "nguyenvana@email.com",
+  "matKhau": "password123"
 }
 ```
 
-**Trường bắt buộc:**
-
-- `email` - Email tài khoản
-- `matKhau` - Mật khẩu
-
 **Response 200:**
-
 ```json
 {
-  "message": "Dang nhap thanh cong",
+  "message": "Login successful",
   "user": {
-    "taiKhoanId": 10,
-    "tenDangNhap": "user01",
-    "email": "user01@example.com",
+    "taiKhoanId": 1,
+    "tenDangNhap": "nguyenvana",
+    "email": "nguyenvana@email.com",
     "hoTen": "Nguyen Van A",
-    "soDienThoai": "0901000001",
+    "soDienThoai": "0901234567",
     "gioiTinh": "Nam",
-    "diaChi": "Ha Noi",
-    "vaiTro": "NguoiThue",
+    "diaChi": "Ho Chi Minh City",
+    "vaiTro": "Freelancer",
     "trangThai": "HoatDong",
-    "ngayTao": "2026-04-22T12:10:00.000Z"
+    "ngayTao": "2025-01-15T10:30:00.000Z"
   }
 }
 ```
 
-**Lỗi (400):**
-
-- `Email hoac mat khau khong chinh xac` - Email hoặc mật khẩu sai
+**Errors:**
+- `400` - Missing email or password
+- `401` - Invalid credentials
+- `403` - Account is locked or suspended
 
 ---
 
-## 3. Người dùng
+## 3. Users
 
-### 3.1 Lấy danh sách người dùng
+### GET /users
 
-```http
-GET /users
-```
+Get all users in the system.
 
-**Query Parameters:**
-
-- `skip` - Bỏ qua số bản ghi (mặc định: 0)
-- `take` - Số lượng bản ghi (mặc định: 10)
+**Request:**
+- No parameters required.
 
 **Response 200:**
-
 ```json
 {
-  "data": [
+  "total": 2,
+  "users": [
     {
       "taiKhoanId": 1,
-      "tenDangNhap": "user01",
-      "email": "user01@example.com",
+      "tenDangNhap": "nguyenvana",
+      "email": "nguyenvana@email.com",
       "hoTen": "Nguyen Van A",
-      "soDienThoai": "0901000001",
+      "soDienThoai": "0901234567",
       "gioiTinh": "Nam",
-      "diaChi": "Ha Noi",
-      "vaiTro": "NguoiThue",
+      "diaChi": "Ho Chi Minh City",
+      "vaiTro": "Freelancer",
       "trangThai": "HoatDong",
-      "ngayTao": "2026-04-22T12:00:00.000Z"
+      "ngayTao": "2025-01-15T10:30:00.000Z",
+      "ngayCapNhat": "2025-01-15T10:30:00.000Z"
     }
-  ],
-  "total": 1
-}
-```
-
----
-
-### 3.2 Tìm kiếm người dùng
-
-```http
-GET /users/search
-```
-
-**Query Parameters:**
-
-- `keyword` - Từ khóa tìm kiếm (tên, email, số điện thoại)
-- `skip` - Bỏ qua số bản ghi (mặc định: 0)
-- `take` - Số lượng bản ghi (mặc định: 10)
-
-**Response 200:**
-
-```json
-{
-  "data": [
-    {
-      "taiKhoanId": 1,
-      "tenDangNhap": "user01",
-      "email": "user01@example.com",
-      "hoTen": "Nguyen Van A",
-      "soDienThoai": "0901000001",
-      "vaiTro": "NguoiThue"
-    }
-  ],
-  "total": 1
-}
-```
-
----
-
-### 3.3 Lấy thông tin người dùng
-
-```http
-GET /users/:id
-```
-
-**Response 200:**
-
-```json
-{
-  "taiKhoanId": 1,
-  "tenDangNhap": "user01",
-  "email": "user01@example.com",
-  "hoTen": "Nguyen Van A",
-  "soDienThoai": "0901000001",
-  "gioiTinh": "Nam",
-  "diaChi": "Ha Noi",
-  "vaiTro": "NguoiThue",
-  "trangThai": "HoatDong",
-  "ngayTao": "2026-04-22T12:00:00.000Z"
-}
-```
-
----
-
-### 3.4 Lấy profile chi tiết
-
-```http
-GET /users/:id/profile
-```
-
-Trả về thông tin chi tiết dựa trên vai trò.
-
-**Response 200 (vai trò: NguoiThue):**
-
-```json
-{
-  "taiKhoan": {
-    "taiKhoanId": 1,
-    "tenDangNhap": "user01",
-    "email": "user01@example.com",
-    "hoTen": "Nguyen Van A",
-    "vaiTro": "NguoiThue"
-  },
-  "nguoiThue": {
-    "nguoiThueId": 1,
-    "congTy": "Cong ty ABC",
-    "moTa": "Chi tiet ve cong ty",
-    "diemTinCay": 4.5,
-    "tongYeuCau": 10,
-    "tyLeHoanThanh": 95.0
-  }
-}
-```
-
-**Response 200 (vai trò: Freelancer):**
-
-```json
-{
-  "taiKhoan": {
-    "taiKhoanId": 2,
-    "tenDangNhap": "freelancer01",
-    "email": "freelancer01@example.com",
-    "hoTen": "Tran Thi B"
-  },
-  "freelancer": {
-    "freelancerId": 1,
-    "kinhNghiem": 5,
-    "chuyenGia": "Web Development",
-    "kyNang": "PHP, JavaScript, React",
-    "xepHang": 4.8,
-    "soDu": 1000.0,
-    "xacThucEmail": true,
-    "xacThucSDT": false,
-    "tongCongViec": 20,
-    "tyLeHoanThanh": 98.0
-  }
-}
-```
-
----
-
-### 3.5 Cập nhật thông tin người dùng
-
-```http
-PUT /users/:id
-```
-
-**Body:**
-
-```json
-{
-  "hoTen": "Nguyen Van B",
-  "soDienThoai": "0901000002",
-  "gioiTinh": "Nam",
-  "diaChi": "Ho Chi Minh"
-}
-```
-
-**Response 200:**
-
-```json
-{
-  "message": "Cap nhat thanh cong",
-  "user": {
-    "taiKhoanId": 1,
-    "hoTen": "Nguyen Van B",
-    "soDienThoai": "0901000002",
-    "gioiTinh": "Nam",
-    "diaChi": "Ho Chi Minh"
-  }
-}
-```
-
----
-
-### 3.6 Xóa người dùng (Soft Delete)
-
-```http
-DELETE /users/:id
-```
-
-**Response 200:**
-
-```json
-{
-  "message": "Xoa nguoi dung thanh cong",
-  "trangThai": "BiKhoa"
-}
-```
-
----
-
-## 4. Loại dịch vụ
-
-### 4.1 Lấy danh sách loại dịch vụ
-
-```http
-GET /categories
-```
-
-**Query Parameters:**
-
-- `skip` - Bỏ qua số bản ghi (mặc định: 0)
-- `take` - Số lượng bản ghi (mặc định: 10)
-
-**Response 200:**
-
-```json
-{
-  "data": [
-    {
-      "loaiDichVuId": 1,
-      "tenLoai": "Thiet ke web",
-      "moTa": "Thiet ke giao dien website",
-      "hinhAnh": "https://example.com/image.jpg"
-    }
-  ],
-  "total": 1
-}
-```
-
----
-
-### 4.2 Lấy chi tiết loại dịch vụ
-
-```http
-GET /categories/:id
-```
-
-**Response 200:**
-
-```json
-{
-  "loaiDichVuId": 1,
-  "tenLoai": "Thiet ke web",
-  "moTa": "Thiet ke giao dien website",
-  "hinhAnh": "https://example.com/image.jpg"
-}
-```
-
----
-
-### 4.3 Tạo loại dịch vụ mới
-
-```http
-POST /categories
-```
-
-**Body:**
-
-```json
-{
-  "tenLoai": "Thiet ke web",
-  "moTa": "Thiet ke giao dien website",
-  "hinhAnh": "https://example.com/image.jpg"
-}
-```
-
-**Trường bắt buộc:**
-
-- `tenLoai` - Tên loại dịch vụ
-
-**Trường tùy chọn:**
-
-- `moTa` - Mô tả
-- `hinhAnh` - URL hình ảnh đại diện
-
-**Response 201:**
-
-```json
-{
-  "message": "Tao loai dich vu thanh cong",
-  "data": {
-    "loaiDichVuId": 1,
-    "tenLoai": "Thiet ke web",
-    "moTa": "Thiet ke giao dien website",
-    "hinhAnh": "https://example.com/image.jpg"
-  }
-}
-```
-
----
-
-### 4.4 Cập nhật loại dịch vụ
-
-```http
-PUT /categories/:id
-```
-
-**Body:**
-
-```json
-{
-  "tenLoai": "Thiet ke web va app",
-  "moTa": "Thiet ke giao dien website va ung dung mobile",
-  "hinhAnh": "https://example.com/new-image.jpg"
-}
-```
-
-**Response 200:**
-
-```json
-{
-  "message": "Cap nhat thanh cong",
-  "data": {
-    "loaiDichVuId": 1,
-    "tenLoai": "Thiet ke web va app",
-    "moTa": "Thiet ke giao dien website va ung dung mobile",
-    "hinhAnh": "https://example.com/new-image.jpg"
-  }
-}
-```
-
----
-
-### 4.5 Xóa loại dịch vụ
-
-```http
-DELETE /categories/:id
-```
-
-**Response 200:**
-
-```json
-{
-  "message": "Xoa loai dich vu thanh cong"
-}
-```
-
----
-
-## 5. Kỹ năng ⭐ MỚI
-
-Bảng `KyNang` là danh mục kỹ năng dùng chung cho cả `YeuCau` (kỹ năng yêu cầu) và `Freelancer` (kỹ năng sở hữu).
-
-### 5.1 Lấy danh sách kỹ năng
-
-```http
-GET /skills
-```
-
-**Response 200:**
-
-```json
-{
-  "total": 38,
-  "skills": [
-    { "kyNangId": 1, "tenKyNang": "NestJS", "moTa": "Framework Node.js cho backend" },
-    { "kyNangId": 11, "tenKyNang": "React", "moTa": "Thu vien UI JavaScript" },
-    { "kyNangId": 23, "tenKyNang": "SEO", "moTa": "Toi uu hoa cong cu tim kiem" }
   ]
 }
 ```
 
 ---
 
-### 5.2 Lấy chi tiết kỹ năng
 
-```http
-GET /skills/:id
-```
+### GET /users/search
+
+Search users by keyword (matches name or email).
+
+**Request:**
+- Query params: `keyword` - search term (optional)
+
+Example: `GET /users/search?keyword=nguyen`
 
 **Response 200:**
-
 ```json
 {
-  "skill": { "kyNangId": 1, "tenKyNang": "NestJS", "moTa": "Framework Node.js cho backend" }
+  "total": 1,
+  "users": [
+    {
+      "taiKhoanId": 1,
+      "tenDangNhap": "nguyenvana",
+      "email": "nguyenvana@email.com",
+      "hoTen": "Nguyen Van A",
+      "soDienThoai": "0901234567",
+      "gioiTinh": "Nam",
+      "diaChi": "Ho Chi Minh City",
+      "vaiTro": "Freelancer",
+      "trangThai": "HoatDong",
+      "ngayTao": "2025-01-15T10:30:00.000Z",
+      "ngayCapNhat": "2025-01-15T10:30:00.000Z"
+    }
+  ]
 }
 ```
 
 ---
 
-### 5.3 Tạo kỹ năng mới
+### GET /users/:id
 
-```http
-POST /skills
-```
+Get a single user by ID.
 
-**Body:**
+**Request:**
+- Path params: `:id` - user account ID (integer)
 
+**Response 200:**
 ```json
-{ "tenKyNang": "Golang", "moTa": "Ngon ngu lap trinh Go" }
+{
+  "user": {
+    "taiKhoanId": 1,
+    "tenDangNhap": "nguyenvana",
+    "email": "nguyenvana@email.com",
+    "hoTen": "Nguyen Van A",
+    "soDienThoai": "0901234567",
+    "gioiTinh": "Nam",
+    "diaChi": "Ho Chi Minh City",
+    "vaiTro": "Freelancer",
+    "trangThai": "HoatDong",
+    "ngayTao": "2025-01-15T10:30:00.000Z",
+    "ngayCapNhat": "2025-01-15T10:30:00.000Z"
+  }
+}
 ```
 
-**Trường bắt buộc:** `tenKyNang`
+**Errors:**
+- `404` - User not found
+
+---
+
+
+### GET /users/:id/profile
+
+Get user profile with role-specific details (NguoiThue, Freelancer, or DonViGiamSat profile).
+
+**Request:**
+- Path params: `:id` - user account ID (integer)
+
+**Response 200 (Freelancer example):**
+```json
+{
+  "user": {
+    "taiKhoanId": 1,
+    "tenDangNhap": "nguyenvana",
+    "email": "nguyenvana@email.com",
+    "hoTen": "Nguyen Van A",
+    "soDienThoai": "0901234567",
+    "gioiTinh": "Nam",
+    "diaChi": "Ho Chi Minh City",
+    "vaiTro": "Freelancer",
+    "trangThai": "HoatDong",
+    "ngayTao": "2025-01-15T10:30:00.000Z",
+    "ngayCapNhat": "2025-01-15T10:30:00.000Z"
+  },
+  "profile": {
+    "role": "Freelancer",
+    "freelancer": {
+      "freelancerId": 1,
+      "kinhNghiem": 3,
+      "chuyenGia": "Web Development",
+      "kyNang": "React, Node.js",
+      "xepHang": "4.5",
+      "soDu": "5000000",
+      "xacThucEmail": true,
+      "xacThucSDT": true,
+      "tongCongViec": 10,
+      "tyLeHoanThanh": "90.00"
+    }
+  }
+}
+```
+
+**Response 200 (NguoiThue example):**
+```json
+{
+  "user": { "...same as above..." },
+  "profile": {
+    "role": "NguoiThue",
+    "nguoiThue": {
+      "nguoiThueId": 1,
+      "congTy": "ABC Corp",
+      "moTa": "Looking for developers",
+      "diemTinCay": "4.8",
+      "tongYeuCau": 5,
+      "tyLeHoanThanh": "80.00"
+    }
+  }
+}
+```
+
+**Errors:**
+- `404` - User not found
+
+---
+
+
+### GET /users/:id/jobs
+
+Get all jobs posted by a user (NguoiThue).
+
+**Request:**
+- Path params: `:id` - user account ID (integer)
+
+**Response 200:**
+```json
+{
+  "total": 1,
+  "jobs": [
+    {
+      "yeuCauId": 1,
+      "nguoiThueId": 1,
+      "loaiDichVuId": 2,
+      "tieuDe": "Build a React website",
+      "moTa": "Need a responsive website",
+      "nganSachMin": "5000000",
+      "nganSachMax": "10000000",
+      "thoiHan": "2025-03-01T00:00:00.000Z",
+      "trangThai": "MoiTao",
+      "soLuongBaoGia": 3,
+      "yeuCauGiamSat": false,
+      "ngayTao": "2025-01-15T10:30:00.000Z",
+      "ngayCapNhat": "2025-01-15T10:30:00.000Z",
+      "nguoiThue": {
+        "taiKhoanId": 1,
+        "hoTen": "Nguyen Van A",
+        "email": "nguyenvana@email.com"
+      },
+      "loaiDichVu": {
+        "loaiDichVuId": 2,
+        "tenLoai": "Web Development"
+      },
+      "kyNangs": [
+        { "kyNangId": 1, "tenKyNang": "React" },
+        { "kyNangId": 2, "tenKyNang": "Node.js" }
+      ]
+    }
+  ]
+}
+```
+
+**Errors:**
+- `404` - User not found
+
+---
+
+### GET /users/:id/contracts
+
+Get all contracts associated with a user.
+
+**Request:**
+- Path params: `:id` - user account ID (integer)
+
+**Response 200:**
+```json
+{
+  "total": 1,
+  "contracts": [
+    {
+      "congViecId": 1,
+      "yeuCauId": 1,
+      "freelancerId": 2,
+      "nguoiThueId": 1,
+      "giaThoa": "8000000",
+      "thoiGianThoa": 30,
+      "trangThai": "DangThucHien",
+      "ngayBatDau": "2025-01-20T00:00:00.000Z",
+      "ngayKetThuc": null,
+      "giamSatId": null,
+      "trangThaiGiamSat": "ChuaYeuCau",
+      "phiGiamSat": "0",
+      "ngayTao": "2025-01-18T10:30:00.000Z",
+      "yeuCau": {
+        "yeuCauId": 1,
+        "tieuDe": "Build a React website",
+        "moTa": "Need a responsive website"
+      },
+      "freelancer": {
+        "freelancerId": 2,
+        "taiKhoanId": 3,
+        "hoTen": "Tran Van B",
+        "email": "tranvanb@email.com"
+      },
+      "nguoiThue": {
+        "nguoiThueId": 1,
+        "taiKhoanId": 1,
+        "hoTen": "Nguyen Van A",
+        "email": "nguyenvana@email.com"
+      },
+      "giamSat": null
+    }
+  ]
+}
+```
+
+**Errors:**
+- `404` - User not found
+
+---
+
+### GET /users/:id/conversations
+
+Get all chat conversations for a user.
+
+**Request:**
+- Path params: `:id` - user account ID (integer)
+
+**Response 200:**
+```json
+{
+  "total": 1,
+  "conversations": [
+    {
+      "cuocHoiThoaiId": 1,
+      "congViecId": 1,
+      "thanhVien1": {
+        "taiKhoanId": 1,
+        "hoTen": "Nguyen Van A",
+        "email": "nguyenvana@email.com"
+      },
+      "thanhVien2": {
+        "taiKhoanId": 3,
+        "hoTen": "Tran Van B",
+        "email": "tranvanb@email.com"
+      },
+      "giamSatId": null,
+      "tinNhanCuoi": "Hello, I am interested in your project",
+      "trangThai": "DangMo",
+      "ngayTao": "2025-01-18T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+**Errors:**
+- `404` - User not found
+
+---
+
+
+### PUT /users/:id
+
+Update user information.
+
+**Request:**
+- Path params: `:id` - user account ID (integer)
+- Body:
+```json
+{
+  "hoTen": "Nguyen Van A Updated",
+  "soDienThoai": "0909876543",
+  "gioiTinh": "Nam",
+  "diaChi": "Ha Noi",
+  "trangThai": "HoatDong"
+}
+```
+
+> All fields are optional. Only provided fields will be updated.
+
+**Response 200:**
+```json
+{
+  "message": "User updated successfully",
+  "user": {
+    "taiKhoanId": 1,
+    "tenDangNhap": "nguyenvana",
+    "email": "nguyenvana@email.com",
+    "hoTen": "Nguyen Van A Updated",
+    "soDienThoai": "0909876543",
+    "gioiTinh": "Nam",
+    "diaChi": "Ha Noi",
+    "vaiTro": "Freelancer",
+    "trangThai": "HoatDong",
+    "ngayTao": "2025-01-15T10:30:00.000Z",
+    "ngayCapNhat": "2025-01-16T08:00:00.000Z"
+  }
+}
+```
+
+**Errors:**
+- `400` - Invalid data
+- `404` - User not found
+
+---
+
+### DELETE /users/:id
+
+Soft-delete (deactivate) a user account.
+
+**Request:**
+- Path params: `:id` - user account ID (integer)
+
+**Response 200:**
+```json
+{
+  "message": "User deleted successfully",
+  "userId": 1,
+  "trangThai": "Khoa"
+}
+```
+
+**Errors:**
+- `404` - User not found
+
+---
+
+## 4. Categories
+
+### GET /categories
+
+Get all service categories.
+
+**Request:**
+- No parameters required.
+
+**Response 200:**
+```json
+{
+  "total": 3,
+  "categories": [
+    {
+      "loaiDichVuId": 1,
+      "tenLoai": "Web Development",
+      "moTa": "Website and web application development",
+      "hinhAnh": "https://example.com/web-dev.png"
+    }
+  ]
+}
+```
+
+---
+
+
+### GET /categories/:id
+
+Get a single category by ID.
+
+**Request:**
+- Path params: `:id` - category ID (integer)
+
+**Response 200:**
+```json
+{
+  "category": {
+    "loaiDichVuId": 1,
+    "tenLoai": "Web Development",
+    "moTa": "Website and web application development",
+    "hinhAnh": "https://example.com/web-dev.png"
+  }
+}
+```
+
+**Errors:**
+- `404` - Category not found
+
+---
+
+### POST /categories
+
+Create a new service category.
+
+**Request:**
+- Body:
+```json
+{
+  "tenLoai": "Mobile Development",
+  "moTa": "iOS and Android app development",
+  "hinhAnh": "https://example.com/mobile-dev.png"
+}
+```
+
+> `moTa` and `hinhAnh` are optional.
 
 **Response 201:**
-
 ```json
 {
-  "message": "Tao ky nang thanh cong",
-  "skill": { "kyNangId": 39, "tenKyNang": "Golang", "moTa": "Ngon ngu lap trinh Go" }
+  "message": "Category created successfully",
+  "category": {
+    "loaiDichVuId": 4,
+    "tenLoai": "Mobile Development",
+    "moTa": "iOS and Android app development",
+    "hinhAnh": "https://example.com/mobile-dev.png"
+  }
 }
 ```
 
-**Lỗi (400):** `Ten ky nang da ton tai`
+**Errors:**
+- `400` - Missing required field `tenLoai`
+- `409` - Category name already exists
 
 ---
 
-### 5.4 Cập nhật kỹ năng
+### PUT /categories/:id
 
-```http
-PUT /skills/:id
-```
+Update an existing category.
 
-**Body** (tất cả optional): `tenKyNang`, `moTa`
-
-**Response 200:** `{ "message": "Cap nhat ky nang thanh cong", "skill": {...} }`
-
----
-
-### 5.5 Xóa kỹ năng
-
-```http
-DELETE /skills/:id
-```
-
-**Response 200:** `{ "message": "Xoa ky nang thanh cong", "kyNangId": 1 }`
-
-> ⚠️ Xóa kỹ năng sẽ tự động xóa tất cả liên kết trong `YeuCauKyNang` và `FreelancerKyNang` (CASCADE).
-
----
-
-## 6. Yêu cầu
-
-> ⭐ **Cập nhật:** Tất cả response của Jobs giờ có thêm trường `kyNangs`. Endpoint tạo mới hỗ trợ `kyNangIds`. Tìm kiếm hỗ trợ lọc theo kỹ năng.
-
-### 6.1 Tạo yêu cầu mới
-
-```http
-POST /jobs
-```
-
-**Body:**
-
+**Request:**
+- Path params: `:id` - category ID (integer)
+- Body:
 ```json
 {
-  "nguoiThueId": 1,
-  "loaiDichVuId": 2,
-  "tieuDe": "Xay dung API NestJS",
-  "moTa": "Can xay dung he thong API RESTful quan ly don hang va thanh toan...",
-  "nganSachMin": 25000000,
-  "nganSachMax": 40000000,
-  "thoiHan": "2026-06-01",
-  "yeuCauGiamSat": true,
-  "kyNangIds": [1, 2, 3, 4, 10]
+  "tenLoai": "Full-Stack Development",
+  "moTa": "End-to-end web development",
+  "hinhAnh": "https://example.com/fullstack.png"
 }
 ```
 
-**Trường bắt buộc:** `nguoiThueId`, `loaiDichVuId`, `tieuDe`, `moTa`, `nganSachMin`, `nganSachMax`, `thoiHan`
+> All fields are optional.
 
-**Trường tùy chọn:** `yeuCauGiamSat` (mặc định: false), `kyNangIds` (mặc định: [])
+**Response 200:**
+```json
+{
+  "message": "Category updated successfully",
+  "category": {
+    "loaiDichVuId": 1,
+    "tenLoai": "Full-Stack Development",
+    "moTa": "End-to-end web development",
+    "hinhAnh": "https://example.com/fullstack.png"
+  }
+}
+```
+
+**Errors:**
+- `400` - Invalid data
+- `404` - Category not found
+
+---
+
+
+### DELETE /categories/:id
+
+Delete a category.
+
+**Request:**
+- Path params: `:id` - category ID (integer)
+
+**Response 200:**
+```json
+{
+  "message": "Category deleted successfully",
+  "categoryId": 1
+}
+```
+
+**Errors:**
+- `404` - Category not found
+- `409` - Category is in use by existing jobs
+
+---
+
+## 5. Skills
+
+### GET /skills
+
+Get all skills.
+
+**Request:**
+- No parameters required.
+
+**Response 200:**
+```json
+{
+  "total": 5,
+  "skills": [
+    {
+      "kyNangId": 1,
+      "tenKyNang": "React",
+      "moTa": "React.js frontend framework"
+    },
+    {
+      "kyNangId": 2,
+      "tenKyNang": "Node.js",
+      "moTa": "Server-side JavaScript runtime"
+    }
+  ]
+}
+```
+
+---
+
+### GET /skills/:id
+
+Get a single skill by ID.
+
+**Request:**
+- Path params: `:id` - skill ID (integer)
+
+**Response 200:**
+```json
+{
+  "skill": {
+    "kyNangId": 1,
+    "tenKyNang": "React",
+    "moTa": "React.js frontend framework"
+  }
+}
+```
+
+**Errors:**
+- `404` - Skill not found
+
+---
+
+### POST /skills
+
+Create a new skill.
+
+**Request:**
+- Body:
+```json
+{
+  "tenKyNang": "TypeScript",
+  "moTa": "Typed superset of JavaScript"
+}
+```
+
+> `moTa` is optional.
 
 **Response 201:**
-
 ```json
 {
-  "message": "Tao yeu cau thanh cong",
+  "message": "Skill created successfully",
+  "skill": {
+    "kyNangId": 6,
+    "tenKyNang": "TypeScript",
+    "moTa": "Typed superset of JavaScript"
+  }
+}
+```
+
+**Errors:**
+- `400` - Missing required field `tenKyNang`
+- `409` - Skill name already exists
+
+---
+
+
+### PUT /skills/:id
+
+Update an existing skill.
+
+**Request:**
+- Path params: `:id` - skill ID (integer)
+- Body:
+```json
+{
+  "tenKyNang": "React.js",
+  "moTa": "A JavaScript library for building user interfaces"
+}
+```
+
+> All fields are optional.
+
+**Response 200:**
+```json
+{
+  "message": "Skill updated successfully",
+  "skill": {
+    "kyNangId": 1,
+    "tenKyNang": "React.js",
+    "moTa": "A JavaScript library for building user interfaces"
+  }
+}
+```
+
+**Errors:**
+- `400` - Invalid data
+- `404` - Skill not found
+
+---
+
+### DELETE /skills/:id
+
+Delete a skill.
+
+**Request:**
+- Path params: `:id` - skill ID (integer)
+
+**Response 200:**
+```json
+{
+  "message": "Skill deleted successfully",
+  "kyNangId": 1
+}
+```
+
+**Errors:**
+- `404` - Skill not found
+
+---
+
+## 6. Jobs
+
+### GET /jobs
+
+Get all job postings.
+
+**Request:**
+- No parameters required.
+
+**Response 200:**
+```json
+{
+  "total": 2,
+  "jobs": [
+    {
+      "yeuCauId": 1,
+      "nguoiThueId": 1,
+      "loaiDichVuId": 2,
+      "tieuDe": "Build a React website",
+      "moTa": "Need a responsive website with modern UI",
+      "nganSachMin": "5000000",
+      "nganSachMax": "10000000",
+      "thoiHan": "2025-03-01T00:00:00.000Z",
+      "trangThai": "MoiTao",
+      "soLuongBaoGia": 3,
+      "yeuCauGiamSat": false,
+      "ngayTao": "2025-01-15T10:30:00.000Z",
+      "ngayCapNhat": "2025-01-15T10:30:00.000Z",
+      "nguoiThue": {
+        "taiKhoanId": 1,
+        "hoTen": "Nguyen Van A",
+        "email": "nguyenvana@email.com"
+      },
+      "loaiDichVu": {
+        "loaiDichVuId": 2,
+        "tenLoai": "Web Development"
+      },
+      "kyNangs": [
+        { "kyNangId": 1, "tenKyNang": "React" },
+        { "kyNangId": 2, "tenKyNang": "Node.js" }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+
+### GET /jobs/search
+
+Search jobs by keyword, category, budget, and skills.
+
+**Request:**
+- Query params:
+  - `keyword` - search in title/description (optional)
+  - `category` - category ID (optional)
+  - `budget` - budget range filter (optional)
+  - `skills` - comma-separated skill IDs, e.g. "1,2,3" (optional)
+
+Example: `GET /jobs/search?keyword=react&category=2&skills=1,2`
+
+**Response 200:**
+```json
+{
+  "total": 1,
+  "jobs": [
+    {
+      "yeuCauId": 1,
+      "nguoiThueId": 1,
+      "loaiDichVuId": 2,
+      "tieuDe": "Build a React website",
+      "moTa": "Need a responsive website with modern UI",
+      "nganSachMin": "5000000",
+      "nganSachMax": "10000000",
+      "thoiHan": "2025-03-01T00:00:00.000Z",
+      "trangThai": "MoiTao",
+      "soLuongBaoGia": 3,
+      "yeuCauGiamSat": false,
+      "ngayTao": "2025-01-15T10:30:00.000Z",
+      "ngayCapNhat": "2025-01-15T10:30:00.000Z",
+      "nguoiThue": {
+        "taiKhoanId": 1,
+        "hoTen": "Nguyen Van A",
+        "email": "nguyenvana@email.com"
+      },
+      "loaiDichVu": {
+        "loaiDichVuId": 2,
+        "tenLoai": "Web Development"
+      },
+      "kyNangs": [
+        { "kyNangId": 1, "tenKyNang": "React" }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+### GET /jobs/:id
+
+Get a single job by ID.
+
+**Request:**
+- Path params: `:id` - job ID (integer)
+
+**Response 200:**
+```json
+{
   "job": {
     "yeuCauId": 1,
     "nguoiThueId": 1,
     "loaiDichVuId": 2,
-    "tieuDe": "Xay dung API NestJS",
-    "moTa": "...",
-    "nganSachMin": "25000000.00",
-    "nganSachMax": "40000000.00",
-    "thoiHan": "2026-06-01T00:00:00.000Z",
-    "trangThai": "DangMo",
-    "soLuongBaoGia": 0,
-    "yeuCauGiamSat": true,
-    "ngayTao": "2026-04-19T10:00:00.000Z",
-    "ngayCapNhat": "2026-04-19T10:00:00.000Z",
-    "nguoiThue": { "taiKhoanId": 1, "hoTen": "Nguyen Van An", "email": "manhhuy2@gmail.com" },
-    "loaiDichVu": { "loaiDichVuId": 2, "tenLoai": "Lap trinh backend" },
+    "tieuDe": "Build a React website",
+    "moTa": "Need a responsive website with modern UI",
+    "nganSachMin": "5000000",
+    "nganSachMax": "10000000",
+    "thoiHan": "2025-03-01T00:00:00.000Z",
+    "trangThai": "MoiTao",
+    "soLuongBaoGia": 3,
+    "yeuCauGiamSat": false,
+    "ngayTao": "2025-01-15T10:30:00.000Z",
+    "ngayCapNhat": "2025-01-15T10:30:00.000Z",
+    "nguoiThue": {
+      "taiKhoanId": 1,
+      "hoTen": "Nguyen Van A",
+      "email": "nguyenvana@email.com"
+    },
+    "loaiDichVu": {
+      "loaiDichVuId": 2,
+      "tenLoai": "Web Development"
+    },
     "kyNangs": [
-      { "kyNangId": 1, "tenKyNang": "NestJS" },
-      { "kyNangId": 2, "tenKyNang": "PostgreSQL" },
-      { "kyNangId": 3, "tenKyNang": "Redis" },
-      { "kyNangId": 4, "tenKyNang": "REST API" },
-      { "kyNangId": 10, "tenKyNang": "JWT" }
+      { "kyNangId": 1, "tenKyNang": "React" }
     ]
   }
 }
 ```
 
----
-
-### 6.2 Lấy danh sách yêu cầu
-
-```http
-GET /jobs
-```
-
-**Response 200:** Mảng jobs, mỗi job có thêm `kyNangs: [...]`
+**Errors:**
+- `404` - Job not found
 
 ---
 
-### 6.3 Tìm kiếm yêu cầu
 
-```http
-GET /jobs/search
-```
+### GET /jobs/:id/proposals
 
-**Query Parameters:**
+Get all proposals submitted for a specific job.
 
-| Param | Mô tả |
-|---|---|
-| `keyword` | Tìm trong tiêu đề và mô tả |
-| `category` | ID loại dịch vụ |
-| `budget` | Ngân sách (tìm yêu cầu có min ≤ budget ≤ max) |
-| `skills` | Danh sách KyNangID cách nhau bằng dấu phẩy (e.g. `1,2,3`) |
-
-**Ví dụ:**
-
-```
-GET /jobs/search?keyword=nestjs&category=2&skills=1,2
-```
-
----
-
-### 6.4 Lấy chi tiết yêu cầu
-
-```http
-GET /jobs/:id
-```
-
-**Response 200:** Job object với `kyNangs` đầy đủ.
-
----
-
-### 6.5 Cập nhật yêu cầu
-
-```http
-PUT /jobs/:id
-```
-
-**Body** (tất cả optional): `loaiDichVuId`, `tieuDe`, `moTa`, `nganSachMin`, `nganSachMax`, `thoiHan`, `trangThai`, `yeuCauGiamSat`
-
-> Để cập nhật kỹ năng, dùng endpoint riêng `PUT /jobs/:id/skills`.
-
----
-
-### 6.6 Xóa yêu cầu (Soft Delete)
-
-```http
-DELETE /jobs/:id
-```
-
-**Response 200:** `{ "message": "Xoa yeu cau thanh cong", "jobId": 1 }`
-
----
-
-### 6.7 Lấy kỹ năng của yêu cầu ⭐ MỚI
-
-```http
-GET /jobs/:id/skills
-```
+**Request:**
+- Path params: `:id` - job ID (integer)
 
 **Response 200:**
-
 ```json
 {
-  "message": "Lay danh sach ky nang thanh cong",
-  "kyNangs": [
-    { "kyNangId": 1, "tenKyNang": "NestJS" },
-    { "kyNangId": 2, "tenKyNang": "PostgreSQL" }
+  "total": 2,
+  "proposals": [
+    {
+      "baoGiaId": 1,
+      "yeuCauId": 1,
+      "freelancerId": 2,
+      "giaDeXuat": "7000000",
+      "thoiGianThucHien": 25,
+      "noiDung": "I can build this with React and Next.js",
+      "trangThai": "ChoXacNhan",
+      "ngayTao": "2025-01-16T08:00:00.000Z",
+      "ngayCapNhat": "2025-01-16T08:00:00.000Z",
+      "freelancer": {
+        "freelancerId": 2,
+        "taiKhoanId": 3,
+        "hoTen": "Tran Van B",
+        "email": "tranvanb@email.com",
+        "kinhNghiem": 5,
+        "kyNang": "React, Node.js",
+        "kyNangs": [
+          { "kyNangId": 1, "tenKyNang": "React" }
+        ],
+        "xepHang": "4.5"
+      },
+      "yeuCau": {
+        "yeuCauId": 1,
+        "tieuDe": "Build a React website",
+        "nguoiThueId": 1
+      }
+    }
   ]
 }
 ```
 
+**Errors:**
+- `404` - Job not found
+
 ---
 
-### 6.8 Thay thế toàn bộ kỹ năng yêu cầu ⭐ MỚI
+### GET /jobs/:id/skills
 
-```http
-PUT /jobs/:id/skills
-```
+Get skills required for a specific job.
 
-**Body:**
-
-```json
-{ "kyNangIds": [1, 2, 4, 10] }
-```
-
-Truyền `kyNangIds: []` để xóa hết kỹ năng.
+**Request:**
+- Path params: `:id` - job ID (integer)
 
 **Response 200:**
-
 ```json
 {
-  "message": "Cap nhat ky nang yeu cau thanh cong",
+  "message": "Job skills retrieved successfully",
   "kyNangs": [
-    { "kyNangId": 1, "tenKyNang": "NestJS" },
-    { "kyNangId": 2, "tenKyNang": "PostgreSQL" }
+    { "kyNangId": 1, "tenKyNang": "React" },
+    { "kyNangId": 2, "tenKyNang": "Node.js" }
   ]
 }
 ```
 
-**Lỗi (400):** `Ky nang khong ton tai: 99, 100`
+**Errors:**
+- `404` - Job not found
 
 ---
 
-### 6.9 Thêm 1 kỹ năng vào yêu cầu ⭐ MỚI
 
-```http
-POST /jobs/:id/skills/:kyNangId
-```
+### POST /jobs
 
-Idempotent — gọi nhiều lần không lỗi.
+Create a new job posting.
 
-**Response 200:** Danh sách kỹ năng hiện tại sau khi thêm.
-
----
-
-### 6.10 Xóa 1 kỹ năng khỏi yêu cầu ⭐ MỚI
-
-```http
-DELETE /jobs/:id/skills/:kyNangId
-```
-
-**Response 200:** Danh sách kỹ năng hiện tại sau khi xóa.
-
----
-
-## 7. Báo giá
-
-> ⭐ **Cập nhật:** Thông tin freelancer trong response báo giá giờ có thêm `kyNangs`.
-
-### 7.1 Tạo báo giá
-
-```http
-POST /proposals
-```
-
-**Body:**
-
+**Request:**
+- Body:
 ```json
 {
-  "yeuCauId": 1,
-  "freelancerId": 5,
-  "giaDeXuat": 7000000,
-  "thoiGianThucHien": 7,
-  "noiDung": "De xuat giao dien hien dai voi Figma..."
+  "nguoiThueId": 1,
+  "loaiDichVuId": 2,
+  "tieuDe": "Build a React website",
+  "moTa": "Need a responsive website with modern UI",
+  "nganSachMin": 5000000,
+  "nganSachMax": 10000000,
+  "thoiHan": "2025-03-01T00:00:00.000Z",
+  "yeuCauGiamSat": false,
+  "kyNangIds": [1, 2, 3]
 }
 ```
+
+> `yeuCauGiamSat` defaults to `false`. `kyNangIds` is optional.
 
 **Response 201:**
-
 ```json
 {
-  "message": "Tao bao gia thanh cong",
+  "message": "Job created successfully",
+  "job": {
+    "yeuCauId": 5,
+    "nguoiThueId": 1,
+    "loaiDichVuId": 2,
+    "tieuDe": "Build a React website",
+    "moTa": "Need a responsive website with modern UI",
+    "nganSachMin": "5000000",
+    "nganSachMax": "10000000",
+    "thoiHan": "2025-03-01T00:00:00.000Z",
+    "trangThai": "MoiTao",
+    "soLuongBaoGia": 0,
+    "yeuCauGiamSat": false,
+    "ngayTao": "2025-01-15T10:30:00.000Z",
+    "ngayCapNhat": "2025-01-15T10:30:00.000Z",
+    "nguoiThue": {
+      "taiKhoanId": 1,
+      "hoTen": "Nguyen Van A",
+      "email": "nguyenvana@email.com"
+    },
+    "loaiDichVu": {
+      "loaiDichVuId": 2,
+      "tenLoai": "Web Development"
+    },
+    "kyNangs": [
+      { "kyNangId": 1, "tenKyNang": "React" },
+      { "kyNangId": 2, "tenKyNang": "Node.js" }
+    ]
+  }
+}
+```
+
+**Errors:**
+- `400` - Missing required fields
+- `404` - NguoiThue or category not found
+
+---
+
+
+### PUT /jobs/:id
+
+Update an existing job.
+
+**Request:**
+- Path params: `:id` - job ID (integer)
+- Body:
+```json
+{
+  "tieuDe": "Build a React + Next.js website",
+  "moTa": "Updated description",
+  "nganSachMin": 6000000,
+  "nganSachMax": 12000000,
+  "thoiHan": "2025-04-01T00:00:00.000Z",
+  "trangThai": "DangNhan",
+  "yeuCauGiamSat": true
+}
+```
+
+> All fields are optional.
+
+**Response 200:**
+```json
+{
+  "message": "Job updated successfully",
+  "job": {
+    "yeuCauId": 1,
+    "nguoiThueId": 1,
+    "loaiDichVuId": 2,
+    "tieuDe": "Build a React + Next.js website",
+    "moTa": "Updated description",
+    "nganSachMin": "6000000",
+    "nganSachMax": "12000000",
+    "thoiHan": "2025-04-01T00:00:00.000Z",
+    "trangThai": "DangNhan",
+    "soLuongBaoGia": 3,
+    "yeuCauGiamSat": true,
+    "ngayTao": "2025-01-15T10:30:00.000Z",
+    "ngayCapNhat": "2025-01-16T08:00:00.000Z",
+    "nguoiThue": {
+      "taiKhoanId": 1,
+      "hoTen": "Nguyen Van A",
+      "email": "nguyenvana@email.com"
+    },
+    "loaiDichVu": {
+      "loaiDichVuId": 2,
+      "tenLoai": "Web Development"
+    },
+    "kyNangs": [
+      { "kyNangId": 1, "tenKyNang": "React" }
+    ]
+  }
+}
+```
+
+**Errors:**
+- `400` - Invalid data
+- `404` - Job not found
+
+---
+
+### PUT /jobs/:id/skills
+
+Replace all skills for a job (set operation).
+
+**Request:**
+- Path params: `:id` - job ID (integer)
+- Body:
+```json
+{
+  "kyNangIds": [1, 3, 5]
+}
+```
+
+**Response 200:**
+```json
+{
+  "message": "Job skills updated successfully",
+  "kyNangs": [
+    { "kyNangId": 1, "tenKyNang": "React" },
+    { "kyNangId": 3, "tenKyNang": "TypeScript" },
+    { "kyNangId": 5, "tenKyNang": "PostgreSQL" }
+  ]
+}
+```
+
+**Errors:**
+- `404` - Job not found
+
+---
+
+
+### POST /jobs/:id/skills/:kyNangId
+
+Add a single skill to a job.
+
+**Request:**
+- Path params:
+  - `:id` - job ID (integer)
+  - `:kyNangId` - skill ID to add (integer)
+
+**Response 200:**
+```json
+{
+  "message": "Skill added to job successfully",
+  "kyNangs": [
+    { "kyNangId": 1, "tenKyNang": "React" },
+    { "kyNangId": 2, "tenKyNang": "Node.js" },
+    { "kyNangId": 3, "tenKyNang": "TypeScript" }
+  ]
+}
+```
+
+**Errors:**
+- `404` - Job or skill not found
+- `409` - Skill already assigned to this job
+
+---
+
+### DELETE /jobs/:id/skills/:kyNangId
+
+Remove a single skill from a job.
+
+**Request:**
+- Path params:
+  - `:id` - job ID (integer)
+  - `:kyNangId` - skill ID to remove (integer)
+
+**Response 200:**
+```json
+{
+  "message": "Skill removed from job successfully",
+  "kyNangs": [
+    { "kyNangId": 1, "tenKyNang": "React" },
+    { "kyNangId": 2, "tenKyNang": "Node.js" }
+  ]
+}
+```
+
+**Errors:**
+- `404` - Job or skill not found
+
+---
+
+### DELETE /jobs/:id
+
+Delete a job posting.
+
+**Request:**
+- Path params: `:id` - job ID (integer)
+
+**Response 200:**
+```json
+{
+  "message": "Job deleted successfully",
+  "jobId": 1
+}
+```
+
+**Errors:**
+- `404` - Job not found
+- `409` - Cannot delete job with active contracts
+
+---
+
+## 7. Proposals
+
+### GET /proposals/:id
+
+Get a single proposal by ID.
+
+**Request:**
+- Path params: `:id` - proposal ID (integer)
+
+**Response 200:**
+```json
+{
   "proposal": {
     "baoGiaId": 1,
     "yeuCauId": 1,
-    "freelancerId": 5,
-    "giaDeXuat": "7000000.00",
-    "thoiGianThucHien": 7,
-    "noiDung": "...",
-    "trangThai": "DaGui",
-    "ngayTao": "...",
-    "ngayCapNhat": "...",
+    "freelancerId": 2,
+    "giaDeXuat": "7000000",
+    "thoiGianThucHien": 25,
+    "noiDung": "I can build this with React and Next.js",
+    "trangThai": "ChoXacNhan",
+    "ngayTao": "2025-01-16T08:00:00.000Z",
+    "ngayCapNhat": "2025-01-16T08:00:00.000Z",
     "freelancer": {
-      "freelancerId": 5,
-      "taiKhoanId": 13,
-      "hoTen": "User 13",
-      "email": "dev1@freelancer.vn",
-      "kinhNghiem": 4,
-      "kyNang": "NestJS, Prisma, React",
+      "freelancerId": 2,
+      "taiKhoanId": 3,
+      "hoTen": "Tran Van B",
+      "email": "tranvanb@email.com",
+      "kinhNghiem": 5,
+      "kyNang": "React, Node.js",
       "kyNangs": [
-        { "kyNangId": 1, "tenKyNang": "NestJS" },
-        { "kyNangId": 2, "tenKyNang": "PostgreSQL" },
-        { "kyNangId": 11, "tenKyNang": "React" }
+        { "kyNangId": 1, "tenKyNang": "React" }
       ],
-      "xepHang": "4.40"
+      "xepHang": "4.5"
     },
-    "yeuCau": { "yeuCauId": 1, "tieuDe": "Xay dung API NestJS", "nguoiThueId": 1 }
-  }
-}
-```
-
----
-
-### 7.2 - 7.4 Lấy / Cập nhật / Xóa báo giá
-
-```http
-GET /proposals/:id
-PUT /proposals/:id
-DELETE /proposals/:id
-```
-
-Tương tự như trước, response freelancer có thêm `kyNangs`.
-
----
-
-### 7.5 Lấy báo giá của yêu cầu
-
-```http
-GET /jobs/:id/proposals
-```
-
----
-
-### 7.6 Lấy báo giá của freelancer
-
-```http
-GET /freelancers/:id/proposals
-```
-
----
-
-## 8. Freelancer
-
-> ⭐ **Cập nhật:** Thêm các endpoint quản lý kỹ năng chuẩn hóa.
-
-### 8.1 Lấy kỹ năng của freelancer ⭐ MỚI
-
-```http
-GET /freelancers/:id/skills
-```
-
-**Response 200:**
-
-```json
-{
-  "message": "Lay danh sach ky nang thanh cong",
-  "freelancerId": 5,
-  "kyNangs": [
-    { "kyNangId": 1, "tenKyNang": "NestJS" },
-    { "kyNangId": 2, "tenKyNang": "PostgreSQL" },
-    { "kyNangId": 11, "tenKyNang": "React" }
-  ]
-}
-```
-
----
-
-### 8.2 Thay thế toàn bộ kỹ năng freelancer ⭐ MỚI
-
-```http
-PUT /freelancers/:id/skills
-```
-
-**Body:** `{ "kyNangIds": [1, 2, 11, 14, 6] }`
-
-**Response 200:** Danh sách kỹ năng sau khi cập nhật.
-
----
-
-### 8.3 Thêm 1 kỹ năng cho freelancer ⭐ MỚI
-
-```http
-POST /freelancers/:id/skills/:kyNangId
-```
-
----
-
-### 8.4 Xóa 1 kỹ năng của freelancer ⭐ MỚI
-
-```http
-DELETE /freelancers/:id/skills/:kyNangId
-```
-
-
-
-### 5.1 Tạo yêu cầu mới
-
-```http
-POST /jobs
-```
-
-**Body:**
-
-```json
-{
-  "tieuDe": "Thiet ke website e-commerce",
-  "moTa": "Can thiet ke website e-commerce cho cong ty ban dien tu",
-  "loaiDichVuId": 1,
-  "nganSachMin": 5000000,
-  "nganSachMax": 10000000,
-  "thoiHan": "2026-05-31",
-  "yeuCauGiamSat": true
-}
-```
-
-**Trường bắt buộc:**
-
-- `tieuDe` - Tiêu đề yêu cầu
-- `moTa` - Mô tả chi tiết
-- `loaiDichVuId` - ID loại dịch vụ
-- `nganSachMin` - Ngân sách tối thiểu
-- `nganSachMax` - Ngân sách tối đa
-- `thoiHan` - Thời hạn hoàn thành (định dạng: YYYY-MM-DD)
-
-**Trường tùy chọn:**
-
-- `yeuCauGiamSat` - Yêu cầu có giám sát hay không (mặc định: false)
-
-**Response 201:**
-
-```json
-{
-  "message": "Tao yeu cau thanh cong",
-  "data": {
-    "yeuCauId": 1,
-    "tieuDe": "Thiet ke website e-commerce",
-    "moTa": "Can thiet ke website e-commerce cho cong ty ban dien tu",
-    "loaiDichVuId": 1,
-    "nganSachMin": 5000000,
-    "nganSachMax": 10000000,
-    "thoiHan": "2026-05-31",
-    "trangThai": "MoDau",
-    "yeuCauGiamSat": true,
-    "soLuongBaoGia": 0,
-    "ngayTao": "2026-04-22T12:00:00.000Z"
-  }
-}
-```
-
----
-
-### 5.2 Lấy danh sách yêu cầu
-
-```http
-GET /jobs
-```
-
-**Query Parameters:**
-
-- `skip` - Bỏ qua số bản ghi (mặc định: 0)
-- `take` - Số lượng bản ghi (mặc định: 10)
-- `trangThai` - Lọc theo trạng thái
-
-**Response 200:**
-
-```json
-{
-  "data": [
-    {
-      "yeuCauId": 1,
-      "tieuDe": "Thiet ke website e-commerce",
-      "moTa": "Can thiet ke website e-commerce cho cong ty ban dien tu",
-      "loaiDichVuId": 1,
-      "nganSachMin": 5000000,
-      "nganSachMax": 10000000,
-      "thoiHan": "2026-05-31",
-      "trangThai": "MoDau",
-      "soLuongBaoGia": 3
-    }
-  ],
-  "total": 1
-}
-```
-
----
-
-### 5.3 Tìm kiếm yêu cầu
-
-```http
-GET /jobs/search
-```
-
-**Query Parameters:**
-
-- `keyword` - Từ khóa tìm kiếm (tiêu đề, mô tả)
-- `skip` - Bỏ qua số bản ghi
-- `take` - Số lượng bản ghi
-
-**Response 200:**
-
-```json
-{
-  "data": [
-    {
-      "yeuCauId": 1,
-      "tieuDe": "Thiet ke website e-commerce"
-    }
-  ],
-  "total": 1
-}
-```
-
----
-
-### 5.4 Lấy chi tiết yêu cầu
-
-```http
-GET /jobs/:id
-```
-
-**Response 200:**
-
-```json
-{
-  "yeuCauId": 1,
-  "tieuDe": "Thiet ke website e-commerce",
-  "moTa": "Can thiet ke website e-commerce cho cong ty ban dien tu",
-  "loaiDichVu": {
-    "loaiDichVuId": 1,
-    "tenLoai": "Thiet ke web"
-  },
-  "nganSachMin": 5000000,
-  "nganSachMax": 10000000,
-  "thoiHan": "2026-05-31",
-  "trangThai": "MoDau",
-  "yeuCauGiamSat": true,
-  "soLuongBaoGia": 3,
-  "nguoiThue": {
-    "nguoiThueId": 1,
-    "congTy": "Cong ty ABC"
-  },
-  "ngayTao": "2026-04-22T12:00:00.000Z"
-}
-```
-
----
-
-### 5.5 Cập nhật yêu cầu
-
-```http
-PUT /jobs/:id
-```
-
-**Body:**
-
-```json
-{
-  "tieuDe": "Thiet ke website e-commerce (cap nhat)",
-  "moTa": "Can thiet ke website e-commerce va app mobile",
-  "nganSachMin": 5000000,
-  "nganSachMax": 15000000,
-  "thoiHan": "2026-06-30"
-}
-```
-
-**Response 200:**
-
-```json
-{
-  "message": "Cap nhat thanh cong",
-  "data": {
-    "yeuCauId": 1,
-    "tieuDe": "Thiet ke website e-commerce (cap nhat)",
-    "moTa": "Can thiet ke website e-commerce va app mobile",
-    "nganSachMin": 5000000,
-    "nganSachMax": 15000000,
-    "thoiHan": "2026-06-30"
-  }
-}
-```
-
----
-
-### 5.6 Xóa yêu cầu (Soft Delete)
-
-```http
-DELETE /jobs/:id
-```
-
-**Response 200:**
-
-```json
-{
-  "message": "Xoa yeu cau thanh cong",
-  "trangThai": "DaHuy"
-}
-```
-
----
-
-## 6. Báo giá
-
-### 6.1 Tạo báo giá
-
-```http
-POST /proposals
-```
-
-**Body:**
-
-```json
-{
-  "yeuCauId": 1,
-  "giaThapNhat": 5000000,
-  "giaNhieuNhat": 8000000,
-  "thoiGianDuKien": 30,
-  "moTa": "Toi co kinh nghiem 5 nam trong thiet ke website"
-}
-```
-
-**Trường bắt buộc:**
-
-- `yeuCauId` - ID yêu cầu
-- `giaThapNhat` - Giá tối thiểu đề xuất
-- `giaNhieuNhat` - Giá tối đa đề xuất
-- `thoiGianDuKien` - Thời gian dự kiến (ngày)
-
-**Trường tùy chọn:**
-
-- `moTa` - Mô tả, lý do chọn
-
-**Response 201:**
-
-```json
-{
-  "message": "Tao bao gia thanh cong",
-  "data": {
-    "baoGiaId": 1,
-    "yeuCauId": 1,
-    "freelancerId": 1,
-    "giaThapNhat": 5000000,
-    "giaNhieuNhat": 8000000,
-    "thoiGianDuKien": 30,
-    "moTa": "Toi co kinh nghiem 5 nam trong thiet ke website",
-    "trangThai": "DaGui",
-    "ngayTao": "2026-04-22T12:00:00.000Z"
-  }
-}
-```
-
----
-
-### 6.2 Lấy chi tiết báo giá
-
-```http
-GET /proposals/:id
-```
-
-**Response 200:**
-
-```json
-{
-  "baoGiaId": 1,
-  "yeuCau": {
-    "yeuCauId": 1,
-    "tieuDe": "Thiet ke website e-commerce"
-  },
-  "freelancer": {
-    "freelancerId": 1,
-    "chuyenGia": "Web Development"
-  },
-  "giaThapNhat": 5000000,
-  "giaNhieuNhat": 8000000,
-  "thoiGianDuKien": 30,
-  "moTa": "Toi co kinh nghiem 5 nam trong thiet ke website",
-  "trangThai": "DaGui"
-}
-```
-
----
-
-### 6.3 Cập nhật báo giá
-
-```http
-PUT /proposals/:id
-```
-
-**Body:**
-
-```json
-{
-  "giaThapNhat": 5000000,
-  "giaNhieuNhat": 7000000,
-  "thoiGianDuKien": 25
-}
-```
-
-**Response 200:**
-
-```json
-{
-  "message": "Cap nhat thanh cong",
-  "data": {
-    "baoGiaId": 1,
-    "giaThapNhat": 5000000,
-    "giaNhieuNhat": 7000000,
-    "thoiGianDuKien": 25
-  }
-}
-```
-
----
-
-### 6.4 Xóa báo giá
-
-```http
-DELETE /proposals/:id
-```
-
-**Response 200:**
-
-```json
-{
-  "message": "Xoa bao gia thanh cong"
-}
-```
-
----
-
-### 6.5 Lấy danh sách báo giá của yêu cầu
-
-```http
-GET /jobs/:id/proposals
-```
-
-**Response 200:**
-
-```json
-{
-  "data": [
-    {
-      "baoGiaId": 1,
-      "freelancer": {
-        "freelancerId": 1,
-        "chuyenGia": "Web Development",
-        "xepHang": 4.8
-      },
-      "giaThapNhat": 5000000,
-      "giaNhieuNhat": 8000000,
-      "trangThai": "DaGui"
-    }
-  ],
-  "total": 1
-}
-```
-
----
-
-### 6.6 Lấy danh sách báo giá của freelancer
-
-```http
-GET /freelancers/:id/proposals
-```
-
-**Response 200:**
-
-```json
-{
-  "data": [
-    {
-      "baoGiaId": 1,
-      "yeuCau": {
-        "yeuCauId": 1,
-        "tieuDe": "Thiet ke website e-commerce"
-      },
-      "trangThai": "DaGui"
-    }
-  ],
-  "total": 1
-}
-```
-
----
-
-## 7. Freelancer
-
-### 7.1 Lấy danh sách freelancer
-
-```http
-GET /freelancers
-```
-
-**Query Parameters:**
-
-- `skip` - Bỏ qua số bản ghi
-- `take` - Số lượng bản ghi
-
-**Response 200:**
-
-```json
-{
-  "data": [
-    {
-      "freelancerId": 1,
-      "taiKhoan": {
-        "taiKhoanId": 2,
-        "hoTen": "Tran Thi B"
-      },
-      "chuyenGia": "Web Development",
-      "xepHang": 4.8,
-      "tongCongViec": 20,
-      "tyLeHoanThanh": 98.0
-    }
-  ],
-  "total": 1
-}
-```
-
----
-
-### 7.2 Tìm kiếm freelancer
-
-```http
-GET /freelancers/search
-```
-
-**Query Parameters:**
-
-- `keyword` - Từ khóa (tên, chuyên gia, kỹ năng)
-- `skip` - Bỏ qua số bản ghi
-- `take` - Số lượng bản ghi
-
----
-
-### 7.3 Lấy chi tiết freelancer
-
-```http
-GET /freelancers/:id
-```
-
-**Response 200:**
-
-```json
-{
-  "freelancerId": 1,
-  "taiKhoan": {
-    "taiKhoanId": 2,
-    "hoTen": "Tran Thi B",
-    "email": "freelancer01@example.com"
-  },
-  "kinhNghiem": 5,
-  "chuyenGia": "Web Development",
-  "kyNang": "PHP, JavaScript, React",
-  "xepHang": 4.8,
-  "soDu": 1000.0,
-  "xacThucEmail": true,
-  "xacThucSDT": false,
-  "tongCongViec": 20,
-  "tyLeHoanThanh": 98.0
-}
-```
-
----
-
-### 7.4 Cập nhật thông tin freelancer
-
-```http
-PUT /freelancers/:id
-```
-
-**Body:**
-
-```json
-{
-  "chuyenGia": "Web Development & Mobile App",
-  "kyNang": "PHP, JavaScript, React, Flutter",
-  "kinhNghiem": 6
-}
-```
-
-**Response 200:**
-
-```json
-{
-  "message": "Cap nhat thanh cong",
-  "data": {
-    "freelancerId": 1,
-    "chuyenGia": "Web Development & Mobile App",
-    "kyNang": "PHP, JavaScript, React, Flutter",
-    "kinhNghiem": 6
-  }
-}
-```
-
----
-
-## 8. Hợp đồng
-
-### 8.1 Tạo hợp đồng
-
-```http
-POST /contracts
-```
-
-**Body:**
-
-```json
-{
-  "baoGiaId": 1,
-  "giaThucTe": 7000000,
-  "thoiHanThucTe": 25
-}
-```
-
-**Trường bắt buộc:**
-
-- `baoGiaId` - ID báo giá được chọn
-
-**Trường tùy chọn:**
-
-- `giaThucTe` - Giá thực tế (mặc định: lấy từ báo giá)
-- `thoiHanThucTe` - Thời hạn thực tế (mặc định: lấy từ báo giá)
-
-**Response 201:**
-
-```json
-{
-  "message": "Tao hop dong thanh cong",
-  "data": {
-    "congViecId": 1,
     "yeuCau": {
       "yeuCauId": 1,
-      "tieuDe": "Thiet ke website e-commerce"
-    },
-    "nguoiThue": {
+      "tieuDe": "Build a React website",
       "nguoiThueId": 1
-    },
-    "freelancer": {
-      "freelancerId": 1
-    },
-    "giaThucTe": 7000000,
-    "thoiHanThucTe": 25,
-    "trangThai": "MoiTao",
-    "ngayTao": "2026-04-22T12:00:00.000Z"
-  }
-}
-```
-
----
-
-### 8.2 Lấy danh sách hợp đồng
-
-```http
-GET /contracts
-```
-
-**Query Parameters:**
-
-- `skip` - Bỏ qua số bản ghi
-- `take` - Số lượng bản ghi
-- `trangThai` - Lọc theo trạng thái
-
-**Response 200:**
-
-```json
-{
-  "data": [
-    {
-      "congViecId": 1,
-      "yeuCau": {
-        "tieuDe": "Thiet ke website e-commerce"
-      },
-      "trangThai": "MoiTao"
     }
-  ],
-  "total": 1
-}
-```
-
----
-
-### 8.3 Lấy chi tiết hợp đồng
-
-```http
-GET /contracts/:id
-```
-
-**Response 200:**
-
-```json
-{
-  "congViecId": 1,
-  "yeuCau": {
-    "yeuCauId": 1,
-    "tieuDe": "Thiet ke website e-commerce"
-  },
-  "nguoiThue": {
-    "nguoiThueId": 1,
-    "congTy": "Cong ty ABC"
-  },
-  "freelancer": {
-    "freelancerId": 1,
-    "chuyenGia": "Web Development"
-  },
-  "giaThucTe": 7000000,
-  "thoiHanThucTe": 25,
-  "trangThai": "MoiTao"
-}
-```
-
----
-
-### 8.4 Lấy chi tiết hợp đồng (bao gồm tiến độ)
-
-```http
-GET /contracts/:id/detail
-```
-
-**Response 200:**
-
-```json
-{
-  "hopDong": {
-    "congViecId": 1,
-    "yeuCau": {
-      "yeuCauId": 1,
-      "tieuDe": "Thiet ke website e-commerce"
-    },
-    "giaThucTe": 7000000,
-    "trangThai": "DangThucHien"
-  },
-  "tiendos": [
-    {
-      "tiendoId": 1,
-      "tieuDe": "Hoan thanh design",
-      "moTa": "Hoan thanh design trang chu",
-      "trangThai": "HoanThanh"
-    }
-  ]
-}
-```
-
----
-
-### 8.5 Cập nhật trạng thái hợp đồng
-
-```http
-PUT /contracts/:id/status
-```
-
-**Body:**
-
-```json
-{
-  "trangThai": "DangThucHien"
-}
-```
-
-**Trạng thái hợp lệ:**
-
-- `MoiTao` - Mới tạo
-- `DangThucHien` - Đang thực hiện
-- `HoanThanh` - Hoàn thành
-- `DaHuy` - Đã hủy
-- `TranhChap` - Tranh chấp
-
-**Response 200:**
-
-```json
-{
-  "message": "Cap nhat trang thai thanh cong",
-  "data": {
-    "congViecId": 1,
-    "trangThai": "DangThucHien"
   }
 }
 ```
 
----
-
-### 8.6 Lấy danh sách hợp đồng của người dùng
-
-```http
-GET /users/:id/contracts
-```
-
-**Response 200:**
-
-```json
-{
-  "data": [
-    {
-      "congViecId": 1,
-      "yeuCau": {
-        "tieuDe": "Thiet ke website e-commerce"
-      },
-      "trangThai": "DangThucHien"
-    }
-  ],
-  "total": 1
-}
-```
+**Errors:**
+- `404` - Proposal not found
 
 ---
 
-## 9. Đơn vị giám sát
 
-### 9.1 Lấy danh sách đơn vị giám sát
+### POST /proposals
 
-```http
-GET /supervisors
-```
+Create a new proposal (freelancer submits a bid for a job).
 
-**Query Parameters:**
-
-- `skip` - Bỏ qua số bản ghi
-- `take` - Số lượng bản ghi
-
-**Response 200:**
-
+**Request:**
+- Body:
 ```json
 {
-  "data": [
-    {
-      "giamSatId": 1,
-      "tenDonVi": "Cong ty giam sat A",
-      "moTa": "Chi tiet ve cong ty",
-      "xepHang": 4.9,
-      "tongCongViecGS": 50,
-      "trangThai": "HoatDong"
-    }
-  ],
-  "total": 1
-}
-```
-
----
-
-### 9.2 Tìm kiếm đơn vị giám sát
-
-```http
-GET /supervisors/search
-```
-
-**Query Parameters:**
-
-- `keyword` - Từ khóa (tên đơn vị)
-- `skip` - Bỏ qua số bản ghi
-- `take` - Số lượng bản ghi
-
----
-
-### 9.3 Lấy chi tiết đơn vị giám sát
-
-```http
-GET /supervisors/:id
-```
-
-**Response 200:**
-
-```json
-{
-  "giamSatId": 1,
-  "taiKhoan": {
-    "hoTen": "Cong ty giam sat A"
-  },
-  "tenDonVi": "Cong ty giam sat A",
-  "moTa": "Chi tiet ve cong ty",
-  "nangLuc": "Cac chung chi quan trong",
-  "phiGiamSat": 100000.0,
-  "xepHang": 4.9,
-  "tongCongViecGS": 50,
-  "trangThai": "HoatDong"
-}
-```
-
----
-
-### 9.4 Tạo đơn vị giám sát mới
-
-```http
-POST /supervisors
-```
-
-**Body:**
-
-```json
-{
-  "tenDonVi": "Cong ty giam sat B",
-  "moTa": "Chi tiet ve cong ty",
-  "nangLuc": "Cac chung chi quan trong",
-  "chungChi": "Chung chi ISO 9001",
-  "phiGiamSat": 150000.0
-}
-```
-
-**Trường bắt buộc:**
-
-- `tenDonVi` - Tên đơn vị
-
-**Trường tùy chọn:**
-
-- `moTa` - Mô tả
-- `nangLuc` - Năng lực
-- `chungChi` - Chứng chỉ
-- `phiGiamSat` - Phí giám sát (mặc định: 0)
-
-**Response 201:**
-
-```json
-{
-  "message": "Tao don vi giam sat thanh cong",
-  "data": {
-    "giamSatId": 1,
-    "tenDonVi": "Cong ty giam sat B",
-    "trangThai": "ChoDuyet"
-  }
-}
-```
-
----
-
-### 9.5 Cập nhật đơn vị giám sát
-
-```http
-PUT /supervisors/:id
-```
-
-**Body:**
-
-```json
-{
-  "tenDonVi": "Cong ty giam sat B (cap nhat)",
-  "phiGiamSat": 200000.0
-}
-```
-
-**Response 200:**
-
-```json
-{
-  "message": "Cap nhat thanh cong",
-  "data": {
-    "giamSatId": 1,
-    "tenDonVi": "Cong ty giam sat B (cap nhat)",
-    "phiGiamSat": 200000.0
-  }
-}
-```
-
----
-
-### 9.6 Xóa đơn vị giám sát
-
-```http
-DELETE /supervisors/:id
-```
-
-**Response 200:**
-
-```json
-{
-  "message": "Xoa don vi giam sat thanh cong"
-}
-```
-
----
-
-### 9.7 Chọn giám sát cho hợp đồng
-
-```http
-POST /contracts/:id/supervisor
-```
-
-**Body:**
-
-```json
-{
-  "giamSatId": 1
-}
-```
-
-**Response 201:**
-
-```json
-{
-  "message": "Chon giam sat thanh cong",
-  "data": {
-    "congViecId": 1,
-    "giamSatId": 1,
-    "trangThaiGiamSat": "ChoDuyet"
-  }
-}
-```
-
----
-
-### 9.8 Freelancer chấp nhận giám sát
-
-```http
-PUT /contracts/:id/supervisor/accept
-```
-
-**Response 200:**
-
-```json
-{
-  "message": "Chap nhan giam sat thanh cong",
-  "trangThaiGiamSat": "DangGiamSat"
-}
-```
-
----
-
-### 9.9 Freelancer từ chối giám sát
-
-```http
-PUT /contracts/:id/supervisor/reject
-```
-
-**Body:**
-
-```json
-{
-  "lyDo": "Toi khong dong y voi sle thanh"
-}
-```
-
-**Response 200:**
-
-```json
-{
-  "message": "Tu choi giam sat thanh cong",
-  "trangThaiGiamSat": "TuChoi"
-}
-```
-
----
-
-## 10. Tiến độ
-
-### 10.1 Tạo tiến độ mới
-
-```http
-POST /contracts/:id/progress
-```
-
-**Body:**
-
-```json
-{
-  "tieuDe": "Hoan thanh design",
-  "moTa": "Hoan thanh design trang chu va trang san pham",
-  "phanTramHoanThanh": 30
-}
-```
-
-**Trường bắt buộc:**
-
-- `tieuDe` - Tiêu đề tiến độ
-- `phanTramHoanThanh` - Phần trăm hoàn thành (0-100)
-
-**Trường tùy chọn:**
-
-- `moTa` - Mô tả chi tiết
-
-**Response 201:**
-
-```json
-{
-  "message": "Tao tien do thanh cong",
-  "data": {
-    "tiendoId": 1,
-    "congViecId": 1,
-    "tieuDe": "Hoan thanh design",
-    "moTa": "Hoan thanh design trang chu va trang san pham",
-    "phanTramHoanThanh": 30,
-    "trangThai": "ChuaXacNhan",
-    "ngayTao": "2026-04-22T12:00:00.000Z"
-  }
-}
-```
-
----
-
-### 10.2 Lấy danh sách tiến độ của hợp đồng
-
-```http
-GET /contracts/:id/progress
-```
-
-**Response 200:**
-
-```json
-{
-  "data": [
-    {
-      "tiendoId": 1,
-      "tieuDe": "Hoan thanh design",
-      "moTa": "Hoan thanh design trang chu va trang san pham",
-      "phanTramHoanThanh": 30,
-      "trangThai": "ChuaXacNhan"
-    }
-  ],
-  "total": 1
-}
-```
-
----
-
-### 10.3 Lấy chi tiết tiến độ
-
-```http
-GET /progress/:id
-```
-
-**Response 200:**
-
-```json
-{
-  "tiendoId": 1,
-  "congViec": {
-    "congViecId": 1
-  },
-  "tieuDe": "Hoan thanh design",
-  "moTa": "Hoan thanh design trang chu va trang san pham",
-  "phanTramHoanThanh": 30,
-  "trangThai": "ChuaXacNhan"
-}
-```
-
----
-
-### 10.4 Cập nhật tiến độ
-
-```http
-PUT /progress/:id
-```
-
-**Body:**
-
-```json
-{
-  "tieuDe": "Hoan thanh design (cap nhat)",
-  "moTa": "Hoan thanh design day du",
-  "phanTramHoanThanh": 50
-}
-```
-
-**Response 200:**
-
-```json
-{
-  "message": "Cap nhat thanh cong",
-  "data": {
-    "tiendoId": 1,
-    "phanTramHoanThanh": 50
-  }
-}
-```
-
----
-
-### 10.5 Xóa tiến độ
-
-```http
-DELETE /progress/:id
-```
-
-**Response 200:**
-
-```json
-{
-  "message": "Xoa tien do thanh cong"
-}
-```
-
----
-
-## 11. Tin nhắn
-
-### 11.1 Tạo cuộc hội thoại mới
-
-```http
-POST /chat
-```
-
-**Body:**
-
-```json
-{
-  "thanhVien2Id": 2
-}
-```
-
-**Trường bắt buộc:**
-
-- `thanhVien2Id` - ID người dùng muốn chat với
-
-**Response 201:**
-
-```json
-{
-  "message": "Tao cuoc hoi thoai thanh cong",
-  "data": {
-    "cuocHoiThoaiId": 1,
-    "thanhVien1": {
-      "taiKhoanId": 1
-    },
-    "thanhVien2": {
-      "taiKhoanId": 2
-    },
-    "trangThai": "DangMo",
-    "ngayTao": "2026-04-22T12:00:00.000Z"
-  }
-}
-```
-
----
-
-### 11.2 Lấy danh sách cuộc hội thoại
-
-```http
-GET /chat
-```
-
-**Response 200:**
-
-```json
-{
-  "data": [
-    {
-      "cuocHoiThoaiId": 1,
-      "thanhVien1": {
-        "taiKhoanId": 1,
-        "hoTen": "Nguyen Van A"
-      },
-      "thanhVien2": {
-        "taiKhoanId": 2,
-        "hoTen": "Tran Thi B"
-      },
-      "tinNhanCuoi": "Toi se hoan thanh vao tuan sau",
-      "trangThai": "DangMo"
-    }
-  ],
-  "total": 1
-}
-```
-
----
-
-### 11.3 Gửi tin nhắn
-
-```http
-POST /chat/:id/messages
-```
-
-**Body:**
-
-```json
-{
-  "noiDung": "Toi se hoan thanh vao tuan sau",
-  "loaiTinNhan": "VanBan"
-}
-```
-
-**Trường bắt buộc:**
-
-- `noiDung` - Nội dung tin nhắn
-
-**Trường tùy chọn:**
-
-- `loaiTinNhan` - Loại tin: `VanBan` | `File` | `HinhAnh` (mặc định: VanBan)
-
-**Response 201:**
-
-```json
-{
-  "message": "Gui tin nhan thanh cong",
-  "data": {
-    "tinNhanId": 1,
-    "cuocHoiThoaiId": 1,
-    "noiDung": "Toi se hoan thanh vao tuan sau",
-    "loaiTinNhan": "VanBan",
-    "ngayGui": "2026-04-22T12:30:00.000Z"
-  }
-}
-```
-
----
-
-### 11.4 Lấy danh sách tin nhắn
-
-```http
-GET /chat/:id/messages
-```
-
-**Query Parameters:**
-
-- `skip` - Bỏ qua số bản ghi
-- `take` - Số lượng bản ghi
-
-**Response 200:**
-
-```json
-{
-  "data": [
-    {
-      "tinNhanId": 1,
-      "nguoiGui": {
-        "taiKhoanId": 1,
-        "hoTen": "Nguyen Van A"
-      },
-      "noiDung": "Toi se hoan thanh vao tuan sau",
-      "loaiTinNhan": "VanBan",
-      "ngayGui": "2026-04-22T12:30:00.000Z"
-    }
-  ],
-  "total": 1
-}
-```
-
----
-
-## 12. Tranh chấp
-
-### 12.1 Tạo tranh chấp mới
-
-```http
-POST /disputes
-```
-
-**Body:**
-
-```json
-{
-  "congViecId": 1,
-  "tieuDe": "Cong viec khong dap ung yeu cau",
-  "moTa": "Freelancer khong thuc hien dung yeu cau, design chua dat chat luong",
-  "loaiTranhChap": "KhongDapUng"
-}
-```
-
-**Trường bắt buộc:**
-
-- `congViecId` - ID công việc/hợp đồng
-- `tieuDe` - Tiêu đề tranh chấp
-- `moTa` - Mô tả chi tiết vấn đề
-
-**Trường tùy chọn:**
-
-- `loaiTranhChap` - Loại tranh chấp
-
-**Response 201:**
-
-```json
-{
-  "message": "Tao tranh chap thanh cong",
-  "data": {
-    "tranhChapId": 1,
-    "congViec": {
-      "congViecId": 1
-    },
-    "tieuDe": "Cong viec khong dap ung yeu cau",
-    "moTa": "Freelancer khong thuc hien dung yeu cau",
-    "trangThai": "MoiMo",
-    "ngayTao": "2026-04-22T12:00:00.000Z"
-  }
-}
-```
-
----
-
-### 12.2 Lấy danh sách tranh chấp
-
-```http
-GET /disputes
-```
-
-**Query Parameters:**
-
-- `skip` - Bỏ qua số bản ghi
-- `take` - Số lượng bản ghi
-- `trangThai` - Lọc theo trạng thái
-
-**Response 200:**
-
-```json
-{
-  "data": [
-    {
-      "tranhChapId": 1,
-      "tieuDe": "Cong viec khong dap ung yeu cau",
-      "trangThai": "DangXuLy"
-    }
-  ],
-  "total": 1
-}
-```
-
----
-
-### 12.3 Lấy chi tiết tranh chấp
-
-```http
-GET /disputes/:id
-```
-
-**Response 200:**
-
-```json
-{
-  "tranhChapId": 1,
-  "congViec": {
-    "congViecId": 1
-  },
-  "tieuDe": "Cong viec khong dap ung yeu cau",
-  "moTa": "Freelancer khong thuc hien dung yeu cau",
-  "trangThai": "DangXuLy",
-  "baoGias": []
-}
-```
-
----
-
-### 12.4 Cập nhật trạng thái tranh chấp
-
-```http
-PUT /disputes/:id/status
-```
-
-**Body:**
-
-```json
-{
-  "trangThai": "DaKetLuan"
-}
-```
-
-**Trạng thái hợp lệ:**
-
-- `MoiMo` - Mới mở
-- `DangXuLy` - Đang xử lý
-- `DaKetLuan` - Đã kết luận
-- `DaDong` - Đã đóng
-
-**Response 200:**
-
-```json
-{
-  "message": "Cap nhat trang thai thanh cong"
-}
-```
-
----
-
-## 13. Bằng chứng
-
-### 13.1 Tạo bằng chứng cho tranh chấp
-
-```http
-POST /evidences
-```
-
-**Body:**
-
-```json
-{
-  "tranhChapId": 1,
-  "loaiBangChung": "HinhAnh",
-  "duongDan": "https://example.com/screenshot.jpg",
-  "moTa": "Screenshot hien thi cong viec chua hoan thanh"
-}
-```
-
-**Trường bắt buộc:**
-
-- `tranhChapId` - ID tranh chấp
-- `loaiBangChung` - Loại bằng chứng: `TinNhan` | `File` | `HinhAnh` | `GhiChu` | `KhacP`
-- `duongDan` - Đường dẫn/URL bằng chứng
-
-**Trường tùy chọn:**
-
-- `moTa` - Mô tả bằng chứng
-
-**Response 201:**
-
-```json
-{
-  "message": "Tao bang chung thanh cong",
-  "data": {
-    "bangChungId": 1,
-    "tranhChapId": 1,
-    "loaiBangChung": "HinhAnh",
-    "duongDan": "https://example.com/screenshot.jpg",
-    "moTa": "Screenshot hien thi cong viec chua hoan thanh",
-    "ngayTao": "2026-04-22T12:00:00.000Z"
-  }
-}
-```
-
----
-
-### 13.2 Lấy danh sách bằng chứng
-
-```http
-GET /evidences
-```
-
-**Query Parameters:**
-
-- `tranhChapId` - Lọc theo ID tranh chấp
-- `skip` - Bỏ qua số bản ghi
-- `take` - Số lượng bản ghi
-
-**Response 200:**
-
-```json
-{
-  "data": [
-    {
-      "bangChungId": 1,
-      "tranhChapId": 1,
-      "loaiBangChung": "HinhAnh",
-      "duongDan": "https://example.com/screenshot.jpg"
-    }
-  ],
-  "total": 1
-}
-```
-
----
-
-## 14. Thông báo
-
-### 14.1 Lấy danh sách thông báo
-
-```http
-GET /notifications
-```
-
-**Query Parameters:**
-
-- `skip` - Bỏ qua số bản ghi
-- `take` - Số lượng bản ghi
-
-**Response 200:**
-
-```json
-{
-  "data": [
-    {
-      "thongBaoId": 1,
-      "tieuDe": "Co bao gia moi cho yeu cau",
-      "moTa": "Freelancer Tran Thi B da gui bao gia",
-      "loai": "BaoGia",
-      "daXem": false,
-      "ngayTao": "2026-04-22T12:00:00.000Z"
-    }
-  ],
-  "total": 1
-}
-```
-
----
-
-### 14.2 Đánh dấu thông báo đã xem
-
-```http
-PUT /notifications/:id/read
-```
-
-**Response 200:**
-
-```json
-{
-  "message": "Danh dau da xem thanh cong"
-}
-```
-
----
-
-### 14.3 Xóa thông báo
-
-```http
-DELETE /notifications/:id
-```
-
-**Response 200:**
-
-```json
-{
-  "message": "Xoa thong bao thanh cong"
-}
-```
-
----
-
-## 15. Thanh toán
-
-### 15.1 Tạo thanh toán
-
-```http
-POST /payments
-```
-
-**Body:**
-
-```json
-{
-  "congViecId": 1,
-  "soTien": 7000000,
-  "loaiThanhToan": "DatCoc",
-  "phuongThucThanhToan": "ChuyenKhoan",
-  "moTa": "Dat coc 50% cong viec"
-}
-```
-
-**Trường bắt buộc:**
-
-- `congViecId` - ID công việc
-- `soTien` - Số tiền thanh toán
-- `loaiThanhToan` - Loại: `DatCoc` | `ThanhToanCuoi` | `HoanTien` | `PhiGiamSat` | `PhiHeThong`
-- `phuongThucThanhToan` - Phương thức: `ChuyenKhoan` | `ThanhToanQuaMang` | `Vi` | `TienMat`
-
-**Trường tùy chọn:**
-
-- `moTa` - Mô tả
-
-**Response 201:**
-
-```json
-{
-  "message": "Tao thanh toan thanh cong",
-  "data": {
-    "thanhToanId": 1,
-    "congViecId": 1,
-    "soTien": 7000000,
-    "loaiThanhToan": "DatCoc",
-    "phuongThucThanhToan": "ChuyenKhoan",
-    "trangThai": "ChoXuLy",
-    "ngayTao": "2026-04-22T12:00:00.000Z"
-  }
-}
-```
-
----
-
-### 15.2 Lấy danh sách thanh toán
-
-```http
-GET /payments
-```
-
-**Query Parameters:**
-
-- `congViecId` - Lọc theo ID công việc
-- `skip` - Bỏ qua số bản ghi
-- `take` - Số lượng bản ghi
-
-**Response 200:**
-
-```json
-{
-  "data": [
-    {
-      "thanhToanId": 1,
-      "congViecId": 1,
-      "soTien": 7000000,
-      "loaiThanhToan": "DatCoc",
-      "trangThai": "ThanhCong"
-    }
-  ],
-  "total": 1
-}
-```
-
----
-
-### 15.3 Cập nhật trạng thái thanh toán
-
-```http
-PUT /payments/:id/status
-```
-
-**Body:**
-
-```json
-{
-  "trangThai": "ThanhCong"
-}
-```
-
-**Trạng thái hợp lệ:**
-
-- `ChoXuLy` - Chờ xử lý
-- `ThanhCong` - Thành công
-- `ThatBai` - Thất bại
-- `DaHoan` - Đã hoàn
-
-**Response 200:**
-
-```json
-{
-  "message": "Cap nhat trang thai thanh cong"
-}
-```
-
----
-
-## 16. Đánh giá
-
-### 16.1 Tạo đánh giá
-
-```http
-POST /reviews
-```
-
-**Body:**
-
-```json
-{
-  "congViecId": 1,
-  "diem": 5,
-  "binhLuan": "Thuc hien tot, chat luong cao, tui hoa luc",
-  "loaiDanhGia": "NguoiThue_DanhGia_Freelancer"
-}
-```
-
-**Trường bắt buộc:**
-
-- `congViecId` - ID công việc
-- `diem` - Điểm đánh giá (1-5)
-- `loaiDanhGia` - Loại đánh giá
-
-**Trường tùy chọn:**
-
-- `binhLuan` - Bình luận
-
-**Response 201:**
-
-```json
-{
-  "message": "Tao danh gia thanh cong",
-  "data": {
-    "danhGiaId": 1,
-    "congViecId": 1,
-    "diem": 5,
-    "binhLuan": "Thuc hien tot, chat luong cao",
-    "loaiDanhGia": "NguoiThue_DanhGia_Freelancer",
-    "ngayTao": "2026-04-22T12:00:00.000Z"
-  }
-}
-```
-
----
-
-### 16.2 Lấy danh sách đánh giá
-
-```http
-GET /reviews
-```
-
-**Query Parameters:**
-
-- `congViecId` - Lọc theo ID công việc
-- `skip` - Bỏ qua số bản ghi
-- `take` - Số lượng bản ghi
-
-**Response 200:**
-
-```json
-{
-  "data": [
-    {
-      "danhGiaId": 1,
-      "congViecId": 1,
-      "diem": 5,
-      "binhLuan": "Thuc hien tot, chat luong cao",
-      "nguoiDanhGia": {
-        "taiKhoanId": 1,
-        "hoTen": "Nguyen Van A"
-      }
-    }
-  ],
-  "total": 1
-}
-```
-
----
-
-## 17. Báo cáo
-
-### 17.1 Tạo báo cáo
-
-```http
-POST /reports
-```
-
-**Body:**
-
-```json
-{
-  "nguoiBiCaoId": 2,
-  "tieuDe": "Freelancer lac tro trong lam viec",
-  "moTa": "Freelancer pham quy dinh thuc hien cong viec an thoa",
-  "loaiBaoCao": "VanPhaMuiCao"
-}
-```
-
-**Trường bắt buộc:**
-
-- `nguoiBiCaoId` - ID người bị báo cáo
-- `tieuDe` - Tiêu đề báo cáo
-- `moTa` - Mô tả chi tiết
-
-**Response 201:**
-
-```json
-{
-  "message": "Tao bao cao thanh cong",
-  "data": {
-    "baoCaoId": 1,
-    "nguoiBiCaoId": 2,
-    "tieuDe": "Freelancer lac tro trong lam viec",
-    "moTa": "Freelancer pham quy dinh",
-    "trangThai": "ChoXuLy",
-    "ngayTao": "2026-04-22T12:00:00.000Z"
-  }
-}
-```
-
----
-
-### 17.2 Lấy danh sách báo cáo
-
-```http
-GET /reports
-```
-
-**Query Parameters:**
-
-- `skip` - Bỏ qua số bản ghi
-- `take` - Số lượng bản ghi
-- `trangThai` - Lọc theo trạng thái
-
-**Response 200:**
-
-```json
-{
-  "data": [
-    {
-      "baoCaoId": 1,
-      "tieuDe": "Freelancer lac tro trong lam viec",
-      "trangThai": "ChoXuLy"
-    }
-  ],
-  "total": 1
-}
-```
-
----
-
-## 18. Admin
-
-### 18.1 Cập nhật trạng thái tài khoản
-
-```http
-PUT /admin/users/:id/status
-```
-
-**Body:**
-
-```json
-{
-  "trangThai": "HoatDong"
-}
-```
-
-**Response 200:**
-
-```json
-{
-  "message": "Cap nhat trang thai thanh cong"
-}
-```
-
----
-
-### 18.2 Duyệt đơn vị giám sát
-
-```http
-PUT /admin/supervisors/:id/approve
-```
-
-**Response 200:**
-
-```json
-{
-  "message": "Duyet don vi giam sat thanh cong",
-  "trangThai": "HoatDong"
-}
-```
-
----
-
-### 18.3 Xử lý báo cáo
-
-```http
-PUT /admin/reports/:id/status
-```
-
-**Body:**
-
-```json
-{
-  "trangThai": "DaXuLy",
-  "hanhDong": "CamHoatDong"
-}
-```
-
-**Response 200:**
-
-```json
-{
-  "message": "Cap nhat trang thai bao cao thanh cong"
-}
-```
-
----
-
-## Lưu ý
-
-- Tất cả các trường ngày tháng sử dụng định dạng ISO 8601: `YYYY-MM-DDTHH:mm:ss.fffZ`
-- Tiền tệ sử dụng đồng Việt Nam (VND)
-- Phần trăm được tính từ 0-100
-- Điểm đánh giá từ 1-5 sao
-- Xếp hạng (rating) từ 0-5 điểm
-- Soft delete: các bản ghi bị xóa vẫn lưu trong cơ sở dữ liệu nhưng được đánh dấu là đã xóa
-- Validation: GlobalValidationPipe tự động xóa các trường không được phép gửi lên
-
-## 5. Jobs
-
-### 5.1. Tạo yêu cầu thuê mới
-
-```http
-POST /jobs
-```
-
-**Body:**
-
-```json
-{
-  "nguoiThueId": 5,
-  "loaiDichVuId": 1,
-  "tieuDe": "Can thiet ke website ban hang",
-  "moTa": "Can thiet ke website ban hang online",
-  "nganSachMin": 5000000,
-  "nganSachMax": 10000000,
-  "thoiHan": "2026-05-30",
-  "yeuCauGiamSat": true
-}
-```
-
-### 5.2. Lấy danh sách yêu cầu
-
-```http
-GET /jobs
-```
-
-### 5.3. Tìm kiếm yêu cầu
-
-```http
-GET /jobs/search?keyword=website&category=1&budget=7000000
-```
-
-**Query params:**
-
-- `keyword` - Tìm trong tiêu đề và mô tả
-- `category` - ID loại dịch vụ
-- `budget` - Ngân sách
-
-### 5.4. Lấy chi tiết yêu cầu
-
-```http
-GET /jobs/:id
-```
-
-### 5.5. Lấy báo giá của yêu cầu
-
-```http
-GET /jobs/:id/proposals
-```
-
-### 5.6. Cập nhật yêu cầu
-
-```http
-PUT /jobs/:id
-```
-
-**Trạng thái có thể cập nhật:**
-
-- `MoDau` - Mở đầu
-- `DangMo` - Đang mở
-- `DaDong` - Đã đóng
-- `DaHuy` - Đã hủy
-- `HoanThanh` - Hoàn thành
-
-### 5.7. Xóa yêu cầu (soft delete)
-
-```http
-DELETE /jobs/:id
-```
-
----
-
-## 6. Proposals
-
-### 6.1. Tạo báo giá mới
-
-```http
-POST /proposals
-```
-
-**Body:**
-
-```json
-{
-  "yeuCauId": 15,
-  "freelancerId": 8,
+  "yeuCauId": 1,
+  "freelancerId": 2,
   "giaDeXuat": 7000000,
   "thoiGianThucHien": 25,
-  "noiDung": "Toi co kinh nghiem 3 nam ve thiet ke web"
+  "noiDung": "I can build this with React and Next.js"
 }
 ```
 
-### 6.2. Lấy chi tiết báo giá
+> `noiDung` is optional.
 
-```http
-GET /proposals/:id
+**Response 201:**
+```json
+{
+  "message": "Proposal created successfully",
+  "proposal": {
+    "baoGiaId": 5,
+    "yeuCauId": 1,
+    "freelancerId": 2,
+    "giaDeXuat": "7000000",
+    "thoiGianThucHien": 25,
+    "noiDung": "I can build this with React and Next.js",
+    "trangThai": "ChoXacNhan",
+    "ngayTao": "2025-01-16T08:00:00.000Z",
+    "ngayCapNhat": "2025-01-16T08:00:00.000Z",
+    "freelancer": {
+      "freelancerId": 2,
+      "taiKhoanId": 3,
+      "hoTen": "Tran Van B",
+      "email": "tranvanb@email.com",
+      "kinhNghiem": 5,
+      "kyNang": "React, Node.js",
+      "kyNangs": [],
+      "xepHang": "4.5"
+    },
+    "yeuCau": {
+      "yeuCauId": 1,
+      "tieuDe": "Build a React website",
+      "nguoiThueId": 1
+    }
+  }
+}
 ```
 
-### 6.3. Lấy báo giá của freelancer
+**Errors:**
+- `400` - Missing required fields
+- `404` - Job or freelancer not found
+- `409` - Freelancer already submitted a proposal for this job
 
-```http
-GET /freelancers/:id/proposals
+---
+
+### PUT /proposals/:id
+
+Update an existing proposal.
+
+**Request:**
+- Path params: `:id` - proposal ID (integer)
+- Body:
+```json
+{
+  "giaDeXuat": 6500000,
+  "thoiGianThucHien": 20,
+  "noiDung": "Updated proposal content",
+  "trangThai": "DaChapNhan"
+}
 ```
 
-### 6.4. Cập nhật báo giá
+> All fields are optional.
 
-```http
-PUT /proposals/:id
+**Response 200:**
+```json
+{
+  "message": "Proposal updated successfully",
+  "proposal": {
+    "baoGiaId": 1,
+    "yeuCauId": 1,
+    "freelancerId": 2,
+    "giaDeXuat": "6500000",
+    "thoiGianThucHien": 20,
+    "noiDung": "Updated proposal content",
+    "trangThai": "DaChapNhan",
+    "ngayTao": "2025-01-16T08:00:00.000Z",
+    "ngayCapNhat": "2025-01-17T09:00:00.000Z",
+    "freelancer": {
+      "freelancerId": 2,
+      "taiKhoanId": 3,
+      "hoTen": "Tran Van B",
+      "email": "tranvanb@email.com",
+      "kinhNghiem": 5,
+      "kyNang": "React, Node.js",
+      "kyNangs": [],
+      "xepHang": "4.5"
+    },
+    "yeuCau": {
+      "yeuCauId": 1,
+      "tieuDe": "Build a React website",
+      "nguoiThueId": 1
+    }
+  }
+}
 ```
 
-**Trạng thái có thể cập nhật:**
+**Errors:**
+- `400` - Invalid data
+- `404` - Proposal not found
 
-- `DaGui` - Đã gửi
-- `DuocChon` - Được chọn
-- `TuChoi` - Từ chối
-- `HetHan` - Hết hạn
+---
 
-### 6.5. Xóa báo giá
 
-```http
-DELETE /proposals/:id
+### DELETE /proposals/:id
+
+Delete a proposal.
+
+**Request:**
+- Path params: `:id` - proposal ID (integer)
+
+**Response 200:**
+```json
+{
+  "message": "Proposal deleted successfully",
+  "proposalId": 1
+}
+```
+
+**Errors:**
+- `404` - Proposal not found
+
+---
+
+## 8. Freelancers
+
+### GET /freelancers/:id/proposals
+
+Get all proposals submitted by a freelancer.
+
+**Request:**
+- Path params: `:id` - freelancer ID (integer)
+
+**Response 200:**
+```json
+{
+  "total": 2,
+  "proposals": [
+    {
+      "baoGiaId": 1,
+      "yeuCauId": 1,
+      "freelancerId": 2,
+      "giaDeXuat": "7000000",
+      "thoiGianThucHien": 25,
+      "noiDung": "I can build this with React and Next.js",
+      "trangThai": "ChoXacNhan",
+      "ngayTao": "2025-01-16T08:00:00.000Z",
+      "ngayCapNhat": "2025-01-16T08:00:00.000Z",
+      "freelancer": {
+        "freelancerId": 2,
+        "taiKhoanId": 3,
+        "hoTen": "Tran Van B",
+        "email": "tranvanb@email.com",
+        "kinhNghiem": 5,
+        "kyNang": "React, Node.js",
+        "kyNangs": [],
+        "xepHang": "4.5"
+      },
+      "yeuCau": {
+        "yeuCauId": 1,
+        "tieuDe": "Build a React website",
+        "nguoiThueId": 1
+      }
+    }
+  ]
+}
+```
+
+**Errors:**
+- `404` - Freelancer not found
+
+---
+
+### GET /freelancers/:id/skills
+
+Get all skills of a freelancer.
+
+**Request:**
+- Path params: `:id` - freelancer ID (integer)
+
+**Response 200:**
+```json
+{
+  "message": "Freelancer skills retrieved successfully",
+  "freelancerId": 2,
+  "kyNangs": [
+    { "kyNangId": 1, "tenKyNang": "React" },
+    { "kyNangId": 2, "tenKyNang": "Node.js" }
+  ]
+}
+```
+
+**Errors:**
+- `404` - Freelancer not found
+
+---
+
+
+### PUT /freelancers/:id/skills
+
+Replace all skills for a freelancer (set operation).
+
+**Request:**
+- Path params: `:id` - freelancer ID (integer)
+- Body:
+```json
+{
+  "kyNangIds": [1, 2, 5]
+}
+```
+
+**Response 200:**
+```json
+{
+  "message": "Freelancer skills updated successfully",
+  "freelancerId": 2,
+  "kyNangs": [
+    { "kyNangId": 1, "tenKyNang": "React" },
+    { "kyNangId": 2, "tenKyNang": "Node.js" },
+    { "kyNangId": 5, "tenKyNang": "PostgreSQL" }
+  ]
+}
+```
+
+**Errors:**
+- `404` - Freelancer not found
+
+---
+
+### POST /freelancers/:id/skills/:kyNangId
+
+Add a single skill to a freelancer.
+
+**Request:**
+- Path params:
+  - `:id` - freelancer ID (integer)
+  - `:kyNangId` - skill ID to add (integer)
+
+**Response 200:**
+```json
+{
+  "message": "Skill added to freelancer successfully",
+  "freelancerId": 2,
+  "kyNangs": [
+    { "kyNangId": 1, "tenKyNang": "React" },
+    { "kyNangId": 2, "tenKyNang": "Node.js" },
+    { "kyNangId": 3, "tenKyNang": "TypeScript" }
+  ]
+}
+```
+
+**Errors:**
+- `404` - Freelancer or skill not found
+- `409` - Skill already assigned to this freelancer
+
+---
+
+### DELETE /freelancers/:id/skills/:kyNangId
+
+Remove a single skill from a freelancer.
+
+**Request:**
+- Path params:
+  - `:id` - freelancer ID (integer)
+  - `:kyNangId` - skill ID to remove (integer)
+
+**Response 200:**
+```json
+{
+  "message": "Skill removed from freelancer successfully",
+  "freelancerId": 2,
+  "kyNangs": [
+    { "kyNangId": 1, "tenKyNang": "React" },
+    { "kyNangId": 2, "tenKyNang": "Node.js" }
+  ]
+}
+```
+
+**Errors:**
+- `404` - Freelancer or skill not found
+
+---
+
+## 9. Contracts
+
+### GET /contracts
+
+Get all contracts.
+
+**Request:**
+- No parameters required.
+
+**Response 200:**
+```json
+{
+  "total": 1,
+  "contracts": [
+    {
+      "congViecId": 1,
+      "yeuCauId": 1,
+      "freelancerId": 2,
+      "nguoiThueId": 1,
+      "giaThoa": "8000000",
+      "thoiGianThoa": 30,
+      "trangThai": "DangThucHien",
+      "ngayBatDau": "2025-01-20T00:00:00.000Z",
+      "ngayKetThuc": null,
+      "giamSatId": null,
+      "trangThaiGiamSat": "ChuaYeuCau",
+      "phiGiamSat": "0",
+      "ngayTao": "2025-01-18T10:30:00.000Z",
+      "yeuCau": {
+        "yeuCauId": 1,
+        "tieuDe": "Build a React website",
+        "moTa": "Need a responsive website"
+      },
+      "freelancer": {
+        "freelancerId": 2,
+        "taiKhoanId": 3,
+        "hoTen": "Tran Van B",
+        "email": "tranvanb@email.com"
+      },
+      "nguoiThue": {
+        "nguoiThueId": 1,
+        "taiKhoanId": 1,
+        "hoTen": "Nguyen Van A",
+        "email": "nguyenvana@email.com"
+      },
+      "giamSat": null
+    }
+  ]
+}
 ```
 
 ---
 
-## 7. Contracts
+### GET /contracts/:id
 
-### 7.1. Tạo hợp đồng mới
+Get a single contract by ID.
 
-```http
-POST /contracts
-```
+**Request:**
+- Path params: `:id` - contract ID (integer)
 
-**Body:**
-
+**Response 200:**
 ```json
 {
-  "yeuCauId": 15,
-  "freelancerId": 8,
-  "nguoiThueId": 5,
-  "giaThoa": 7000000,
-  "thoiGianThoa": 25
+  "contract": {
+    "congViecId": 1,
+    "yeuCauId": 1,
+    "freelancerId": 2,
+    "nguoiThueId": 1,
+    "giaThoa": "8000000",
+    "thoiGianThoa": 30,
+    "trangThai": "DangThucHien",
+    "ngayBatDau": "2025-01-20T00:00:00.000Z",
+    "ngayKetThuc": null,
+    "giamSatId": null,
+    "trangThaiGiamSat": "ChuaYeuCau",
+    "phiGiamSat": "0",
+    "ngayTao": "2025-01-18T10:30:00.000Z",
+    "yeuCau": {
+      "yeuCauId": 1,
+      "tieuDe": "Build a React website",
+      "moTa": "Need a responsive website"
+    },
+    "freelancer": {
+      "freelancerId": 2,
+      "taiKhoanId": 3,
+      "hoTen": "Tran Van B",
+      "email": "tranvanb@email.com"
+    },
+    "nguoiThue": {
+      "nguoiThueId": 1,
+      "taiKhoanId": 1,
+      "hoTen": "Nguyen Van A",
+      "email": "nguyenvana@email.com"
+    },
+    "giamSat": null
+  }
 }
 ```
 
-### 7.2. Lấy danh sách hợp đồng
+**Errors:**
+- `404` - Contract not found
 
-```http
-GET /contracts
-```
+---
 
-### 7.3. Lấy chi tiết hợp đồng
 
-```http
-GET /contracts/:id
-GET /contracts/:id/detail
-```
+### GET /contracts/:id/detail
 
-### 7.4. Lấy hợp đồng của user
+Get detailed contract information (same as GET /contracts/:id but may include additional computed fields).
 
-```http
-GET /users/:id/contracts
-```
+**Request:**
+- Path params: `:id` - contract ID (integer)
 
-### 7.5. Cập nhật trạng thái hợp đồng
-
-```http
-PUT /contracts/:id/status
-```
-
-**Body:**
-
+**Response 200:**
 ```json
 {
-  "trangThai": "DangThucHien"
+  "contract": {
+    "congViecId": 1,
+    "yeuCauId": 1,
+    "freelancerId": 2,
+    "nguoiThueId": 1,
+    "giaThoa": "8000000",
+    "thoiGianThoa": 30,
+    "trangThai": "DangThucHien",
+    "ngayBatDau": "2025-01-20T00:00:00.000Z",
+    "ngayKetThuc": null,
+    "giamSatId": null,
+    "trangThaiGiamSat": "ChuaYeuCau",
+    "phiGiamSat": "0",
+    "ngayTao": "2025-01-18T10:30:00.000Z",
+    "yeuCau": {
+      "yeuCauId": 1,
+      "tieuDe": "Build a React website",
+      "moTa": "Need a responsive website"
+    },
+    "freelancer": {
+      "freelancerId": 2,
+      "taiKhoanId": 3,
+      "hoTen": "Tran Van B",
+      "email": "tranvanb@email.com"
+    },
+    "nguoiThue": {
+      "nguoiThueId": 1,
+      "taiKhoanId": 1,
+      "hoTen": "Nguyen Van A",
+      "email": "nguyenvana@email.com"
+    },
+    "giamSat": null
+  }
 }
 ```
 
-**Trạng thái:**
+**Errors:**
+- `404` - Contract not found
 
-- `MoiTao` - Mới tạo
-- `DangThucHien` - Đang thực hiện
-- `HoanThanh` - Hoàn thành
-- `DaHuy` - Đã hủy
-- `TranhChap` - Tranh chấp
+---
 
-### 7.6. Chọn đơn vị giám sát
+### GET /contracts/:id/progress
 
-```http
-POST /contracts/:id/supervisor
+Get all progress reports for a contract.
+
+**Request:**
+- Path params: `:id` - contract ID (integer)
+
+**Response 200:**
+```json
+{
+  "total": 2,
+  "progress": [
+    {
+      "tienDoId": 1,
+      "congViecId": 1,
+      "freelancerId": 2,
+      "tieuDe": "Completed homepage design",
+      "moTa": "Finished the homepage layout and responsive design",
+      "phanTram": 30,
+      "tepDinhKem": "https://example.com/files/design.pdf",
+      "xacNhanBoi": null,
+      "trangThaiXacNhan": "ChoXacNhan",
+      "ngayTao": "2025-01-25T10:00:00.000Z",
+      "congViec": {
+        "congViecId": 1,
+        "yeuCauId": 1,
+        "giaThoa": "8000000"
+      },
+      "freelancer": {
+        "freelancerId": 2,
+        "taiKhoanId": 3,
+        "hoTen": "Tran Van B",
+        "email": "tranvanb@email.com"
+      },
+      "donViGiamSat": null
+    }
+  ]
+}
 ```
 
-**Body:**
+**Errors:**
+- `404` - Contract not found
 
+---
+
+
+### GET /contracts/:id/conversations
+
+Get all chat conversations for a contract.
+
+**Request:**
+- Path params: `:id` - contract ID (integer)
+
+**Response 200:**
+```json
+{
+  "total": 1,
+  "conversations": [
+    {
+      "cuocHoiThoaiId": 1,
+      "congViecId": 1,
+      "thanhVien1": {
+        "taiKhoanId": 1,
+        "hoTen": "Nguyen Van A",
+        "email": "nguyenvana@email.com"
+      },
+      "thanhVien2": {
+        "taiKhoanId": 3,
+        "hoTen": "Tran Van B",
+        "email": "tranvanb@email.com"
+      },
+      "giamSatId": null,
+      "tinNhanCuoi": "Let me know when you finish the homepage",
+      "trangThai": "DangMo",
+      "ngayTao": "2025-01-20T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+**Errors:**
+- `404` - Contract not found
+
+---
+
+### POST /contracts
+
+Create a new contract (after accepting a proposal).
+
+**Request:**
+- Body:
+```json
+{
+  "yeuCauId": 1,
+  "freelancerId": 2,
+  "nguoiThueId": 1,
+  "giaThoa": 8000000,
+  "thoiGianThoa": 30
+}
+```
+
+**Response 201:**
+```json
+{
+  "message": "Contract created successfully",
+  "contract": {
+    "congViecId": 3,
+    "yeuCauId": 1,
+    "freelancerId": 2,
+    "nguoiThueId": 1,
+    "giaThoa": "8000000",
+    "thoiGianThoa": 30,
+    "trangThai": "DangThucHien",
+    "ngayBatDau": "2025-01-20T00:00:00.000Z",
+    "ngayKetThuc": null,
+    "giamSatId": null,
+    "trangThaiGiamSat": "ChuaYeuCau",
+    "phiGiamSat": "0",
+    "ngayTao": "2025-01-20T10:30:00.000Z",
+    "yeuCau": {
+      "yeuCauId": 1,
+      "tieuDe": "Build a React website",
+      "moTa": "Need a responsive website"
+    },
+    "freelancer": {
+      "freelancerId": 2,
+      "taiKhoanId": 3,
+      "hoTen": "Tran Van B",
+      "email": "tranvanb@email.com"
+    },
+    "nguoiThue": {
+      "nguoiThueId": 1,
+      "taiKhoanId": 1,
+      "hoTen": "Nguyen Van A",
+      "email": "nguyenvana@email.com"
+    },
+    "giamSat": null
+  }
+}
+```
+
+**Errors:**
+- `400` - Missing required fields
+- `404` - Job, freelancer, or employer not found
+
+---
+
+
+### PUT /contracts/:id/status
+
+Update contract status.
+
+**Request:**
+- Path params: `:id` - contract ID (integer)
+- Body:
+```json
+{
+  "trangThai": "HoanThanh"
+}
+```
+
+> Valid values: `DangThucHien`, `HoanThanh`, `DaHuy`, `TamDung`
+
+**Response 200:**
+```json
+{
+  "message": "Contract status updated successfully",
+  "contract": {
+    "congViecId": 1,
+    "yeuCauId": 1,
+    "freelancerId": 2,
+    "nguoiThueId": 1,
+    "giaThoa": "8000000",
+    "thoiGianThoa": 30,
+    "trangThai": "HoanThanh",
+    "ngayBatDau": "2025-01-20T00:00:00.000Z",
+    "ngayKetThuc": "2025-02-15T00:00:00.000Z",
+    "giamSatId": null,
+    "trangThaiGiamSat": "ChuaYeuCau",
+    "phiGiamSat": "0",
+    "ngayTao": "2025-01-18T10:30:00.000Z",
+    "yeuCau": {
+      "yeuCauId": 1,
+      "tieuDe": "Build a React website",
+      "moTa": "Need a responsive website"
+    },
+    "freelancer": {
+      "freelancerId": 2,
+      "taiKhoanId": 3,
+      "hoTen": "Tran Van B",
+      "email": "tranvanb@email.com"
+    },
+    "nguoiThue": {
+      "nguoiThueId": 1,
+      "taiKhoanId": 1,
+      "hoTen": "Nguyen Van A",
+      "email": "nguyenvana@email.com"
+    },
+    "giamSat": null
+  }
+}
+```
+
+**Errors:**
+- `400` - Invalid status value
+- `404` - Contract not found
+
+---
+
+### POST /contracts/:id/supervisor
+
+Select a supervisor for a contract.
+
+**Request:**
+- Path params: `:id` - contract ID (integer)
+- Body:
 ```json
 {
   "giamSatId": 1,
-  "phiGiamSat": 2000000
+  "phiGiamSat": 500000
 }
 ```
 
-### 7.7. Freelancer chấp nhận giám sát
-
-```http
-PUT /contracts/:id/supervisor/accept
+**Response 200:**
+```json
+{
+  "message": "Supervisor request sent successfully",
+  "yeuCauGiamSatId": 1,
+  "trangThai": "ChoChapNhan"
+}
 ```
 
-### 7.8. Freelancer từ chối giám sát
+**Errors:**
+- `400` - Invalid data
+- `404` - Contract or supervisor not found
+- `409` - Contract already has a supervisor
 
-```http
-PUT /contracts/:id/supervisor/reject
+---
+
+
+### PUT /contracts/:id/supervisor/accept
+
+Supervisor accepts the supervision request for a contract.
+
+**Request:**
+- Path params: `:id` - contract ID (integer)
+
+**Response 200:**
+```json
+{
+  "message": "Supervisor accepted successfully",
+  "yeuCauGiamSatId": 1,
+  "trangThai": "DaChapNhan"
+}
+```
+
+**Errors:**
+- `404` - Contract not found or no pending supervisor request
+- `409` - Request already processed
+
+---
+
+### PUT /contracts/:id/supervisor/reject
+
+Supervisor rejects the supervision request for a contract.
+
+**Request:**
+- Path params: `:id` - contract ID (integer)
+
+**Response 200:**
+```json
+{
+  "message": "Supervisor rejected successfully",
+  "yeuCauGiamSatId": 1,
+  "trangThai": "DaTuChoi"
+}
+```
+
+**Errors:**
+- `404` - Contract not found or no pending supervisor request
+- `409` - Request already processed
+
+---
+
+## 10. Supervisors
+
+### GET /supervisors
+
+Get all supervisors.
+
+**Request:**
+- No parameters required.
+
+**Response 200:**
+```json
+{
+  "total": 2,
+  "supervisors": [
+    {
+      "giamSatId": 1,
+      "taiKhoanId": 5,
+      "tenDonVi": "Quality Assurance Corp",
+      "moTa": "Professional project supervision",
+      "nangLuc": "IT project management",
+      "chungChi": "PMP, ISO 9001",
+      "phiGiamSat": "500000",
+      "xepHang": "4.8",
+      "tongCongViecGS": 15,
+      "trangThai": "DaDuyet",
+      "ngayDangKy": "2025-01-01T00:00:00.000Z",
+      "taiKhoan": {
+        "taiKhoanId": 5,
+        "hoTen": "Le Van C",
+        "email": "levanc@email.com",
+        "soDienThoai": "0912345678"
+      }
+    }
+  ]
+}
 ```
 
 ---
 
-## 8. Supervisors
 
-### 8.1. Lấy danh sách đơn vị giám sát
+### GET /supervisors/search
 
-```http
-GET /supervisors
-```
+Search supervisors by keyword.
 
-### 8.2. Tìm kiếm đơn vị giám sát
+**Request:**
+- Query params: `keyword` - search term (optional)
 
-```http
-GET /supervisors/search?keyword=ISO
-```
+Example: `GET /supervisors/search?keyword=quality`
 
-### 8.3. Lấy chi tiết đơn vị giám sát
-
-```http
-GET /supervisors/:id
-```
-
-### 8.4. Tạo đơn vị giám sát mới
-
-```http
-POST /supervisors
-```
-
-**Body:**
-
+**Response 200:**
 ```json
 {
-  "taiKhoanId": 15,
-  "tenDonVi": "Cong ty giam sat A",
-  "moTa": "Chuyen giam sat cac du an CNTT",
-  "nangLuc": "ISO 9001, ISO 27001",
-  "chungChi": "Chung chi giam sat quoc te",
-  "phiGiamSat": 2000000
+  "total": 1,
+  "supervisors": [
+    {
+      "giamSatId": 1,
+      "taiKhoanId": 5,
+      "tenDonVi": "Quality Assurance Corp",
+      "moTa": "Professional project supervision",
+      "nangLuc": "IT project management",
+      "chungChi": "PMP, ISO 9001",
+      "phiGiamSat": "500000",
+      "xepHang": "4.8",
+      "tongCongViecGS": 15,
+      "trangThai": "DaDuyet",
+      "ngayDangKy": "2025-01-01T00:00:00.000Z",
+      "taiKhoan": {
+        "taiKhoanId": 5,
+        "hoTen": "Le Van C",
+        "email": "levanc@email.com",
+        "soDienThoai": "0912345678"
+      }
+    }
+  ]
 }
-```
-
-### 8.5. Cập nhật đơn vị giám sát
-
-```http
-PUT /supervisors/:id
-```
-
-**Trạng thái:**
-
-- `HoatDong` - Hoạt động
-- `TamNghi` - Tạm nghỉ
-- `BiKhoa` - Bị khóa
-- `ChoDuyet` - Chờ duyệt
-
-### 8.6. Xóa đơn vị giám sát (soft delete)
-
-```http
-DELETE /supervisors/:id
 ```
 
 ---
 
-## 9. Progress
+### GET /supervisors/:id
 
-### 9.1. Tạo tiến độ mới
+Get a single supervisor by ID.
 
-```http
-POST /progress
-```
+**Request:**
+- Path params: `:id` - supervisor ID (integer)
 
-**Body:**
-
+**Response 200:**
 ```json
 {
-  "congViecId": 30,
-  "freelancerId": 8,
-  "tieuDe": "Hoan thanh thiet ke giao dien",
-  "moTa": "Da hoan thanh thiet ke giao dien trang chu",
+  "supervisor": {
+    "giamSatId": 1,
+    "taiKhoanId": 5,
+    "tenDonVi": "Quality Assurance Corp",
+    "moTa": "Professional project supervision",
+    "nangLuc": "IT project management",
+    "chungChi": "PMP, ISO 9001",
+    "phiGiamSat": "500000",
+    "xepHang": "4.8",
+    "tongCongViecGS": 15,
+    "trangThai": "DaDuyet",
+    "ngayDangKy": "2025-01-01T00:00:00.000Z",
+    "taiKhoan": {
+      "taiKhoanId": 5,
+      "hoTen": "Le Van C",
+      "email": "levanc@email.com",
+      "soDienThoai": "0912345678"
+    }
+  }
+}
+```
+
+**Errors:**
+- `404` - Supervisor not found
+
+---
+
+
+### POST /supervisors
+
+Register a new supervisor.
+
+**Request:**
+- Body:
+```json
+{
+  "taiKhoanId": 5,
+  "tenDonVi": "Quality Assurance Corp",
+  "moTa": "Professional project supervision",
+  "nangLuc": "IT project management",
+  "chungChi": "PMP, ISO 9001",
+  "phiGiamSat": 500000
+}
+```
+
+> `moTa`, `nangLuc`, `chungChi` are optional.
+
+**Response 201:**
+```json
+{
+  "message": "Supervisor created successfully",
+  "supervisor": {
+    "giamSatId": 3,
+    "taiKhoanId": 5,
+    "tenDonVi": "Quality Assurance Corp",
+    "moTa": "Professional project supervision",
+    "nangLuc": "IT project management",
+    "chungChi": "PMP, ISO 9001",
+    "phiGiamSat": "500000",
+    "xepHang": "0",
+    "tongCongViecGS": 0,
+    "trangThai": "ChoDuyet",
+    "ngayDangKy": "2025-01-15T10:30:00.000Z",
+    "taiKhoan": {
+      "taiKhoanId": 5,
+      "hoTen": "Le Van C",
+      "email": "levanc@email.com",
+      "soDienThoai": "0912345678"
+    }
+  }
+}
+```
+
+**Errors:**
+- `400` - Missing required fields
+- `404` - Account not found
+- `409` - Account already registered as supervisor
+
+---
+
+### PUT /supervisors/:id
+
+Update supervisor information.
+
+**Request:**
+- Path params: `:id` - supervisor ID (integer)
+- Body:
+```json
+{
+  "tenDonVi": "Quality Assurance Corp Updated",
+  "moTa": "Updated description",
+  "nangLuc": "IT project management, QA",
+  "chungChi": "PMP, ISO 9001, CMMI",
+  "phiGiamSat": 600000,
+  "trangThai": "DaDuyet"
+}
+```
+
+> All fields are optional.
+
+**Response 200:**
+```json
+{
+  "message": "Supervisor updated successfully",
+  "supervisor": {
+    "giamSatId": 1,
+    "taiKhoanId": 5,
+    "tenDonVi": "Quality Assurance Corp Updated",
+    "moTa": "Updated description",
+    "nangLuc": "IT project management, QA",
+    "chungChi": "PMP, ISO 9001, CMMI",
+    "phiGiamSat": "600000",
+    "xepHang": "4.8",
+    "tongCongViecGS": 15,
+    "trangThai": "DaDuyet",
+    "ngayDangKy": "2025-01-01T00:00:00.000Z",
+    "taiKhoan": {
+      "taiKhoanId": 5,
+      "hoTen": "Le Van C",
+      "email": "levanc@email.com",
+      "soDienThoai": "0912345678"
+    }
+  }
+}
+```
+
+**Errors:**
+- `400` - Invalid data
+- `404` - Supervisor not found
+
+---
+
+
+### DELETE /supervisors/:id
+
+Delete a supervisor.
+
+**Request:**
+- Path params: `:id` - supervisor ID (integer)
+
+**Response 200:**
+```json
+{
+  "message": "Supervisor deleted successfully",
+  "supervisorId": 1
+}
+```
+
+**Errors:**
+- `404` - Supervisor not found
+- `409` - Supervisor has active contracts
+
+---
+
+## 11. Progress
+
+### GET /progress/:id
+
+Get a single progress report by ID.
+
+**Request:**
+- Path params: `:id` - progress ID (integer)
+
+**Response 200:**
+```json
+{
+  "progress": {
+    "tienDoId": 1,
+    "congViecId": 1,
+    "freelancerId": 2,
+    "tieuDe": "Completed homepage design",
+    "moTa": "Finished the homepage layout and responsive design",
+    "phanTram": 30,
+    "tepDinhKem": "https://example.com/files/design.pdf",
+    "xacNhanBoi": null,
+    "trangThaiXacNhan": "ChoXacNhan",
+    "ngayTao": "2025-01-25T10:00:00.000Z",
+    "congViec": {
+      "congViecId": 1,
+      "yeuCauId": 1,
+      "giaThoa": "8000000"
+    },
+    "freelancer": {
+      "freelancerId": 2,
+      "taiKhoanId": 3,
+      "hoTen": "Tran Van B",
+      "email": "tranvanb@email.com"
+    },
+    "donViGiamSat": null
+  }
+}
+```
+
+**Errors:**
+- `404` - Progress report not found
+
+---
+
+### POST /progress
+
+Create a new progress report.
+
+**Request:**
+- Body:
+```json
+{
+  "congViecId": 1,
+  "freelancerId": 2,
+  "tieuDe": "Completed homepage design",
+  "moTa": "Finished the homepage layout and responsive design",
   "phanTram": 30,
-  "tepDinhKem": "https://example.com/files/design-v1.zip"
+  "tepDinhKem": "https://example.com/files/design.pdf"
 }
 ```
 
-**Lưu ý:** `phanTram` phải từ 0-100
+> `moTa` and `tepDinhKem` are optional.
 
-### 9.2. Lấy danh sách tiến độ của hợp đồng
-
-```http
-GET /contracts/:id/progress
-```
-
-### 9.3. Lấy chi tiết tiến độ
-
-```http
-GET /progress/:id
-```
-
-### 9.4. Cập nhật tiến độ
-
-```http
-PUT /progress/:id
-```
-
-**Body:**
-
+**Response 201:**
 ```json
 {
-  "tieuDe": "Hoan thanh thiet ke giao dien - Cap nhat",
+  "message": "Progress created successfully",
+  "progress": {
+    "tienDoId": 3,
+    "congViecId": 1,
+    "freelancerId": 2,
+    "tieuDe": "Completed homepage design",
+    "moTa": "Finished the homepage layout and responsive design",
+    "phanTram": 30,
+    "tepDinhKem": "https://example.com/files/design.pdf",
+    "xacNhanBoi": null,
+    "trangThaiXacNhan": "ChoXacNhan",
+    "ngayTao": "2025-01-25T10:00:00.000Z",
+    "congViec": {
+      "congViecId": 1,
+      "yeuCauId": 1,
+      "giaThoa": "8000000"
+    },
+    "freelancer": {
+      "freelancerId": 2,
+      "taiKhoanId": 3,
+      "hoTen": "Tran Van B",
+      "email": "tranvanb@email.com"
+    },
+    "donViGiamSat": null
+  }
+}
+```
+
+**Errors:**
+- `400` - Missing required fields or invalid phanTram (must be 0-100)
+- `404` - Contract or freelancer not found
+
+---
+
+
+### PUT /progress/:id
+
+Update a progress report (can also be used to confirm/reject progress).
+
+**Request:**
+- Path params: `:id` - progress ID (integer)
+- Body:
+```json
+{
+  "tieuDe": "Updated title",
+  "moTa": "Updated description",
   "phanTram": 50,
+  "tepDinhKem": "https://example.com/files/updated.pdf",
   "trangThaiXacNhan": "DaXacNhan"
 }
 ```
 
-**Trạng thái xác nhận:**
+> All fields are optional.
 
-- `ChuaXacNhan` - Chưa xác nhận
-- `DaXacNhan` - Đã xác nhận
-- `TuChoi` - Từ chối
-
-### 9.5. Xóa tiến độ
-
-```http
-DELETE /progress/:id
-```
-
----
-
-## 10. Freelancers
-
-### 10.1. Lấy báo giá của freelancer
-
-```http
-GET /freelancers/:id/proposals
-```
-
----
-
-## 11. Chat
-
-### 11.1. Tạo cuộc trò chuyện
-
-```http
-POST /conversations
-```
-
-**Body:**
-
+**Response 200:**
 ```json
 {
-  "contractId": 15,
-  "nguoiThueId": 5,
-  "freelancerId": 8
+  "message": "Progress updated successfully",
+  "progress": {
+    "tienDoId": 1,
+    "congViecId": 1,
+    "freelancerId": 2,
+    "tieuDe": "Updated title",
+    "moTa": "Updated description",
+    "phanTram": 50,
+    "tepDinhKem": "https://example.com/files/updated.pdf",
+    "xacNhanBoi": 1,
+    "trangThaiXacNhan": "DaXacNhan",
+    "ngayTao": "2025-01-25T10:00:00.000Z",
+    "congViec": {
+      "congViecId": 1,
+      "yeuCauId": 1,
+      "giaThoa": "8000000"
+    },
+    "freelancer": {
+      "freelancerId": 2,
+      "taiKhoanId": 3,
+      "hoTen": "Tran Van B",
+      "email": "tranvanb@email.com"
+    },
+    "donViGiamSat": null
+  }
 }
 ```
 
-### 11.2. Lấy thông tin cuộc trò chuyện
+**Errors:**
+- `400` - Invalid data
+- `404` - Progress report not found
 
-```http
-GET /conversations/:id
-```
+---
 
-### 11.3. Lấy danh sách cuộc trò chuyện theo hợp đồng
+### DELETE /progress/:id
 
-```http
-GET /contracts/:id/conversations
-```
+Delete a progress report.
 
-### 11.4. Gửi tin nhắn
+**Request:**
+- Path params: `:id` - progress ID (integer)
 
-```http
-POST /messages
-```
-
-**Body:**
-
+**Response 200:**
 ```json
 {
-  "conversationId": 10,
-  "nguoiGuiId": 5,
-  "noiDung": "Xin chao"
+  "message": "Progress deleted successfully",
+  "progressId": 1
 }
 ```
 
-### 11.5. Lấy danh sách tin nhắn theo cuộc trò chuyện
-
-```http
-GET /conversations/:id/messages
-```
+**Errors:**
+- `404` - Progress report not found
 
 ---
 
-## 12. Disputes
+## 12. Chat
 
-### 12.1. Tạo tranh chấp
+### POST /chat
 
-```http
-POST /disputes
-```
+Create a new conversation.
 
-**Body:**
-
+**Request:**
+- Body:
 ```json
 {
-  "contractId": 15,
-  "nguoiTaoId": 5,
-  "lyDo": "Khong dat yeu cau"
+  "congViecId": 1,
+  "thanhVien1Id": 1,
+  "thanhVien2Id": 3,
+  "giamSatId": 5
 }
 ```
 
-### 12.2. Lấy chi tiết tranh chấp
+> `congViecId` and `giamSatId` are optional.
 
-```http
-GET /disputes/:id
-```
-
-### 12.3. Lấy danh sách tranh chấp theo hợp đồng
-
-```http
-GET /contracts/:id/disputes
-```
-
-### 12.4. Duyệt tranh chấp
-
-```http
-PUT /disputes/:id/review
-```
-
-### 12.5. Giải quyết tranh chấp
-
-```http
-PUT /disputes/:id/resolve
-```
-
----
-
-## 13. Evidences
-
-### 13.1. Tạo bằng chứng cho tranh chấp
-
-```http
-POST /disputes/:id/evidences
-```
-
-**Body:**
-
+**Response 201:**
 ```json
 {
-  "tepDinhKem": "https://example.com/files/proof.zip",
-  "moTa": "Tai lieu lien quan"
+  "message": "Conversation created successfully",
+  "conversation": {
+    "cuocHoiThoaiId": 5,
+    "congViecId": 1,
+    "thanhVien1": {
+      "taiKhoanId": 1,
+      "hoTen": "Nguyen Van A",
+      "email": "nguyenvana@email.com"
+    },
+    "thanhVien2": {
+      "taiKhoanId": 3,
+      "hoTen": "Tran Van B",
+      "email": "tranvanb@email.com"
+    },
+    "giamSatId": 5,
+    "tinNhanCuoi": null,
+    "trangThai": "DangMo",
+    "ngayTao": "2025-01-20T10:30:00.000Z"
+  }
 }
 ```
 
-### 13.2. Lấy danh sách bằng chứng theo tranh chấp
-
-```http
-GET /disputes/:id/evidences
-```
-
-### 13.3. Xóa bằng chứng
-
-```http
-DELETE /evidences/:id
-```
+**Errors:**
+- `400` - Missing required fields
+- `404` - User(s) not found
 
 ---
 
-## 14. Notifications
 
-### 14.1. Lấy danh sách thông báo theo user
+### GET /chat/:id
 
-```http
-GET /notifications?userId=5
-```
+Get a single conversation by ID.
 
-### 14.2. Đánh dấu đã đọc
+**Request:**
+- Path params: `:id` - conversation ID (integer)
 
-```http
-PUT /notifications/:id/read
-```
-
-### 14.3. Xóa thông báo
-
-```http
-DELETE /notifications/:id
-```
-
----
-
-## 15. Payments
-
-### 15.1. Nạp tiền
-
-```http
-POST /payments/deposit
-```
-
-**Body:**
-
+**Response 200:**
 ```json
 {
-  "nguoiThueId": 5,
-  "soTien": 2000000
+  "conversation": {
+    "cuocHoiThoaiId": 1,
+    "congViecId": 1,
+    "thanhVien1": {
+      "taiKhoanId": 1,
+      "hoTen": "Nguyen Van A",
+      "email": "nguyenvana@email.com"
+    },
+    "thanhVien2": {
+      "taiKhoanId": 3,
+      "hoTen": "Tran Van B",
+      "email": "tranvanb@email.com"
+    },
+    "giamSatId": null,
+    "tinNhanCuoi": "Hello, I am interested in your project",
+    "trangThai": "DangMo",
+    "ngayTao": "2025-01-18T10:30:00.000Z"
+  }
 }
 ```
 
-### 15.2. Lấy chi tiết giao dịch
-
-```http
-GET /payments/:id
-```
-
-### 15.3. Lấy danh sách giao dịch theo hợp đồng
-
-```http
-GET /contracts/:id/payments
-```
-
-### 15.4. Giai ngan
-
-```http
-PUT /payments/:id/release
-```
-
-### 15.5. Hoan tien
-
-```http
-PUT /payments/:id/refund
-```
+**Errors:**
+- `404` - Conversation not found
 
 ---
+
+### PUT /chat/:id/close
+
+Close a conversation.
+
+**Request:**
+- Path params: `:id` - conversation ID (integer)
+
+**Response 200:**
+```json
+{
+  "message": "Conversation closed successfully",
+  "conversation": {
+    "cuocHoiThoaiId": 1,
+    "congViecId": 1,
+    "thanhVien1": {
+      "taiKhoanId": 1,
+      "hoTen": "Nguyen Van A",
+      "email": "nguyenvana@email.com"
+    },
+    "thanhVien2": {
+      "taiKhoanId": 3,
+      "hoTen": "Tran Van B",
+      "email": "tranvanb@email.com"
+    },
+    "giamSatId": null,
+    "tinNhanCuoi": "Goodbye!",
+    "trangThai": "DaDong",
+    "ngayTao": "2025-01-18T10:30:00.000Z"
+  }
+}
+```
+
+**Errors:**
+- `404` - Conversation not found
+- `409` - Conversation already closed
+
+---
+
+### GET /chat/:id/messages
+
+Get all messages in a conversation.
+
+**Request:**
+- Path params: `:id` - conversation ID (integer)
+
+**Response 200:**
+```json
+{
+  "total": 3,
+  "messages": [
+    {
+      "tinNhanId": 1,
+      "cuocHoiThoaiId": 1,
+      "nguoiGui": {
+        "taiKhoanId": 1,
+        "hoTen": "Nguyen Van A",
+        "email": "nguyenvana@email.com"
+      },
+      "noiDung": "Hello, I am interested in your project",
+      "loaiTin": "VanBan",
+      "daDoc": true,
+      "ngayTao": "2025-01-18T10:30:00.000Z"
+    },
+    {
+      "tinNhanId": 2,
+      "cuocHoiThoaiId": 1,
+      "nguoiGui": {
+        "taiKhoanId": 3,
+        "hoTen": "Tran Van B",
+        "email": "tranvanb@email.com"
+      },
+      "noiDung": "Great! Let me share my portfolio",
+      "loaiTin": "VanBan",
+      "daDoc": false,
+      "ngayTao": "2025-01-18T10:35:00.000Z"
+    }
+  ]
+}
+```
+
+**Errors:**
+- `404` - Conversation not found
+
+---
+
+
+### POST /chat/:id/messages
+
+Send a message in a conversation.
+
+**Request:**
+- Path params: `:id` - conversation ID (integer)
+- Body:
+```json
+{
+  "cuocHoiThoaiId": 1,
+  "nguoiGuiId": 1,
+  "noiDung": "Can you start working on the homepage first?",
+  "loaiTin": "VanBan"
+}
+```
+
+> `loaiTin` is optional, defaults to `VanBan`. Valid values: `VanBan`, `HinhAnh`, `TepTin`.
+
+**Response 201:**
+```json
+{
+  "message": "Message sent successfully",
+  "data": {
+    "tinNhanId": 5,
+    "cuocHoiThoaiId": 1,
+    "nguoiGui": {
+      "taiKhoanId": 1,
+      "hoTen": "Nguyen Van A",
+      "email": "nguyenvana@email.com"
+    },
+    "noiDung": "Can you start working on the homepage first?",
+    "loaiTin": "VanBan",
+    "daDoc": false,
+    "ngayTao": "2025-01-19T08:00:00.000Z"
+  }
+}
+```
+
+**Errors:**
+- `400` - Missing required fields
+- `404` - Conversation or sender not found
+- `409` - Conversation is closed
+
+---
+
+### PUT /chat/:id/read/:userId
+
+Mark all messages in a conversation as read for a specific user.
+
+**Request:**
+- Path params:
+  - `:id` - conversation ID (integer)
+  - `:userId` - user account ID (integer)
+
+**Response 200:**
+```json
+{
+  "message": "Messages marked as read",
+  "count": 5
+}
+```
+
+**Errors:**
+- `404` - Conversation not found
+
+---
+
+## 13. Payments
+
+### POST /payments/deposit
+
+Create a deposit payment for a contract (escrow).
+
+**Request:**
+- Body:
+```json
+{
+  "contractId": 1,
+  "amount": 8000000,
+  "paymentMethod": "ChuyenKhoan",
+  "note": "Deposit for React website project"
+}
+```
+
+> `note` is optional. Valid `paymentMethod`: `ViDienTu`, `ChuyenKhoan`, `TheTinDung`.
+
+**Response 201:**
+```json
+{
+  "message": "Deposit created successfully",
+  "payment": {
+    "thanhToanId": 1,
+    "congViecId": 1,
+    "nguoiThueId": 1,
+    "soTien": "8000000",
+    "loaiTT": "DatCoc",
+    "phuongThuc": "ChuyenKhoan",
+    "trangThai": "ChoXuLy",
+    "giamSatId": null,
+    "phiGiamSatTT": "0",
+    "ghiChu": "Deposit for React website project",
+    "ngayTao": "2025-01-20T10:30:00.000Z"
+  }
+}
+```
+
+**Errors:**
+- `400` - Missing required fields or invalid amount
+- `404` - Contract not found
+
+---
+
+
+### GET /payments/:id
+
+Get a single payment by ID.
+
+**Request:**
+- Path params: `:id` - payment ID (integer)
+
+**Response 200:**
+```json
+{
+  "payment": {
+    "thanhToanId": 1,
+    "congViecId": 1,
+    "nguoiThueId": 1,
+    "soTien": "8000000",
+    "loaiTT": "DatCoc",
+    "phuongThuc": "ChuyenKhoan",
+    "trangThai": "ThanhCong",
+    "giamSatId": null,
+    "phiGiamSatTT": "0",
+    "ghiChu": "Deposit for React website project",
+    "ngayTao": "2025-01-20T10:30:00.000Z"
+  }
+}
+```
+
+**Errors:**
+- `404` - Payment not found
+
+---
+
+### GET /contracts/:id/payments
+
+Get all payments for a specific contract.
+
+**Request:**
+- Path params: `:id` - contract ID (integer)
+
+**Response 200:**
+```json
+{
+  "total": 2,
+  "payments": [
+    {
+      "thanhToanId": 1,
+      "congViecId": 1,
+      "nguoiThueId": 1,
+      "soTien": "8000000",
+      "loaiTT": "DatCoc",
+      "phuongThuc": "ChuyenKhoan",
+      "trangThai": "ThanhCong",
+      "giamSatId": null,
+      "phiGiamSatTT": "0",
+      "ghiChu": "Deposit for React website project",
+      "ngayTao": "2025-01-20T10:30:00.000Z"
+    },
+    {
+      "thanhToanId": 2,
+      "congViecId": 1,
+      "nguoiThueId": 1,
+      "soTien": "8000000",
+      "loaiTT": "ThanhToan",
+      "phuongThuc": "ChuyenKhoan",
+      "trangThai": "ThanhCong",
+      "giamSatId": null,
+      "phiGiamSatTT": "0",
+      "ghiChu": "Final payment released",
+      "ngayTao": "2025-02-15T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+**Errors:**
+- `404` - Contract not found
+
+---
+
+### PUT /payments/:id/release
+
+Release a payment to the freelancer (from escrow).
+
+**Request:**
+- Path params: `:id` - payment ID (integer)
+
+**Response 200:**
+```json
+{
+  "message": "Payment released successfully",
+  "payment": {
+    "thanhToanId": 1,
+    "congViecId": 1,
+    "nguoiThueId": 1,
+    "soTien": "8000000",
+    "loaiTT": "ThanhToan",
+    "phuongThuc": "ChuyenKhoan",
+    "trangThai": "ThanhCong",
+    "giamSatId": null,
+    "phiGiamSatTT": "0",
+    "ghiChu": "Payment released to freelancer",
+    "ngayTao": "2025-02-15T10:30:00.000Z"
+  }
+}
+```
+
+**Errors:**
+- `404` - Payment not found
+- `409` - Payment already released or refunded
+
+---
+
+
+### PUT /payments/:id/refund
+
+Refund a payment back to the employer.
+
+**Request:**
+- Path params: `:id` - payment ID (integer)
+
+**Response 200:**
+```json
+{
+  "message": "Payment refunded successfully",
+  "payment": {
+    "thanhToanId": 1,
+    "congViecId": 1,
+    "nguoiThueId": 1,
+    "soTien": "8000000",
+    "loaiTT": "HoanTien",
+    "phuongThuc": "ChuyenKhoan",
+    "trangThai": "DaHoan",
+    "giamSatId": null,
+    "phiGiamSatTT": "0",
+    "ghiChu": "Refund due to dispute resolution",
+    "ngayTao": "2025-02-15T10:30:00.000Z"
+  }
+}
+```
+
+**Errors:**
+- `404` - Payment not found
+- `409` - Payment already refunded or released
+
+---
+
+## 14. Disputes
+
+### POST /disputes
+
+Create a new dispute for a contract.
+
+**Request:**
+- Body:
+```json
+{
+  "congViecId": 1,
+  "nguoiGuiId": 1,
+  "lyDo": "Work not delivered on time",
+  "moTa": "The freelancer missed the deadline by 2 weeks without communication",
+  "yeuCauHoanTien": 5000000
+}
+```
+
+> `moTa` is optional.
+
+**Response 201:**
+```json
+{
+  "message": "Dispute created successfully",
+  "dispute": {
+    "tranhChapId": 1,
+    "congViecId": 1,
+    "nguoiGuiId": 1,
+    "giamSatId": null,
+    "lyDo": "Work not delivered on time",
+    "moTa": "The freelancer missed the deadline by 2 weeks without communication",
+    "trangThai": "DangMo",
+    "yeuCauHoanTien": "5000000",
+    "ngayMo": "2025-02-10T10:30:00.000Z",
+    "ngayDong": null
+  }
+}
+```
+
+**Errors:**
+- `400` - Missing required fields
+- `404` - Contract not found
+- `409` - Active dispute already exists for this contract
+
+---
+
+### GET /disputes/:id
+
+Get a single dispute by ID.
+
+**Request:**
+- Path params: `:id` - dispute ID (integer)
+
+**Response 200:**
+```json
+{
+  "dispute": {
+    "tranhChapId": 1,
+    "congViecId": 1,
+    "nguoiGuiId": 1,
+    "giamSatId": 5,
+    "lyDo": "Work not delivered on time",
+    "moTa": "The freelancer missed the deadline by 2 weeks",
+    "trangThai": "DangXuLy",
+    "yeuCauHoanTien": "5000000",
+    "ngayMo": "2025-02-10T10:30:00.000Z",
+    "ngayDong": null
+  }
+}
+```
+
+**Errors:**
+- `404` - Dispute not found
+
+---
+
+
+### GET /contracts/:id/disputes
+
+Get all disputes for a specific contract.
+
+**Request:**
+- Path params: `:id` - contract ID (integer)
+
+**Response 200:**
+```json
+{
+  "total": 1,
+  "disputes": [
+    {
+      "tranhChapId": 1,
+      "congViecId": 1,
+      "nguoiGuiId": 1,
+      "giamSatId": 5,
+      "lyDo": "Work not delivered on time",
+      "moTa": "The freelancer missed the deadline by 2 weeks",
+      "trangThai": "DangXuLy",
+      "yeuCauHoanTien": "5000000",
+      "ngayMo": "2025-02-10T10:30:00.000Z",
+      "ngayDong": null
+    }
+  ]
+}
+```
+
+**Errors:**
+- `404` - Contract not found
+
+---
+
+### PUT /disputes/:id/review
+
+Assign a supervisor to review a dispute.
+
+**Request:**
+- Path params: `:id` - dispute ID (integer)
+- Body:
+```json
+{
+  "giamSatId": 5
+}
+```
+
+**Response 200:**
+```json
+{
+  "message": "Dispute assigned for review",
+  "dispute": {
+    "tranhChapId": 1,
+    "congViecId": 1,
+    "nguoiGuiId": 1,
+    "giamSatId": 5,
+    "lyDo": "Work not delivered on time",
+    "moTa": "The freelancer missed the deadline by 2 weeks",
+    "trangThai": "DangXuLy",
+    "yeuCauHoanTien": "5000000",
+    "ngayMo": "2025-02-10T10:30:00.000Z",
+    "ngayDong": null
+  }
+}
+```
+
+**Errors:**
+- `404` - Dispute or supervisor not found
+- `409` - Dispute already assigned or closed
+
+---
+
+### PUT /disputes/:id/resolve
+
+Resolve a dispute with a final decision.
+
+**Request:**
+- Path params: `:id` - dispute ID (integer)
+- Body:
+```json
+{
+  "giamSatId": 5,
+  "ketQua": "HoanMotPhan",
+  "lyDo": "Freelancer completed 60% of work, partial refund granted",
+  "soTienHoan": 3000000,
+  "benChiuPhi": "ChiaDeu"
+}
+```
+
+> Valid `ketQua`: `HoanTien`, `KhongHoanTien`, `HoanMotPhan`.
+> Valid `benChiuPhi`: `NguoiThue`, `Freelancer`, `ChiaDeu`.
+
+**Response 200:**
+```json
+{
+  "message": "Dispute resolved successfully",
+  "dispute": {
+    "tranhChapId": 1,
+    "congViecId": 1,
+    "nguoiGuiId": 1,
+    "giamSatId": 5,
+    "lyDo": "Work not delivered on time",
+    "moTa": "The freelancer missed the deadline by 2 weeks",
+    "trangThai": "DaDong",
+    "yeuCauHoanTien": "5000000",
+    "ngayMo": "2025-02-10T10:30:00.000Z",
+    "ngayDong": "2025-02-15T14:00:00.000Z"
+  }
+}
+```
+
+**Errors:**
+- `400` - Missing required fields
+- `404` - Dispute not found
+- `409` - Dispute already resolved
+
+---
+
+
+## 15. Evidences
+
+### POST /disputes/:id/evidences
+
+Submit evidence for a dispute.
+
+**Request:**
+- Path params: `:id` - dispute ID (integer)
+- Body:
+```json
+{
+  "nguoiNopId": 1,
+  "giamSatId": 5,
+  "loaiBangChung": "TaiLieu",
+  "noiDung": "Contract agreement showing deadline was January 31",
+  "duongDanFile": "https://example.com/files/contract.pdf"
+}
+```
+
+> `giamSatId`, `noiDung`, `duongDanFile` are optional.
+> Valid `loaiBangChung`: `HinhAnh`, `Video`, `TaiLieu`, `VanBan`.
+
+**Response 201:**
+```json
+{
+  "message": "Evidence submitted successfully",
+  "evidence": {
+    "bangChungId": 1,
+    "tranhChapId": 1,
+    "nguoiNopId": 1,
+    "giamSatId": 5,
+    "loaiBangChung": "TaiLieu",
+    "noiDung": "Contract agreement showing deadline was January 31",
+    "duongDanFile": "https://example.com/files/contract.pdf",
+    "ngayNop": "2025-02-11T08:00:00.000Z"
+  }
+}
+```
+
+**Errors:**
+- `400` - Missing required fields
+- `404` - Dispute not found
+
+---
+
+### GET /disputes/:id/evidences
+
+Get all evidences for a dispute.
+
+**Request:**
+- Path params: `:id` - dispute ID (integer)
+
+**Response 200:**
+```json
+{
+  "total": 2,
+  "evidences": [
+    {
+      "bangChungId": 1,
+      "tranhChapId": 1,
+      "nguoiNopId": 1,
+      "giamSatId": 5,
+      "loaiBangChung": "TaiLieu",
+      "noiDung": "Contract agreement showing deadline was January 31",
+      "duongDanFile": "https://example.com/files/contract.pdf",
+      "ngayNop": "2025-02-11T08:00:00.000Z"
+    },
+    {
+      "bangChungId": 2,
+      "tranhChapId": 1,
+      "nguoiNopId": 3,
+      "giamSatId": null,
+      "loaiBangChung": "HinhAnh",
+      "noiDung": "Screenshot of chat showing extension request",
+      "duongDanFile": "https://example.com/files/screenshot.png",
+      "ngayNop": "2025-02-12T09:00:00.000Z"
+    }
+  ]
+}
+```
+
+**Errors:**
+- `404` - Dispute not found
+
+---
+
+### DELETE /evidences/:id
+
+Delete an evidence submission.
+
+**Request:**
+- Path params: `:id` - evidence ID (integer)
+
+**Response 200:**
+```json
+{
+  "message": "Evidence deleted successfully",
+  "evidence": null
+}
+```
+
+**Errors:**
+- `404` - Evidence not found
+
+---
+
 
 ## 16. Reviews
 
-### 16.1. Tao danh gia
+### POST /reviews
 
-```http
-POST /reviews
-```
+Create a new review for a completed contract.
 
-**Body:**
-
+**Request:**
+- Body:
 ```json
 {
-  "contractId": 15,
-  "nguoiDanhGiaId": 5,
-  "diem": 5,
-  "noiDung": "Lam viec tot"
+  "congViecId": 1,
+  "nguoiDanhGiaId": 1,
+  "nguoiDuocDGId": 3,
+  "diemSo": 5,
+  "binhLuan": "Excellent work, delivered on time with great quality",
+  "loaiDanhGia": "NguoiThue_DanhGia_Freelancer",
+  "giamSatId": 5
 }
 ```
 
-### 16.2. Lay chi tiet danh gia
+> `binhLuan` and `giamSatId` are optional.
+> Valid `loaiDanhGia`: `NguoiThue_DanhGia_Freelancer`, `Freelancer_DanhGia_NguoiThue`.
+> `diemSo` range: 1-5.
 
-```http
-GET /reviews/:id
-```
-
-### 16.3. Lay danh gia theo user
-
-```http
-GET /users/:id/reviews
-```
-
-### 16.4. Lay danh gia theo hop dong
-
-```http
-GET /contracts/:id/reviews
-```
-
----
-
-## 17. Reports
-
-### 17.1. Tao bao cao
-
-```http
-POST /reports
-```
-
-**Body:**
-
+**Response 201:**
 ```json
 {
-  "nguoiBaoCaoId": 5,
-  "doiTuongId": 8,
-  "noiDung": "Co hanh vi vi pham"
+  "message": "Review created successfully",
+  "review": {
+    "danhGiaId": 1,
+    "congViecId": 1,
+    "nguoiDanhGiaId": 1,
+    "nguoiDuocDGId": 3,
+    "diemSo": 5,
+    "binhLuan": "Excellent work, delivered on time with great quality",
+    "loaiDanhGia": "NguoiThue_DanhGia_Freelancer",
+    "giamSatId": 5,
+    "ngayTao": "2025-02-20T10:30:00.000Z"
+  }
 }
 ```
 
-### 17.2. Lay danh sach bao cao
-
-```http
-GET /reports
-```
-
-### 17.3. Giai quyet bao cao
-
-```http
-PUT /reports/:id/resolve
-```
+**Errors:**
+- `400` - Missing required fields or invalid diemSo
+- `404` - Contract, reviewer, or reviewee not found
+- `409` - Review already exists for this contract by this user
 
 ---
 
-## 18. Admin
+### GET /reviews/:id
 
-### 18.1. Lay danh sach user
+Get a single review by ID.
 
-```http
-GET /admin/users
+**Request:**
+- Path params: `:id` - review ID (integer)
+
+**Response 200:**
+```json
+{
+  "review": {
+    "danhGiaId": 1,
+    "congViecId": 1,
+    "nguoiDanhGiaId": 1,
+    "nguoiDuocDGId": 3,
+    "diemSo": 5,
+    "binhLuan": "Excellent work, delivered on time with great quality",
+    "loaiDanhGia": "NguoiThue_DanhGia_Freelancer",
+    "giamSatId": 5,
+    "ngayTao": "2025-02-20T10:30:00.000Z"
+  }
+}
 ```
 
-### 18.2. Khoa user
-
-```http
-PUT /admin/users/:id/ban
-```
-
-### 18.3. Lay danh sach don vi giam sat
-
-```http
-GET /admin/supervisors
-```
-
-### 18.4. Duyet don vi giam sat
-
-```http
-PUT /admin/supervisors/:id/approve
-```
-
-### 18.5. Thong ke
-
-```http
-GET /admin/statistics
-```
+**Errors:**
+- `404` - Review not found
 
 ---
 
-## 🔍 Ví dụ sử dụng với cURL
+### GET /users/:id/reviews
 
-### Đăng ký tài khoản
+Get all reviews for a specific user (received reviews).
 
-```bash
-curl -X POST http://localhost:3000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tenDangNhap": "user01",
-    "matKhau": "123456",
-    "email": "user01@example.com",
-    "hoTen": "Nguyen Van A",
-    "vaiTro": "NguoiThue"
-  }'
+**Request:**
+- Path params: `:id` - user account ID (integer)
+
+**Response 200:**
+```json
+{
+  "total": 2,
+  "reviews": [
+    {
+      "danhGiaId": 1,
+      "congViecId": 1,
+      "nguoiDanhGiaId": 1,
+      "nguoiDuocDGId": 3,
+      "diemSo": 5,
+      "binhLuan": "Excellent work",
+      "loaiDanhGia": "NguoiThue_DanhGia_Freelancer",
+      "giamSatId": null,
+      "ngayTao": "2025-02-20T10:30:00.000Z"
+    }
+  ]
+}
 ```
 
-### Tạo yêu cầu thuê
-
-```bash
-curl -X POST http://localhost:3000/jobs \
-  -H "Content-Type: application/json" \
-  -d '{
-    "nguoiThueId": 5,
-    "loaiDichVuId": 1,
-    "tieuDe": "Can thiet ke website",
-    "moTa": "Thiet ke website ban hang",
-    "nganSachMin": 5000000,
-    "nganSachMax": 10000000,
-    "thoiHan": "2026-05-30"
-  }'
-```
-
-### Lấy danh sách yêu cầu
-
-```bash
-curl http://localhost:3000/jobs
-```
+**Errors:**
+- `404` - User not found
 
 ---
 
-## 🔍 Ví dụ sử dụng với JavaScript (Fetch API)
 
-### Đăng ký tài khoản
+### GET /contracts/:id/reviews
 
-```javascript
-const register = async () => {
-  const response = await fetch('http://localhost:3000/auth/register', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
+Get all reviews for a specific contract.
+
+**Request:**
+- Path params: `:id` - contract ID (integer)
+
+**Response 200:**
+```json
+{
+  "total": 2,
+  "reviews": [
+    {
+      "danhGiaId": 1,
+      "congViecId": 1,
+      "nguoiDanhGiaId": 1,
+      "nguoiDuocDGId": 3,
+      "diemSo": 5,
+      "binhLuan": "Excellent work, delivered on time",
+      "loaiDanhGia": "NguoiThue_DanhGia_Freelancer",
+      "giamSatId": null,
+      "ngayTao": "2025-02-20T10:30:00.000Z"
     },
-    body: JSON.stringify({
-      tenDangNhap: 'user01',
-      matKhau: '123456',
-      email: 'user01@example.com',
-      hoTen: 'Nguyen Van A',
-      vaiTro: 'NguoiThue',
-    }),
-  });
-
-  const data = await response.json();
-  console.log(data);
-};
+    {
+      "danhGiaId": 2,
+      "congViecId": 1,
+      "nguoiDanhGiaId": 3,
+      "nguoiDuocDGId": 1,
+      "diemSo": 4,
+      "binhLuan": "Good communication, clear requirements",
+      "loaiDanhGia": "Freelancer_DanhGia_NguoiThue",
+      "giamSatId": null,
+      "ngayTao": "2025-02-20T11:00:00.000Z"
+    }
+  ]
+}
 ```
 
-### Lấy danh sách yêu cầu
-
-```javascript
-const getJobs = async () => {
-  const response = await fetch('http://localhost:3000/jobs');
-  const data = await response.json();
-  console.log(data);
-};
-```
-
-### Tìm kiếm yêu cầu
-
-```javascript
-const searchJobs = async (keyword) => {
-  const response = await fetch(
-    `http://localhost:3000/jobs/search?keyword=${keyword}`,
-  );
-  const data = await response.json();
-  console.log(data);
-};
-```
+**Errors:**
+- `404` - Contract not found
 
 ---
 
-## 📝 Lưu ý quan trọng
+## 17. Notifications
 
-1. **Validation**: Tất cả API đều có validation, kiểm tra kỹ dữ liệu trước khi gửi
-2. **Soft Delete**: Một số endpoint xóa là soft delete (chỉ cập nhật trạng thái)
-3. **Hard Delete**: Một số endpoint xóa là hard delete (xóa vĩnh viễn)
-4. **Date Format**: Sử dụng format ISO 8601 cho ngày tháng (YYYY-MM-DD)
-5. **Number Format**: Số tiền được trả về dạng string để tránh mất độ chính xác
+### GET /notifications
 
----
+Get all notifications for a user.
 
-## ⚠️ Xử lý lỗi
+**Request:**
+- Query params: `userId` - user account ID (integer, required)
 
-### Các mã lỗi thường gặp:
+Example: `GET /notifications?userId=1`
 
-- `400 Bad Request` - Dữ liệu không hợp lệ
-- `401 Unauthorized` - Chưa đăng nhập hoặc token không hợp lệ
-- `404 Not Found` - Không tìm thấy tài nguyên
-- `500 Internal Server Error` - Lỗi server
-
-### Ví dụ response lỗi:
-
+**Response 200:**
 ```json
 {
-  "statusCode": 400,
-  "message": "tenDangNhap is required",
-  "error": "Bad Request"
+  "total": 3,
+  "notifications": [
+    {
+      "thongBaoId": 1,
+      "taiKhoanId": 1,
+      "tieuDe": "New proposal received",
+      "noiDung": "You have a new proposal for your job posting",
+      "loaiThongBao": "CongViec",
+      "daDoc": false,
+      "giamSatId": null,
+      "ngayTao": "2025-01-16T08:00:00.000Z"
+    },
+    {
+      "thongBaoId": 2,
+      "taiKhoanId": 1,
+      "tieuDe": "Payment received",
+      "noiDung": "Your deposit of 8,000,000 VND has been confirmed",
+      "loaiThongBao": "ThanhToan",
+      "daDoc": true,
+      "giamSatId": null,
+      "ngayTao": "2025-01-20T10:30:00.000Z"
+    }
+  ]
 }
 ```
 
 ---
 
-## 🚀 Luồng hoạt động cơ bản
+### PUT /notifications/:id/read
 
-### 1. Người thuê đăng yêu cầu
+Mark a notification as read.
 
-```
-POST /auth/register (vaiTro: NguoiThue)
-  ↓
-POST /auth/login
-  ↓
-POST /jobs (tạo yêu cầu thuê)
-```
+**Request:**
+- Path params: `:id` - notification ID (integer)
 
-### 2. Freelancer gửi báo giá
-
-```
-POST /auth/register (vaiTro: Freelancer)
-  ↓
-POST /auth/login
-  ↓
-GET /jobs (xem danh sách yêu cầu)
-  ↓
-POST /proposals (gửi báo giá)
-```
-
-### 3. Tạo hợp đồng và thực hiện
-
-```
-POST /contracts (tạo hợp đồng)
-  ↓
-PUT /contracts/:id/status (bắt đầu thực hiện)
-  ↓
-POST /progress (báo cáo tiến độ)
-  ↓
-PUT /contracts/:id/status (hoàn thành)
+**Response 200:**
+```json
+{
+  "message": "Notification marked as read",
+  "notification": {
+    "thongBaoId": 1,
+    "taiKhoanId": 1,
+    "tieuDe": "New proposal received",
+    "noiDung": "You have a new proposal for your job posting",
+    "loaiThongBao": "CongViec",
+    "daDoc": true,
+    "giamSatId": null,
+    "ngayTao": "2025-01-16T08:00:00.000Z"
+  }
+}
 ```
 
-### 4. Sử dụng giám sát (tùy chọn)
+**Errors:**
+- `404` - Notification not found
 
+---
+
+### DELETE /notifications/:id
+
+Delete a notification.
+
+**Request:**
+- Path params: `:id` - notification ID (integer)
+
+**Response 200:**
+```json
+{
+  "message": "Notification deleted successfully"
+}
 ```
-POST /contracts/:id/supervisor (chọn giám sát)
-  ↓
-PUT /contracts/:id/supervisor/accept (freelancer chấp nhận)
-  ↓
-POST /progress (giám sát xác nhận tiến độ)
+
+**Errors:**
+- `404` - Notification not found
+
+---
+
+
+## 18. Reports
+
+### POST /reports
+
+Create a new user report (report a user for misconduct).
+
+**Request:**
+- Body:
+```json
+{
+  "nguoiBaoCaoId": 1,
+  "nguoiBiCaoId": 3,
+  "lyDo": "Spam messages",
+  "moTa": "This user keeps sending unsolicited promotional messages"
+}
+```
+
+> `moTa` is optional.
+
+**Response 201:**
+```json
+{
+  "message": "Report created successfully",
+  "report": {
+    "baoCaoId": 1,
+    "nguoiBaoCaoId": 1,
+    "nguoiBiCaoId": 3,
+    "lyDo": "Spam messages",
+    "moTa": "This user keeps sending unsolicited promotional messages",
+    "trangThai": "ChoXuLy",
+    "ketQua": null,
+    "adminXuLyId": null,
+    "ngayTao": "2025-02-01T10:30:00.000Z",
+    "ngayXuLy": null
+  }
+}
+```
+
+**Errors:**
+- `400` - Missing required fields
+- `404` - Reporter or reported user not found
+
+---
+
+### GET /reports
+
+Get all reports (admin view).
+
+**Request:**
+- No parameters required.
+
+**Response 200:**
+```json
+{
+  "total": 2,
+  "reports": [
+    {
+      "baoCaoId": 1,
+      "nguoiBaoCaoId": 1,
+      "nguoiBiCaoId": 3,
+      "lyDo": "Spam messages",
+      "moTa": "This user keeps sending unsolicited promotional messages",
+      "trangThai": "ChoXuLy",
+      "ketQua": null,
+      "adminXuLyId": null,
+      "ngayTao": "2025-02-01T10:30:00.000Z",
+      "ngayXuLy": null
+    },
+    {
+      "baoCaoId": 2,
+      "nguoiBaoCaoId": 5,
+      "nguoiBiCaoId": 7,
+      "lyDo": "Fake profile",
+      "moTa": null,
+      "trangThai": "DaXuLy",
+      "ketQua": "User account suspended",
+      "adminXuLyId": 10,
+      "ngayTao": "2025-01-28T08:00:00.000Z",
+      "ngayXuLy": "2025-01-30T14:00:00.000Z"
+    }
+  ]
+}
 ```
 
 ---
 
-## 📞 Hỗ trợ
+### PUT /reports/:id/resolve
 
-Nếu có vấn đề hoặc câu hỏi, vui lòng liên hệ team phát triển.
+Resolve a report (admin action).
 
-**Version**: 1.0.0  
-**Last Updated**: 2026-05-06
+**Request:**
+- Path params: `:id` - report ID (integer)
+- Body:
+```json
+{
+  "adminId": 10,
+  "trangThai": "DaXuLy",
+  "ketQua": "User has been warned and messages deleted"
+}
+```
+
+> Valid `trangThai`: `ChoXuLy`, `DaXuLy`, `TuChoi`.
+
+**Response 200:**
+```json
+{
+  "message": "Report resolved successfully",
+  "report": {
+    "baoCaoId": 1,
+    "nguoiBaoCaoId": 1,
+    "nguoiBiCaoId": 3,
+    "lyDo": "Spam messages",
+    "moTa": "This user keeps sending unsolicited promotional messages",
+    "trangThai": "DaXuLy",
+    "ketQua": "User has been warned and messages deleted",
+    "adminXuLyId": 10,
+    "ngayTao": "2025-02-01T10:30:00.000Z",
+    "ngayXuLy": "2025-02-03T09:00:00.000Z"
+  }
+}
+```
+
+**Errors:**
+- `400` - Missing required fields
+- `404` - Report not found
+- `409` - Report already resolved
+
+---
+
+
+## 19. Admin
+
+### GET /admin/users
+
+Get all users for admin management.
+
+**Request:**
+- No parameters required.
+
+**Response 200:**
+```json
+{
+  "total": 10,
+  "users": [
+    {
+      "taiKhoanId": 1,
+      "tenDangNhap": "nguyenvana",
+      "email": "nguyenvana@email.com",
+      "hoTen": "Nguyen Van A",
+      "vaiTro": "Freelancer",
+      "trangThai": "HoatDong",
+      "ngayTao": "2025-01-15T10:30:00.000Z"
+    },
+    {
+      "taiKhoanId": 2,
+      "tenDangNhap": "tranvanb",
+      "email": "tranvanb@email.com",
+      "hoTen": "Tran Van B",
+      "vaiTro": "NguoiThue",
+      "trangThai": "HoatDong",
+      "ngayTao": "2025-01-10T08:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### PUT /admin/users/:id/ban
+
+Ban (lock) a user account.
+
+**Request:**
+- Path params: `:id` - user account ID (integer)
+
+**Response 200:**
+```json
+{
+  "message": "User banned successfully"
+}
+```
+
+**Errors:**
+- `404` - User not found
+- `409` - User already banned
+
+---
+
+### GET /admin/supervisors
+
+Get all supervisors for admin management.
+
+**Request:**
+- No parameters required.
+
+**Response 200:**
+```json
+{
+  "total": 3,
+  "supervisors": [
+    {
+      "giamSatId": 1,
+      "taiKhoanId": 5,
+      "tenDonVi": "Quality Assurance Corp",
+      "phiGiamSat": "500000",
+      "trangThai": "DaDuyet",
+      "ngayDangKy": "2025-01-01T00:00:00.000Z",
+      "hoTen": "Le Van C",
+      "email": "levanc@email.com"
+    },
+    {
+      "giamSatId": 2,
+      "taiKhoanId": 8,
+      "tenDonVi": "Project Monitor Ltd",
+      "phiGiamSat": "400000",
+      "trangThai": "ChoDuyet",
+      "ngayDangKy": "2025-01-20T00:00:00.000Z",
+      "hoTen": "Pham Van D",
+      "email": "phamvand@email.com"
+    }
+  ]
+}
+```
+
+---
+
+### PUT /admin/supervisors/:id/approve
+
+Approve a supervisor registration.
+
+**Request:**
+- Path params: `:id` - supervisor ID (integer)
+
+**Response 200:**
+```json
+{
+  "message": "Supervisor approved successfully"
+}
+```
+
+**Errors:**
+- `404` - Supervisor not found
+- `409` - Supervisor already approved
+
+---
+
+### GET /admin/statistics
+
+Get platform statistics overview.
+
+**Request:**
+- No parameters required.
+
+**Response 200:**
+```json
+{
+  "statistics": {
+    "totalUsers": 150,
+    "totalContracts": 45,
+    "activeContracts": 12,
+    "pendingDisputes": 3,
+    "pendingReports": 5
+  }
+}
+```
+
+---
+
+
+## Endpoint Summary
+
+| # | Method | Path | Module | Description |
+|---|--------|------|--------|-------------|
+| 1 | GET | /health | Health | Health check |
+| 2 | POST | /auth/register | Auth | Register new account |
+| 3 | POST | /auth/login | Auth | Login |
+| 4 | GET | /users | Users | Get all users |
+| 5 | GET | /users/search | Users | Search users |
+| 6 | GET | /users/:id | Users | Get user by ID |
+| 7 | GET | /users/:id/profile | Users | Get user profile |
+| 8 | GET | /users/:id/jobs | Users | Get user's jobs |
+| 9 | GET | /users/:id/contracts | Users | Get user's contracts |
+| 10 | GET | /users/:id/conversations | Users | Get user's conversations |
+| 11 | PUT | /users/:id | Users | Update user |
+| 12 | DELETE | /users/:id | Users | Delete user |
+| 13 | GET | /categories | Categories | Get all categories |
+| 14 | GET | /categories/:id | Categories | Get category by ID |
+| 15 | POST | /categories | Categories | Create category |
+| 16 | PUT | /categories/:id | Categories | Update category |
+| 17 | DELETE | /categories/:id | Categories | Delete category |
+| 18 | GET | /skills | Skills | Get all skills |
+| 19 | GET | /skills/:id | Skills | Get skill by ID |
+| 20 | POST | /skills | Skills | Create skill |
+| 21 | PUT | /skills/:id | Skills | Update skill |
+| 22 | DELETE | /skills/:id | Skills | Delete skill |
+| 23 | GET | /jobs | Jobs | Get all jobs |
+| 24 | GET | /jobs/search | Jobs | Search jobs |
+| 25 | GET | /jobs/:id | Jobs | Get job by ID |
+| 26 | GET | /jobs/:id/proposals | Jobs | Get job proposals |
+| 27 | GET | /jobs/:id/skills | Jobs | Get job skills |
+| 28 | POST | /jobs | Jobs | Create job |
+| 29 | PUT | /jobs/:id | Jobs | Update job |
+| 30 | PUT | /jobs/:id/skills | Jobs | Set job skills |
+| 31 | POST | /jobs/:id/skills/:kyNangId | Jobs | Add skill to job |
+| 32 | DELETE | /jobs/:id/skills/:kyNangId | Jobs | Remove skill from job |
+| 33 | DELETE | /jobs/:id | Jobs | Delete job |
+| 34 | GET | /proposals/:id | Proposals | Get proposal by ID |
+| 35 | POST | /proposals | Proposals | Create proposal |
+| 36 | PUT | /proposals/:id | Proposals | Update proposal |
+| 37 | DELETE | /proposals/:id | Proposals | Delete proposal |
+| 38 | GET | /freelancers/:id/proposals | Freelancers | Get freelancer proposals |
+| 39 | GET | /freelancers/:id/skills | Freelancers | Get freelancer skills |
+| 40 | PUT | /freelancers/:id/skills | Freelancers | Set freelancer skills |
+| 41 | POST | /freelancers/:id/skills/:kyNangId | Freelancers | Add skill to freelancer |
+| 42 | DELETE | /freelancers/:id/skills/:kyNangId | Freelancers | Remove skill from freelancer |
+| 43 | GET | /contracts | Contracts | Get all contracts |
+| 44 | GET | /contracts/:id | Contracts | Get contract by ID |
+| 45 | GET | /contracts/:id/detail | Contracts | Get contract detail |
+| 46 | GET | /contracts/:id/progress | Contracts | Get contract progress |
+| 47 | GET | /contracts/:id/conversations | Contracts | Get contract conversations |
+| 48 | POST | /contracts | Contracts | Create contract |
+| 49 | PUT | /contracts/:id/status | Contracts | Update contract status |
+| 50 | POST | /contracts/:id/supervisor | Contracts | Select supervisor |
+| 51 | PUT | /contracts/:id/supervisor/accept | Contracts | Accept supervisor |
+| 52 | PUT | /contracts/:id/supervisor/reject | Contracts | Reject supervisor |
+| 53 | GET | /supervisors | Supervisors | Get all supervisors |
+| 54 | GET | /supervisors/search | Supervisors | Search supervisors |
+| 55 | GET | /supervisors/:id | Supervisors | Get supervisor by ID |
+| 56 | POST | /supervisors | Supervisors | Create supervisor |
+| 57 | PUT | /supervisors/:id | Supervisors | Update supervisor |
+| 58 | DELETE | /supervisors/:id | Supervisors | Delete supervisor |
+| 59 | GET | /progress/:id | Progress | Get progress by ID |
+| 60 | POST | /progress | Progress | Create progress |
+| 61 | PUT | /progress/:id | Progress | Update progress |
+| 62 | DELETE | /progress/:id | Progress | Delete progress |
+| 63 | POST | /chat | Chat | Create conversation |
+| 64 | GET | /chat/:id | Chat | Get conversation by ID |
+| 65 | PUT | /chat/:id/close | Chat | Close conversation |
+| 66 | GET | /chat/:id/messages | Chat | Get messages |
+| 67 | POST | /chat/:id/messages | Chat | Send message |
+| 68 | PUT | /chat/:id/read/:userId | Chat | Mark messages as read |
+| 69 | POST | /payments/deposit | Payments | Create deposit |
+| 70 | GET | /payments/:id | Payments | Get payment by ID |
+| 71 | GET | /contracts/:id/payments | Payments | Get contract payments |
+| 72 | PUT | /payments/:id/release | Payments | Release payment |
+| 73 | PUT | /payments/:id/refund | Payments | Refund payment |
+| 74 | POST | /disputes | Disputes | Create dispute |
+| 75 | GET | /disputes/:id | Disputes | Get dispute by ID |
+| 76 | GET | /contracts/:id/disputes | Disputes | Get contract disputes |
+| 77 | PUT | /disputes/:id/review | Disputes | Assign reviewer |
+| 78 | PUT | /disputes/:id/resolve | Disputes | Resolve dispute |
+| 79 | POST | /disputes/:id/evidences | Evidences | Submit evidence |
+| 80 | GET | /disputes/:id/evidences | Evidences | Get dispute evidences |
+| 81 | DELETE | /evidences/:id | Evidences | Delete evidence |
+| 82 | POST | /reviews | Reviews | Create review |
+| 83 | GET | /reviews/:id | Reviews | Get review by ID |
+| 84 | GET | /users/:id/reviews | Reviews | Get user reviews |
+| 85 | GET | /contracts/:id/reviews | Reviews | Get contract reviews |
+| 86 | GET | /notifications | Notifications | Get user notifications |
+| 87 | PUT | /notifications/:id/read | Notifications | Mark as read |
+| 88 | DELETE | /notifications/:id | Notifications | Delete notification |
+| 89 | POST | /reports | Reports | Create report |
+| 90 | GET | /reports | Reports | Get all reports |
+| 91 | PUT | /reports/:id/resolve | Reports | Resolve report |
+| 92 | GET | /admin/users | Admin | Get all users (admin) |
+| 93 | PUT | /admin/users/:id/ban | Admin | Ban user |
+| 94 | GET | /admin/supervisors | Admin | Get supervisors (admin) |
+| 95 | PUT | /admin/supervisors/:id/approve | Admin | Approve supervisor |
+| 96 | GET | /admin/statistics | Admin | Get statistics |
+
+---
+
+
+---
+
+## 20. WebSocket - Realtime Chat
+
+The chat system supports realtime messaging via Socket.IO alongside the REST API.
+
+### Connection
+
+```
+URL: http://localhost:3000/chat
+Query: { userId: "1" }
+```
+
+**Frontend example:**
+```js
+import { io } from 'socket.io-client';
+
+const socket = io('http://localhost:3000/chat', {
+  query: { userId: '1' }
+});
+```
+
+---
+
+### Client -> Server Events
+
+#### joinConversation
+
+Join a conversation room to receive realtime messages.
+
+```json
+{ "cuocHoiThoaiId": 1 }
+```
+
+Call this when user opens a conversation.
+
+---
+
+#### leaveConversation
+
+Leave a conversation room.
+
+```json
+{ "cuocHoiThoaiId": 1 }
+```
+
+Call this when user navigates away from a conversation.
+
+---
+
+#### sendMessage
+
+Send a message via WebSocket (saves to DB + broadcasts to room).
+
+```json
+{
+  "cuocHoiThoaiId": 1,
+  "nguoiGuiId": 1,
+  "noiDung": "Hello!",
+  "loaiTin": "VanBan"
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| cuocHoiThoaiId | Yes | Conversation ID |
+| nguoiGuiId | Yes | Sender user ID (must be a member) |
+| noiDung | Yes | Message content |
+| loaiTin | No | VanBan (default) / File / HinhAnh |
+
+On success, server emits `newMessage` to the room.
+On error, server emits `error` to the sender.
+
+---
+
+#### markAsRead
+
+Mark all messages (not sent by userId) as read.
+
+```json
+{ "cuocHoiThoaiId": 1, "userId": 1 }
+```
+
+Server emits `messagesRead` to the room.
+
+---
+
+#### typing
+
+Typing indicator.
+
+```json
+{ "cuocHoiThoaiId": 1, "userId": 1, "isTyping": true }
+```
+
+Server broadcasts `userTyping` to other members in the room.
+
+---
+
+### Server -> Client Events
+
+#### newMessage
+
+Emitted to all clients in the conversation room when a new message is sent.
+
+```json
+{
+  "tinNhanId": 4,
+  "cuocHoiThoaiId": 1,
+  "nguoiGui": {
+    "taiKhoanId": 1,
+    "hoTen": "Nguyen Van An",
+    "email": "manhhuy2@gmail.com"
+  },
+  "noiDung": "Hello!",
+  "loaiTin": "VanBan",
+  "daDoc": false,
+  "ngayTao": "2026-04-24T09:00:00.000Z"
+}
+```
+
+---
+
+#### messageNotification
+
+Emitted to the other member when they are NOT in the conversation room (for unread badge/notification).
+
+```json
+{
+  "cuocHoiThoaiId": 1,
+  "message": { ... same as newMessage ... }
+}
+```
+
+---
+
+#### messagesRead
+
+Emitted to the room when someone marks messages as read.
+
+```json
+{
+  "cuocHoiThoaiId": 1,
+  "userId": 1,
+  "count": 5
+}
+```
+
+---
+
+#### userTyping
+
+Emitted to other members in the room when someone is typing.
+
+```json
+{
+  "cuocHoiThoaiId": 1,
+  "userId": 1,
+  "isTyping": true
+}
+```
+
+---
+
+#### error
+
+Emitted to the sender when an operation fails.
+
+```json
+{ "message": "Cuoc hoi thoai khong ton tai" }
+```
+
+---
+
+### Usage Flow
+
+1. **Connect** when user logs in: `io('/chat', { query: { userId } })`
+2. **Join room** when opening a conversation: emit `joinConversation`
+3. **Send messages** via `sendMessage` event (realtime) or `POST /chat/:id/messages` (REST)
+4. **Receive messages** by listening to `newMessage` event
+5. **Mark as read** when user views messages: emit `markAsRead`
+6. **Show typing** indicator: emit `typing` with `isTyping: true/false`
+7. **Leave room** when switching conversations: emit `leaveConversation`
+8. **Listen to `messageNotification`** for unread badges on conversation list
+
+> Note: REST endpoints (`GET /chat/:id/messages`, `POST /chat`) still work for loading history, creating conversations, etc. WebSocket is only for realtime updates.

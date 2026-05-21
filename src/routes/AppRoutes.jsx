@@ -8,9 +8,11 @@ import RequestDetailPage from "../pages/RequestDetail/RequestDetailPage";
 import WorkspaceLayout from "../pages/Workspace/WorkspaceLayout";
 import WorkspaceOverview from "../pages/Workspace/WorkspaceOverview";
 import WorkspaceJobs from "../pages/Workspace/WorkspaceJobs";
+import WorkspaceJobDetail from "../pages/Workspace/WorkspaceJobDetail";
 import WorkspaceMessages from "../pages/Workspace/WorkspaceMessages";
 import WorkspaceNotifications from "../pages/Workspace/WorkspaceNotifications";
 import WorkspaceComplaints from "../pages/Workspace/WorkspaceComplaints";
+import WorkspaceMyQuotes from "../pages/Workspace/WorkspaceMyQuotes";
 import EditRequestPage from "../pages/EditRequest/EditRequestPage";
 import MyRequestsPage from "../pages/MyRequests/MyRequestsPage";
 import MyQuotesPage from "../pages/MyQuotes/MyQuotesPage";
@@ -82,9 +84,11 @@ function AppRoutes() {
           <Route path="workspace" element={<WorkspaceLayout />}>
             <Route index element={<WorkspaceOverview />} />
             <Route path="jobs" element={<WorkspaceJobs />} />
+            <Route path="jobs/:id" element={<WorkspaceJobDetail />} />
             <Route path="messages" element={<WorkspaceMessages />} />
             <Route path="notifications" element={<WorkspaceNotifications />} />
             <Route path="complaints" element={<WorkspaceComplaints />} />
+            <Route path="my-quotes" element={<WorkspaceMyQuotes />} />
           </Route>
           
           <Route path="my-requests" element={<MyRequestsPage />} />

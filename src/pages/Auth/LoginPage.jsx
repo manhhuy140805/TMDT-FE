@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import authService from "../../services/authService";
+import userService from "../../services/userService";
 import "./Auth.css";
 
 const LoginPage = () => {
@@ -36,6 +37,26 @@ const LoginPage = () => {
 
       // API trả về { message, user } — chỉ lưu phần user
       const userData = res?.user ?? res;
+
+      // Gọi thêm profile để lấy freelancerId / nguoiThueId / giamSatId
+      try {
+        const profileRes = await userService.getProfile(userData.taiKhoanId);
+        const profile = profileRes?.profile;
+        if (profile) {
+          if (profile.freelancer) {
+            userData.freelancerId = profile.freelancer.freelancerId;
+          }
+          if (profile.nguoiThue) {
+            userData.nguoiThueId = profile.nguoiThue.nguoiThueId;
+          }
+          if (profile.giamSat) {
+            userData.giamSatId = profile.giamSat.giamSatId;
+          }
+        }
+      } catch (profileErr) {
+        console.warn("Không lấy được profile, tiếp tục với user cơ bản:", profileErr);
+      }
+
       localStorage.setItem("user", JSON.stringify(userData));
 
       // Nếu chọn "Nhớ đăng nhập", lưu thêm flag

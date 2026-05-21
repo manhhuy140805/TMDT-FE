@@ -63,6 +63,7 @@ const RequestDetailPage = () => {
     deadline: job.thoiHan,
     status: job.trangThai,
     requiresSupervision: job.yeuCauGiamSat,
+    supervisorFee: job.phiGiamSat ?? 2000000,
     bids: job.soLuongBaoGia ?? 0,
     category: job.loaiDichVu?.tenLoai ?? "",
     createdAt: job.ngayTao,
@@ -133,11 +134,11 @@ const RequestDetailPage = () => {
     request.employer &&
     request.employer.id === currentUserId;
 
-  // Yêu cầu còn nhận hồ sơ khi: đang mở VÀ chưa có freelancer được chọn
+  // Yêu cầu còn nhận hồ sơ khi: trạng thái MoiTao VÀ chưa có freelancer được chọn
   const isAcceptingBids =
     request &&
-    (request.status === "DangMo" || request.status === "MoDau") &&
-    !quotes.some((q) => q.status === "DuocChon");
+    request.status === "MoiTao" &&
+    !quotes.some((q) => q.status === "DaChapNhan" || q.status === "DuocChon");
 
   const canSubmitQuote = isFreelancer && isAcceptingBids && !isOwner;
 
@@ -245,26 +246,122 @@ const RequestDetailPage = () => {
       alert("Không tìm thấy thông tin freelancer!");
       return;
     }
+
+    // Bước 1: Tìm conversation hiện có cùng (partner + requestId) trong localStorage mapping
+    let contexts = {};
     try {
-      await api.chat.createConversation({ thanhVien2Id: targetId });
+      contexts = JSON.parse(localStorage.getItem("chat_contexts") || "{}");
     } catch {
-      // Conversation có thể đã tồn tại — bỏ qua lỗi, navigate luôn
+      contexts = {};
     }
-    navigate("/workspace/messages");
+
+    try {
+      const listRes = await api.chat.getConversations(currentUserId);
+      const list =
+        listRes?.conversations || listRes?.data || (Array.isArray(listRes) ? listRes : []);
+
+      // Tìm conversation đã tồn tại cho cặp partner + request hiện tại
+      const existing = list.find((c) => {
+        const m1 = Number(c.thanhVien1?.taiKhoanId);
+        const m2 = Number(c.thanhVien2?.taiKhoanId);
+        const isSamePair =
+          (m1 === Number(currentUserId) && m2 === Number(targetId)) ||
+          (m2 === Number(currentUserId) && m1 === Number(targetId));
+        if (!isSamePair) return false;
+
+        const convId = c.cuocHoiThoaiId;
+        const ctx = contexts[convId];
+        // Khớp khi: hội thoại có context = yêu cầu hiện tại
+        return ctx?.type === "request" && Number(ctx.id) === Number(request.id);
+      });
+
+      if (existing) {
+        navigate(
+          `/workspace/messages?conversationId=${existing.cuocHoiThoaiId}`
+        );
+        return;
+      }
+    } catch (err) {
+      console.warn("Không lấy được danh sách hội thoại:", err.message);
+    }
+
+    // Bước 2: Tạo conversation mới
+    try {
+      const res = await api.chat.createConversation({
+        thanhVien1Id: currentUserId,
+        thanhVien2Id: targetId,
+      });
+      const conv = res?.conversation ?? res;
+      const conversationId = conv?.cuocHoiThoaiId;
+      if (conversationId && request) {
+        contexts[conversationId] = {
+          type: "request",
+          id: request.id,
+          title: request.title,
+        };
+        try {
+          localStorage.setItem("chat_contexts", JSON.stringify(contexts));
+        } catch (e) {
+          console.warn("Không thể lưu chat context:", e);
+        }
+      }
+      navigate(`/workspace/messages?conversationId=${conversationId}`);
+    } catch (err) {
+      console.error("Lỗi tạo hội thoại:", err);
+      navigate("/workspace/messages");
+    }
   };
 
-  const confirmAcceptQuote = async () => {
+  const confirmAcceptQuote = async (paymentInfo) => {
     if (!selectedQuote) return;
+
+    // Guard: không cho chấp nhận nếu yêu cầu đã đóng hoặc đã có quote được chấp nhận
+    if (request.status === "DangNhan" || request.status === "HoanThanh" || request.status === "DaHuy") {
+      alert("Yêu cầu này đã được chấp nhận hoặc không còn mở!");
+      setShowAcceptModal(false);
+      return;
+    }
+    if (quotes.some((q) => q.id !== selectedQuote.id && (q.status === "DaChapNhan" || q.status === "DuocChon"))) {
+      alert("Đã có báo giá khác được chấp nhận cho yêu cầu này!");
+      setShowAcceptModal(false);
+      return;
+    }
 
     setAccepting(true);
     try {
-      // Tạo hợp đồng từ báo giá được chọn
-      await api.contracts.create({
-        baoGiaId: selectedQuote.id,
-        giaThucTe: selectedQuote.minPrice,
-        thoiHanThucTe: selectedQuote.durationDays,
+      // Bước 1: Cập nhật proposal sang DaChapNhan
+      await api.proposals.update(selectedQuote.id, { trangThai: "DaChapNhan" });
+
+      // Bước 2: Tạo hợp đồng từ báo giá được chọn
+      const contractRes = await api.contracts.create({
+        yeuCauId: request.id,
+        freelancerId: selectedQuote.freelancer.taiKhoanId,
+        nguoiThueId: currentUserId,
+        giaThoa: paymentInfo.agreedPrice,
+        thoiGianThoa: selectedQuote.durationDays,
       });
-      alert("Đã chấp nhận báo giá và tạo hợp đồng thành công!");
+
+      const contractId = contractRes?.congViecId ?? contractRes?.contract?.congViecId;
+
+      // Bước 3: Thanh toán escrow — 100% tiền freelancer + phí giám sát (nếu có)
+      if (contractId) {
+        const depositAmount = paymentInfo.agreedPrice + (paymentInfo.supervisorFee || 0);
+        await api.payments.deposit({
+          contractId: contractId,
+          amount: depositAmount,
+          paymentMethod: paymentInfo.paymentMethod,
+          note: `Thanh toán escrow cho hợp đồng #${contractId}`,
+        });
+      }
+
+      // Bước 4: Đóng yêu cầu thuê (chuyển trạng thái sang DangNhan)
+      try {
+        await api.jobs.update(request.id, { trangThai: "DangNhan" });
+      } catch (statusErr) {
+        console.warn("[confirmAcceptQuote] Lỗi đổi trạng thái job:", statusErr.message);
+      }
+
+      alert("Đã chấp nhận báo giá và thanh toán escrow thành công! Tiền sẽ được hệ thống giữ cho đến khi công việc hoàn thành.");
       setShowAcceptModal(false);
       setSelectedQuote(null);
       fetchQuotes();
@@ -339,6 +436,8 @@ const RequestDetailPage = () => {
         onClose={() => setShowAcceptModal(false)}
         onConfirm={confirmAcceptQuote}
         accepting={accepting}
+        requiresSupervision={request?.requiresSupervision ?? false}
+        supervisorFee={request?.supervisorFee ?? 2000000}
       />
     </>
   );

@@ -1,18 +1,25 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useOutletContext, Link, useSearchParams } from "react-router-dom";
 import api from "../../services/api";
+import useSocket from "../../hooks/useSocket";
 import "./WorkspaceMessages.css";
 
 /**
- * Hộp thư – nhắn tin với freelancer / người thuê.
- * API:
- *   GET    /chat                         -> danh sách hội thoại
- *   GET    /chat/:id/messages            -> tin nhắn trong hội thoại
- *   POST   /chat/:id/messages            -> gửi tin nhắn { noiDung, loaiTinNhan? }
+ * Hộp thư – nhắn tin realtime với freelancer / người thuê.
+ *
+ * REST (load history):
+ *   GET /users/:id/conversations
+ *   GET /chat/:id/messages
+ *
+ * WebSocket (realtime):
+ *   emit: joinConversation, leaveConversation, sendMessage, markAsRead, typing
+ *   listen: newMessage, messagesRead, userTyping, messageNotification, error
  */
 const WorkspaceMessages = () => {
   const { currentUser } = useOutletContext();
   const currentUserId = currentUser?.taiKhoanId ?? currentUser?.id;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedConvId = searchParams.get("conversationId");
 
   const [conversations, setConversations] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
@@ -26,21 +33,32 @@ const WorkspaceMessages = () => {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [search, setSearch] = useState("");
+  const [partnerTyping, setPartnerTyping] = useState(false);
+  // Track unread: set chứa conversationId có tin nhắn mới chưa đọc
+  const [unreadIds, setUnreadIds] = useState(new Set());
+  const [activeJob, setActiveJob] = useState(null);
+  // Mapping: conversationId → { type: 'contract'|'request', id, title }
+  const [convContexts, setConvContexts] = useState({});
 
   const bodyRef = useRef(null);
+  const prevActiveRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
-  // ── Load danh sách hội thoại ──
+  // ── Socket.IO ──
+  const { socket, connected } = useSocket(currentUserId);
+
+  // ── Load danh sách hội thoại (REST) ──
   useEffect(() => {
+    if (!currentUserId) return;
     let cancelled = false;
     const load = async () => {
       setLoadingList(true);
       setListError(null);
       try {
-        const res = await api.chat.getConversations();
+        const res = await api.chat.getConversations(currentUserId);
         if (cancelled) return;
-        const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+        const list = res?.conversations || res?.data || (Array.isArray(res) ? res : []);
         setConversations(list);
-        // tự chọn hội thoại đầu tiên nếu chưa chọn
         if (list.length > 0 && !activeId) {
           setActiveId(list[0].cuocHoiThoaiId ?? list[0].id);
         }
@@ -51,13 +69,30 @@ const WorkspaceMessages = () => {
       }
     };
     load();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentUserId]);
 
-  // ── Load tin nhắn khi đổi hội thoại ──
+  // ── Sync URL param ?conversationId=X → setActiveId ──
+  useEffect(() => {
+    if (!requestedConvId || !conversations.length) return;
+    const targetId = Number(requestedConvId);
+    const found = conversations.find(
+      (c) => Number(c.cuocHoiThoaiId ?? c.id) === targetId
+    );
+    if (found) {
+      setActiveId(found.cuocHoiThoaiId ?? found.id);
+      setUnreadIds((prev) => {
+        const next = new Set(prev);
+        next.delete(targetId);
+        return next;
+      });
+      // Xóa query param sau khi đã apply để tránh re-trigger
+      setSearchParams({}, { replace: true });
+    }
+  }, [requestedConvId, conversations, setSearchParams]);
+
+  // ── Load tin nhắn history khi đổi hội thoại (REST) ──
   useEffect(() => {
     if (!activeId) return;
     let cancelled = false;
@@ -67,7 +102,7 @@ const WorkspaceMessages = () => {
       try {
         const res = await api.chat.getMessages(activeId);
         if (cancelled) return;
-        const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+        const list = res?.messages || res?.data || (Array.isArray(res) ? res : []);
         setMessages(list);
       } catch (err) {
         if (!cancelled) setThreadError(err.message || "Không tải được tin nhắn");
@@ -76,27 +111,234 @@ const WorkspaceMessages = () => {
       }
     };
     load();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [activeId]);
 
-  // ── Auto scroll xuống cuối khi messages thay đổi ──
+  // ── Load context (yêu cầu / công việc) cho mỗi hội thoại ──
+  useEffect(() => {
+    if (!conversations.length) {
+      setConvContexts({});
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadContexts = async () => {
+      // 1. Lấy mapping từ localStorage (do RequestDetailPage lưu khi tạo conversation từ yêu cầu)
+      let localMap = {};
+      try {
+        localMap = JSON.parse(localStorage.getItem("chat_contexts") || "{}");
+      } catch {
+        localMap = {};
+      }
+
+      // 2. Build context map cho từng conversation
+      const contextMap = {};
+      const jobsToFetch = [];
+
+      conversations.forEach((conv) => {
+        const id = conv.cuocHoiThoaiId ?? conv.id;
+        // Ưu tiên: nếu hội thoại đã liên kết hợp đồng (congViecId) thì gọi API
+        if (conv.congViecId) {
+          jobsToFetch.push({ convId: id, jobId: conv.congViecId });
+        } else if (localMap[id]) {
+          // Fallback: lấy từ localStorage (yêu cầu)
+          contextMap[id] = localMap[id];
+        }
+      });
+
+      // 3. Fetch song song thông tin hợp đồng
+      const jobResults = await Promise.allSettled(
+        jobsToFetch.map((j) =>
+          api.contracts.getDetail(j.jobId).then((res) => ({
+            convId: j.convId,
+            jobId: j.jobId,
+            data: res?.contract || res?.data || res,
+          }))
+        )
+      );
+
+      jobResults.forEach((r) => {
+        if (r.status === "fulfilled" && r.value) {
+          const { convId, jobId, data } = r.value;
+          contextMap[convId] = {
+            type: "contract",
+            id: jobId,
+            title: data?.yeuCau?.tieuDe || `Hợp đồng #${jobId}`,
+            link: `/workspace/jobs/${jobId}`,
+          };
+        }
+      });
+
+      if (!cancelled) setConvContexts(contextMap);
+    };
+
+    loadContexts();
+    return () => { cancelled = true; };
+  }, [conversations]);
+
+  // ── activeJob: tương thích ngược cho phần thread header ──
+  useEffect(() => {
+    const ctx = convContexts[activeId];
+    if (ctx?.type === "contract") {
+      setActiveJob({ yeuCau: { tieuDe: ctx.title }, congViecId: ctx.id });
+    } else {
+      setActiveJob(null);
+    }
+  }, [activeId, convContexts]);
+
+  // ── Join/Leave room khi đổi hội thoại ──
+  useEffect(() => {
+    const s = socket.current;
+
+    // Leave room cũ
+    if (s && connected && prevActiveRef.current && prevActiveRef.current !== activeId) {
+      s.emit("leaveConversation", { cuocHoiThoaiId: prevActiveRef.current });
+    }
+
+    // Join room mới + mark as read
+    if (activeId) {
+      if (s && connected) {
+        s.emit("joinConversation", { cuocHoiThoaiId: activeId });
+        s.emit("markAsRead", { cuocHoiThoaiId: activeId, userId: currentUserId });
+      }
+      // Fallback REST: luôn gọi để đảm bảo backend cập nhật trạng thái đọc
+      api.chat.markAsRead(activeId, currentUserId).catch((err) => {
+        console.warn("[chat] markAsRead REST failed:", err.message);
+      });
+    }
+
+    prevActiveRef.current = activeId;
+  }, [activeId, connected, socket, currentUserId]);
+
+  // ── Listen socket events ──
+  useEffect(() => {
+    const s = socket.current;
+    if (!s) return;
+
+    const handleNewMessage = (msg) => {
+      if (msg.cuocHoiThoaiId === activeId) {
+        setMessages((prev) => {
+          // Nếu tin nhắn do mình gửi → thay thế optimistic msg
+          if (msg.nguoiGui?.taiKhoanId === currentUserId) {
+            const pendingIdx = prev.findIndex(
+              (m) => m._pending && m.noiDung === msg.noiDung
+            );
+            if (pendingIdx >= 0) {
+              const updated = [...prev];
+              updated[pendingIdx] = { ...msg, _pending: false };
+              return updated;
+            }
+          }
+          // Tránh duplicate (nếu đã có tinNhanId này)
+          if (prev.some((m) => m.tinNhanId === msg.tinNhanId)) return prev;
+          // Tin nhắn từ người khác → append
+          return [...prev, msg];
+        });
+        // Mark as read ngay nếu tin từ người khác
+        if (msg.nguoiGui?.taiKhoanId !== currentUserId) {
+          s.emit("markAsRead", { cuocHoiThoaiId: activeId, userId: currentUserId });
+        }
+      }
+      // Cập nhật tinNhanCuoi ở list + track ai gửi cuối
+      setConversations((prev) =>
+        prev.map((c) =>
+          (c.cuocHoiThoaiId ?? c.id) === msg.cuocHoiThoaiId
+            ? { ...c, tinNhanCuoi: msg.noiDung, lastSenderId: msg.nguoiGui?.taiKhoanId }
+            : c
+        )
+      );
+      // Nếu tin nhắn từ người khác và conversation không phải đang active → đánh dấu unread
+      if (msg.nguoiGui?.taiKhoanId !== currentUserId && msg.cuocHoiThoaiId !== activeId) {
+        setUnreadIds((prev) => new Set([...prev, msg.cuocHoiThoaiId]));
+      }
+    };
+
+    const handleNotification = (data) => {
+      // Tin nhắn đến conversation khác (unread badge)
+      const convId = data.cuocHoiThoaiId;
+      setConversations((prev) =>
+        prev.map((c) =>
+          (c.cuocHoiThoaiId ?? c.id) === convId
+            ? { ...c, tinNhanCuoi: data.message?.noiDung || c.tinNhanCuoi }
+            : c
+        )
+      );
+      // Đánh dấu unread
+      if (convId !== activeId) {
+        setUnreadIds((prev) => new Set([...prev, convId]));
+      }
+    };
+
+    const handleTyping = (data) => {
+      if (data.cuocHoiThoaiId === activeId && data.userId !== currentUserId) {
+        setPartnerTyping(data.isTyping);
+      }
+    };
+
+    const handleMessagesRead = (data) => {
+      // Khi đối phương đọc tin → cập nhật daDoc cho tin nhắn mình gửi
+      if (data.cuocHoiThoaiId === activeId && data.userId !== currentUserId) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.nguoiGui?.taiKhoanId === currentUserId && !m.daDoc
+              ? { ...m, daDoc: true }
+              : m
+          )
+        );
+      }
+    };
+
+    const handleError = (err) => {
+      console.warn("[socket] error:", err.message);
+    };
+
+    s.on("newMessage", handleNewMessage);
+    s.on("messageNotification", handleNotification);
+    s.on("userTyping", handleTyping);
+    s.on("messagesRead", handleMessagesRead);
+    s.on("error", handleError);
+
+    return () => {
+      s.off("newMessage", handleNewMessage);
+      s.off("messageNotification", handleNotification);
+      s.off("userTyping", handleTyping);
+      s.off("messagesRead", handleMessagesRead);
+      s.off("error", handleError);
+    };
+  }, [socket, activeId, currentUserId]);
+
+  // ── Auto scroll xuống cuối ──
   useEffect(() => {
     if (bodyRef.current) {
       bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
     }
   }, [messages, activeId]);
 
-  // ── Xác định người còn lại ──
+  // ── Helpers ──
   const getPartner = (conv) => {
     if (!conv) return null;
     const m1 = conv.thanhVien1;
     const m2 = conv.thanhVien2;
-    if (!m1 && !m2) return null;
-    if (m1?.taiKhoanId === currentUserId) return m2;
-    if (m2?.taiKhoanId === currentUserId) return m1;
+    // So sánh cả taiKhoanId dạng number và string
+    const uid = Number(currentUserId);
+    if (Number(m1?.taiKhoanId) === uid) return m2;
+    if (Number(m2?.taiKhoanId) === uid) return m1;
     return m2 || m1;
+  };
+
+  // Kiểm tra xem chuỗi có phải là ISO timestamp không
+  const isTimestamp = (str) => {
+    if (!str || typeof str !== "string") return false;
+    return /^\d{4}-\d{2}-\d{2}T/.test(str);
+  };
+
+  const getLastMessage = (conv) => {
+    const msg = conv.tinNhanCuoi;
+    if (!msg) return "Chưa có tin nhắn";
+    // Nếu tinNhanCuoi là timestamp thì không hiển thị nó
+    if (isTimestamp(msg)) return "Chưa có tin nhắn";
+    return msg;
   };
 
   const filteredConversations = useMemo(() => {
@@ -130,23 +372,17 @@ const WorkspaceMessages = () => {
     try {
       const d = new Date(dateStr);
       const now = new Date();
-      const sameDay = d.toDateString() === now.toDateString();
-      if (sameDay) {
+      if (d.toDateString() === now.toDateString()) {
         return d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
       }
-      return d.toLocaleDateString("vi-VN", {
-        day: "2-digit",
-        month: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+      return d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
     } catch {
       return "";
     }
   };
 
-  // ── Gửi tin nhắn ──
-  const handleSend = async (e) => {
+  // ── Gửi tin nhắn qua WebSocket ──
+  const handleSend = useCallback(async (e) => {
     e?.preventDefault?.();
     const content = draft.trim();
     if (!content || !activeId || sending) return;
@@ -158,51 +394,74 @@ const WorkspaceMessages = () => {
     const tempId = `temp-${Date.now()}`;
     const optimisticMsg = {
       tinNhanId: tempId,
-      nguoiGui: {
-        taiKhoanId: currentUserId,
-        hoTen: currentUser?.hoTen || "Bạn",
-      },
+      cuocHoiThoaiId: activeId,
+      nguoiGui: { taiKhoanId: currentUserId, hoTen: currentUser?.hoTen || "Bạn" },
       noiDung: content,
-      loaiTinNhan: "VanBan",
-      ngayGui: new Date().toISOString(),
+      loaiTin: "VanBan",
+      daDoc: false,
+      ngayTao: new Date().toISOString(),
       _pending: true,
     };
     setMessages((prev) => [...prev, optimisticMsg]);
     setDraft("");
 
-    try {
-      const res = await api.chat.sendMessage(activeId, {
+    const s = socket.current;
+    if (s && connected) {
+      // Gửi qua WebSocket
+      s.emit("sendMessage", {
+        cuocHoiThoaiId: activeId,
+        nguoiGuiId: currentUserId,
         noiDung: content,
-        loaiTinNhan: "VanBan",
+        loaiTin: "VanBan",
       });
-      const sent = res?.data || res;
-      // Thay tin nhắn tạm bằng tin nhắn thực
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.tinNhanId === tempId
-            ? {
-                ...optimisticMsg,
-                ...sent,
-                _pending: false,
-              }
-            : m
-        )
-      );
-      // Cập nhật tin nhắn cuối ở list
-      setConversations((prev) =>
-        prev.map((c) =>
-          (c.cuocHoiThoaiId ?? c.id) === activeId
-            ? { ...c, tinNhanCuoi: content }
-            : c
-        )
-      );
-    } catch (err) {
-      // Rollback optimistic
-      setMessages((prev) => prev.filter((m) => m.tinNhanId !== tempId));
-      setDraft(content);
-      setThreadError(err.message || "Gửi tin nhắn thất bại");
-    } finally {
-      setSending(false);
+      // Server sẽ emit newMessage lại — ta thay thế optimistic msg
+      // Đợi 1 chút rồi bỏ _pending (newMessage event sẽ handle)
+      setTimeout(() => {
+        setMessages((prev) =>
+          prev.map((m) => (m.tinNhanId === tempId ? { ...m, _pending: false } : m))
+        );
+        setSending(false);
+      }, 300);
+    } else {
+      // Fallback: gửi qua REST nếu socket không available
+      try {
+        const res = await api.chat.sendMessage(activeId, {
+          cuocHoiThoaiId: activeId,
+          nguoiGuiId: currentUserId,
+          noiDung: content,
+          loaiTin: "VanBan",
+        });
+        const sent = res?.data || res;
+        setMessages((prev) =>
+          prev.map((m) => (m.tinNhanId === tempId ? { ...optimisticMsg, ...sent, _pending: false } : m))
+        );
+      } catch (err) {
+        setMessages((prev) => prev.filter((m) => m.tinNhanId !== tempId));
+        setDraft(content);
+        setThreadError(err.message || "Gửi tin nhắn thất bại");
+      } finally {
+        setSending(false);
+      }
+    }
+
+    // Cập nhật tinNhanCuoi ở list
+    setConversations((prev) =>
+      prev.map((c) =>
+        (c.cuocHoiThoaiId ?? c.id) === activeId ? { ...c, tinNhanCuoi: content, lastSenderId: currentUserId } : c
+      )
+    );
+  }, [draft, activeId, sending, currentUserId, currentUser, socket, connected]);
+
+  // ── Typing indicator ──
+  const handleInputChange = (e) => {
+    setDraft(e.target.value);
+    const s = socket.current;
+    if (s && connected && activeId) {
+      s.emit("typing", { cuocHoiThoaiId: activeId, userId: currentUserId, isTyping: true });
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        s.emit("typing", { cuocHoiThoaiId: activeId, userId: currentUserId, isTyping: false });
+      }, 2000);
     }
   };
 
@@ -214,9 +473,10 @@ const WorkspaceMessages = () => {
   };
 
   return (
-    <div className="wl-content-box" style={{ padding: 0, overflow: "hidden" }}>
-      <div className="wl-content-header" style={{ padding: "20px 24px", marginBottom: 0, borderBottom: "1px solid #e2e8f0" }}>
+    <div className="wl-content-box wm-page">
+      <div className="wm-page-header">
         <h2>Tin nhắn</h2>
+        {connected && <span style={{ fontSize: "11px", color: "#10b981", marginLeft: "12px" }}>● Online</span>}
       </div>
 
       <div className="wm-wrapper">
@@ -247,23 +507,44 @@ const WorkspaceMessages = () => {
               <div className="wm-list-empty">
                 <i className="fa-regular fa-comments" />
                 <div>Chưa có hội thoại nào.</div>
+                <div style={{ fontSize: "12px", color: "#94A3B8", marginTop: "8px" }}>
+                  Bấm "Nhắn tin" ở trang chi tiết yêu cầu để bắt đầu trò chuyện.
+                </div>
               </div>
             ) : (
               filteredConversations.map((conv) => {
                 const id = conv.cuocHoiThoaiId ?? conv.id;
                 const partner = getPartner(conv);
                 const name = partner?.hoTen || "Người dùng";
+                const hasUnread = unreadIds.has(id);
+                const ctx = convContexts[id];
                 return (
                   <div
                     key={id}
                     className={`wm-conv-item ${activeId === id ? "active" : ""}`}
-                    onClick={() => setActiveId(id)}
+                    onClick={() => {
+                      setActiveId(id);
+                      // Đọc rồi → xóa khỏi unread
+                      setUnreadIds((prev) => {
+                        const next = new Set(prev);
+                        next.delete(id);
+                        return next;
+                      });
+                    }}
                   >
                     <div className="wm-avatar">{initials(name)}</div>
                     <div className="wm-conv-info">
                       <div className="wm-conv-name">{name}</div>
-                      <div className="wm-conv-last">
-                        {conv.tinNhanCuoi || "Chưa có tin nhắn"}
+                      {ctx && (
+                        <div className="wm-conv-context">
+                          <i className={`fa-solid ${ctx.type === "contract" ? "fa-briefcase" : "fa-file-lines"}`}></i>
+                          <span title={ctx.title}>
+                            {ctx.type === "contract" ? "Công việc:" : "Yêu cầu:"} {ctx.title}
+                          </span>
+                        </div>
+                      )}
+                      <div className={`wm-conv-last ${hasUnread ? "unread" : ""}`}>
+                        {getLastMessage(conv)}
                       </div>
                     </div>
                   </div>
@@ -287,10 +568,36 @@ const WorkspaceMessages = () => {
                 <div>
                   <div className="wm-conv-name">{activePartner?.hoTen || "Người dùng"}</div>
                   <div className="wm-conv-meta">
-                    {activePartner?.email || activePartner?.vaiTro || ""}
+                    {partnerTyping ? (
+                      <span style={{ color: "#0ea5e9", fontStyle: "italic" }}>Đang nhập…</span>
+                    ) : (
+                      activePartner?.email || activePartner?.vaiTro || ""
+                    )}
                   </div>
                 </div>
               </header>
+
+              {(() => {
+                const ctx = convContexts[activeId];
+                if (!ctx) return null;
+                const isContract = ctx.type === "contract";
+                return (
+                  <div className="wm-thread-context">
+                    <i className={`fa-solid ${isContract ? "fa-briefcase" : "fa-file-lines"}`} style={{ color: "#0EA5E9" }}></i>
+                    <span className="wm-thread-context-text">
+                      Trao đổi về {isContract ? "công việc" : "yêu cầu"}:{" "}
+                      <strong>{ctx.title}</strong>
+                    </span>
+                    <Link
+                      to={isContract ? ctx.link : `/requests/${ctx.id}`}
+                      className="wm-thread-context-link"
+                    >
+                      Xem chi tiết
+                      <i className="fa-solid fa-chevron-right" style={{ fontSize: "11px", marginLeft: "4px" }}></i>
+                    </Link>
+                  </div>
+                );
+              })()}
 
               <div className="wm-thread-body" ref={bodyRef}>
                 {loadingMessages ? (
@@ -306,22 +613,26 @@ const WorkspaceMessages = () => {
                     const senderId = m.nguoiGui?.taiKhoanId;
                     const isMe = senderId === currentUserId;
                     return (
-                      <div
-                        key={m.tinNhanId}
-                        className={`wm-msg-row ${isMe ? "me" : ""}`}
-                      >
+                      <div key={m.tinNhanId} className={`wm-msg-row ${isMe ? "me" : ""}`}>
                         <div>
                           {!isMe && (
-                            <div className="wm-msg-sender">
-                              {m.nguoiGui?.hoTen || "Người dùng"}
-                            </div>
+                            <div className="wm-msg-sender">{m.nguoiGui?.hoTen || "Người dùng"}</div>
                           )}
                           <div className={`wm-msg-bubble ${isMe ? "me" : "them"}`}>
                             {m.noiDung}
                           </div>
                           <div className="wm-msg-time" style={{ textAlign: isMe ? "right" : "left" }}>
-                            {formatTime(m.ngayGui)}
+                            {formatTime(m.ngayTao || m.ngayGui)}
                             {m._pending && " • Đang gửi…"}
+                            {isMe && !m._pending && (
+                              <span style={{ marginLeft: "6px", fontSize: "11px", color: m.daDoc ? "#0ea5e9" : "#94a3b8" }}>
+                                {m.daDoc ? (
+                                  <><i className="fa-solid fa-check-double"></i> Đã đọc</>
+                                ) : (
+                                  <><i className="fa-solid fa-check"></i> Đã gửi</>
+                                )}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -338,7 +649,7 @@ const WorkspaceMessages = () => {
                   rows={1}
                   placeholder="Nhập tin nhắn…"
                   value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
+                  onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   disabled={sending}
                 />

@@ -2,7 +2,7 @@ import { api } from "../utils/api";
 
 /**
  * Notification Service
- * GET    /notifications?skip=&take=
+ * GET    /notifications?userId=&skip=&take=
  * PUT    /notifications/:id/read
  * DELETE /notifications/:id
  */
@@ -11,10 +11,11 @@ const notificationService = {
     const query = new URLSearchParams(params).toString();
     return api.get(query ? `/notifications?${query}` : "/notifications");
   },
-  // params: { skip, take }
 
-  // backward compat alias
-  getByUserId: () => api.get("/notifications"),
+  getByUserId: (userId, params = {}) => {
+    const query = new URLSearchParams({ userId, ...params }).toString();
+    return api.get(`/notifications?${query}`);
+  },
 
   markAsRead: (id) => api.put(`/notifications/${id}/read`),
 

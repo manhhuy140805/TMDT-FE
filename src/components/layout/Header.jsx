@@ -11,33 +11,13 @@ const ROLE_LABELS = {
   KhachVangLai: 'Khách vãng lai',
 };
 
-// Workspace options theo từng vai trò
-const WORKSPACE_OPTIONS = {
-  NguoiThue: [
-    { label: 'Đăng yêu cầu', icon: 'fa-solid fa-plus-circle', path: '/post-request' },
-    { label: 'Yêu cầu của tôi', icon: 'fa-solid fa-briefcase', path: '/my-requests' },
-    { label: 'Hợp đồng', icon: 'fa-solid fa-file-contract', path: '/contracts' },
-  ],
-  Freelancer: [
-    { label: 'Tìm việc làm', icon: 'fa-solid fa-magnifying-glass', path: '/requests' },
-    { label: 'Báo giá của tôi', icon: 'fa-solid fa-file-invoice', path: '/my-quotes' },
-    { label: 'Hợp đồng', icon: 'fa-solid fa-file-contract', path: '/contracts' },
-  ],
-  DonViGiamSat: [
-    { label: 'Giám sát công việc', icon: 'fa-solid fa-eye', path: '/supervisor/jobs' },
-    { label: 'Hợp đồng giám sát', icon: 'fa-solid fa-file-contract', path: '/supervisor/contracts' },
-  ],
-  Admin: [
-    { label: 'Bảng điều khiển', icon: 'fa-solid fa-gauge', path: '/admin' },
-    { label: 'Quản lý người dùng', icon: 'fa-solid fa-users', path: '/admin/users' },
-  ],
-};
+
 
 const Header = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [showWorkspace, setShowWorkspace] = useState(false);
+
   const [hideTimeout, setHideTimeout] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -61,7 +41,6 @@ const Header = () => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setShowDropdown(false);
-        setShowWorkspace(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -71,7 +50,6 @@ const Header = () => {
   const handleLinkClick = () => {
     setMobileMenuOpen(false);
     setShowDropdown(false);
-    setShowWorkspace(false);
   };
 
   const handleMouseEnter = () => {
@@ -85,7 +63,6 @@ const Header = () => {
   const handleMouseLeave = () => {
     const timeout = setTimeout(() => {
       setShowDropdown(false);
-      setShowWorkspace(false);
     }, 200);
     setHideTimeout(timeout);
   };
@@ -95,13 +72,11 @@ const Header = () => {
     localStorage.removeItem('rememberMe');
     setUser(null);
     setShowDropdown(false);
-    setShowWorkspace(false);
     setMobileMenuOpen(false);
     navigate('/');
   };
 
   const roleLabel = user ? (ROLE_LABELS[user.vaiTro] || user.vaiTro || 'Thành viên') : '';
-  const workspaceItems = user ? (WORKSPACE_OPTIONS[user.vaiTro] || []) : [];
   const displayName = user?.hoTen || user?.name || 'Người dùng';
   const displayEmail = user?.email || '';
   const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=0EA5E9&color=fff&size=40`;
@@ -109,16 +84,6 @@ const Header = () => {
 
   return (
     <div className="global-header-sticky" style={{ position: 'sticky', top: 0, zIndex: 100, display: 'flex', flexDirection: 'column' }}>
-      {/* Promo Banner */}
-      <div className="promo-banner">
-        <div className="promo-content">
-          <span>Đừng ôm đồm mọi việc. Hãy thuê chuyên gia.</span>
-          <Link to="#" className="promo-link">
-            Khám phá Business Plus <i className="fa-solid fa-arrow-right"></i>
-          </Link>
-        </div>
-      </div>
-
       {/* Header */}
       <header className="redesign-header" style={{ position: 'relative', top: 'auto', zIndex: 'auto' }}>
         <div className="header-container">
@@ -196,39 +161,13 @@ const Header = () => {
 
                       <div className="dropdown-divider"></div>
 
-                      {/* Không gian làm việc */}
-                      {workspaceItems.length > 0 && (
-                        <>
-                          <button
-                            className="dropdown-item dropdown-workspace-toggle"
-                            onClick={() => setShowWorkspace((v) => !v)}
-                          >
-                            <i className="fa-solid fa-layer-group"></i>
-                            Không gian làm việc
-                            <i
-                              className={`fa-solid fa-chevron-${showWorkspace ? 'up' : 'down'} dropdown-chevron`}
-                            ></i>
-                          </button>
+                      {/* Không gian làm việc - chuyển thẳng tới /workspace */}
+                      <Link to="/workspace" className="dropdown-item" onClick={handleLinkClick}>
+                        <i className="fa-solid fa-layer-group"></i>
+                        Không gian làm việc
+                      </Link>
 
-                          {showWorkspace && (
-                            <div className="dropdown-workspace-list">
-                              {workspaceItems.map((item) => (
-                                <Link
-                                  key={item.path}
-                                  to={item.path}
-                                  className="dropdown-item dropdown-workspace-item"
-                                  onClick={handleLinkClick}
-                                >
-                                  <i className={item.icon}></i>
-                                  {item.label}
-                                </Link>
-                              ))}
-                            </div>
-                          )}
-
-                          <div className="dropdown-divider"></div>
-                        </>
-                      )}
+                      <div className="dropdown-divider"></div>
 
                       <Link to="/profile" className="dropdown-item" onClick={handleLinkClick}>
                         <i className="fa-solid fa-user"></i>

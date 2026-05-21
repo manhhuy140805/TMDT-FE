@@ -1,9 +1,8 @@
 const STATUS_MAP = {
-  MoDau:     { label: 'Mới tạo',      cls: 'rd-badge-teal' },
-  DangMo:    { label: 'Đang mở',      cls: 'rd-badge-green' },
-  DaDong:    { label: 'Đã đóng',      cls: 'rd-badge-red'  },
-  DaHuy:     { label: 'Đã hủy',       cls: 'rd-badge-red'  },
+  MoiTao:    { label: 'Đang mở',      cls: 'rd-badge-green' },
+  DangNhan:  { label: 'Đang thực hiện', cls: 'rd-badge-teal' },
   HoanThanh: { label: 'Hoàn thành',   cls: 'rd-badge-gold' },
+  DaHuy:     { label: 'Đã hủy',       cls: 'rd-badge-red'  },
 };
 
 const RequestHero = ({ request, onNavigate, isAcceptingBids = true }) => {
@@ -37,7 +36,7 @@ const RequestHero = ({ request, onNavigate, isAcceptingBids = true }) => {
             <i className="fa-solid fa-circle" style={{ fontSize: '7px' }}></i>
             {status.label}
           </span>
-          {!isAcceptingBids && (
+          {!isAcceptingBids && request.status === 'MoiTao' && (
             <span className="rd-badge rd-badge-red">
               <i className="fa-solid fa-lock"></i> Ngừng nhận hồ sơ
             </span>

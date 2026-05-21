@@ -1,37 +1,43 @@
 import { api } from "../utils/api";
 
 /**
- * Chat Service
- * POST   /chat
- * GET    /chat
- * POST   /chat/:id/messages
- * GET    /chat/:id/messages?skip=&take=
+ * Chat Service (Updated API)
  *
- * loaiTinNhan: VanBan | File | HinhAnh
+ * GET    /users/:id/conversations       — danh sách hội thoại của user
+ * POST   /chat                          — tạo hội thoại mới
+ * GET    /chat/:id                      — chi tiết 1 hội thoại
+ * PUT    /chat/:id/close                — đóng hội thoại
+ * GET    /chat/:id/messages             — lấy tin nhắn
+ * POST   /chat/:id/messages             — gửi tin nhắn
+ * PUT    /chat/:id/read/:userId         — đánh dấu đã đọc
+ *
+ * loaiTin: VanBan | HinhAnh | TepTin
  */
 const chatService = {
-  // Lấy danh sách cuộc hội thoại của user hiện tại
-  getConversations: () => api.get("/chat"),
+  // Lấy danh sách cuộc hội thoại của user
+  getConversations: (userId) => api.get(`/users/${userId}/conversations`),
 
   // Tạo cuộc hội thoại mới
   createConversation: (data) => api.post("/chat", data),
-  // data: { thanhVien2Id }
+  // data: { thanhVien1Id, thanhVien2Id, congViecId?, giamSatId? }
+
+  // Lấy chi tiết 1 hội thoại
+  getById: (id) => api.get(`/chat/${id}`),
+
+  // Đóng hội thoại
+  close: (id) => api.put(`/chat/${id}/close`),
+
+  // Lấy tin nhắn trong cuộc hội thoại
+  getMessages: (conversationId) => api.get(`/chat/${conversationId}/messages`),
 
   // Gửi tin nhắn
   sendMessage: (conversationId, data) =>
     api.post(`/chat/${conversationId}/messages`, data),
-  // data: { noiDung (required), loaiTinNhan? }
+  // data: { cuocHoiThoaiId, nguoiGuiId, noiDung, loaiTin? }
 
-  // Lấy tin nhắn trong cuộc hội thoại
-  getMessages: (conversationId, params = {}) => {
-    const query = new URLSearchParams(params).toString();
-    return api.get(
-      query
-        ? `/chat/${conversationId}/messages?${query}`
-        : `/chat/${conversationId}/messages`
-    );
-  },
-  // params: { skip, take }
+  // Đánh dấu đã đọc
+  markAsRead: (conversationId, userId) =>
+    api.put(`/chat/${conversationId}/read/${userId}`),
 };
 
 export default chatService;

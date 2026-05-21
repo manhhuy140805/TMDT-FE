@@ -17,7 +17,23 @@ const MyRequestsPage = () => {
     setLoading(true);
     try {
       const response = await jobService.getByUserId(userId);
-      setRequests(response.data || []);
+      const rawData = response.data || response.jobs || response || [];
+      const mappedRequests = Array.isArray(rawData) ? rawData.map(r => ({
+        id: r.yeuCauId || r.id,
+        title: r.tieuDe || r.title,
+        status: r.trangThai || r.status,
+        category: r.loaiDichVu?.tenLoai || r.category || "Khác",
+        location: r.location || "Từ xa",
+        postedTime: r.ngayTao ? new Date(r.ngayTao).toLocaleDateString("vi-VN") : r.postedTime || "N/A",
+        description: r.moTa || r.description || "",
+        skills: r.kyNangs ? r.kyNangs.map(k => k.tenKyNang) : r.skills || [],
+        budget: r.nganSachMin ? `${Number(r.nganSachMin).toLocaleString("vi-VN")} – ${Number(r.nganSachMax).toLocaleString("vi-VN")} VNĐ` : r.budget || "Thỏa thuận",
+        submissionDeadlineDate: r.thoiHan || r.submissionDeadlineDate,
+        deadlineDate: r.deadlineDate,
+        bids: r.soLuongBaoGia || r.bids || 0,
+        views: r.luotXem || r.views || 0
+      })) : [];
+      setRequests(mappedRequests);
     } catch (error) {
       console.error("Error fetching requests:", error);
     } finally {

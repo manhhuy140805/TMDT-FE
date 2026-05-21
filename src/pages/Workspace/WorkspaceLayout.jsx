@@ -38,36 +38,55 @@ const WorkspaceLayout = () => {
 
   const fetchWorkspaceData = async (user) => {
     setLoading(true);
-    try {
-      const userId = user.taiKhoanId || user.id;
-      const jobsResponse = await api.jobs.getAll();
-      if (jobsResponse.success) {
-        let userJobs = jobsResponse.data;
-        if (user.vaiTro === "Freelancer") {
-          userJobs = userJobs.filter(j => j.freelancer?.id === userId);
-          if (userJobs.length === 0) userJobs = jobsResponse.data.slice(0, 3);
-        } else if (user.vaiTro === "NguoiThue") {
-          userJobs = userJobs.filter(j => j.employer?.id === userId);
-          if (userJobs.length === 0) userJobs = jobsResponse.data.slice(2, 5);
-        }
-        setJobs(userJobs);
-        
-        const activeJobs = userJobs.filter(j => j.status === "DANG_THUC_HIEN").length;
-        const completedJobs = userJobs.filter(j => j.status === "HOAN_THANH").length;
-        const totalEarnings = userJobs.filter(j => j.status === "HOAN_THANH").reduce((sum, j) => sum + (j.agreedPrice || 0), 0);
-        setStats({ activeJobs, completedJobs, totalEarnings, avgRating: 4.8 });
-      }
+    const userId = user.taiKhoanId || user.id;
+    console.log("[WorkspaceLayout] Fetching data for userId:", userId, "role:", user.vaiTro, "freelancerId:", user.freelancerId);
 
-      const convResponse = await api.messages.getConversations(userId);
-      if (convResponse.success) setConversations(convResponse.data);
+    // Chạy song song và xử lý lỗi độc lập, 1 endpoint fail không vỡ các phần khác.
+    const [contractsRes, convRes, notiRes] = await Promise.allSettled([
+      api.users.getContracts(userId),
+      api.chat.getConversations(userId),
+      api.notifications.getByUserId(userId),
+    ]);
 
-      const notiResponse = await api.notifications.getByUserId(userId);
-      if (notiResponse.success) setNotifications(notiResponse.data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
+    console.log("[WorkspaceLayout] contractsRes:", contractsRes);
+    console.log("[WorkspaceLayout] convRes:", convRes);
+    console.log("[WorkspaceLayout] notiRes:", notiRes);
+
+    // ── Contracts (thay thế jobs) ──
+    if (contractsRes.status === "fulfilled") {
+      const v = contractsRes.value;
+      const all = v?.contracts || v?.data || (Array.isArray(v) ? v : []);
+      setJobs(all);
+
+      const activeJobs = all.filter((c) => c.trangThai === "DangThucHien").length;
+      const completedJobs = all.filter((c) => c.trangThai === "HoanThanh").length;
+      const totalEarnings = all
+        .filter((c) => c.trangThai === "HoanThanh")
+        .reduce((sum, c) => sum + (Number(c.giaThoa) || 0), 0);
+      setStats({ activeJobs, completedJobs, totalEarnings, avgRating: 4.8 });
+    } else {
+      console.warn("[workspace] contracts failed:", contractsRes.reason?.message);
     }
+
+    // ── Conversations ──
+    if (convRes.status === "fulfilled") {
+      const v = convRes.value;
+      const list = v?.conversations || v?.data || (Array.isArray(v) ? v : []);
+      setConversations(list);
+    } else {
+      console.warn("[workspace] conversations failed:", convRes.reason?.message);
+    }
+
+    // ── Notifications ──
+    if (notiRes.status === "fulfilled") {
+      const v = notiRes.value;
+      const list = v?.notifications || v?.data || (Array.isArray(v) ? v : []);
+      setNotifications(list);
+    } else {
+      console.warn("[workspace] notifications failed:", notiRes.reason?.message);
+    }
+
+    setLoading(false);
   };
 
   if (!currentUser) return null;
@@ -114,6 +133,11 @@ const WorkspaceLayout = () => {
             <Link to="/workspace/notifications" className={`wl-nav-item ${location.pathname.includes("/workspace/notifications") ? "active" : ""}`}>
               <i className="fa-solid fa-bell"></i> Thông báo
             </Link>
+            {isFreelancerRole(currentUser.vaiTro) && (
+              <Link to="/workspace/my-quotes" className={`wl-nav-item ${location.pathname.includes("/workspace/my-quotes") ? "active" : ""}`}>
+                <i className="fa-solid fa-file-invoice"></i> Báo giá đã gửi
+              </Link>
+            )}
             {currentUser.vaiTro === "DonViGiamSat" && (
               <Link to="/workspace/complaints" className={`wl-nav-item ${location.pathname.includes("/workspace/complaints") ? "active" : ""}`}>
                 <i className="fa-solid fa-scale-balanced"></i> Xử lý khiếu nại

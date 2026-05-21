@@ -1,12 +1,49 @@
-/* WorkspaceMessages — Chat 2-pane layout */
+/* WorkspaceMessages — Chat 2-pane layout
+   Toàn bộ trang fill 100% chiều cao .wl-content,
+   header "Tin nhắn" + thread header / footer được ghim,
+   chỉ wm-list-body và wm-thread-body cuộn. */
+.wm-page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0 !important; /* Override .wl-content-box padding */
+  overflow: hidden;
+}
+
+/* Khi page là messages, cha .wl-content không được cuộn —
+   chỉ cho danh sách & thread cuộn bên trong. */
+.wl-content:has(> .wm-page) {
+  overflow: hidden !important;
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.wl-content > .wm-page {
+  flex: 1 1 auto;
+  height: auto;
+}
+
+.wm-page-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+  background: #fff;
+}
+
+.wm-page-header h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #0f172a;
+  font-weight: 600;
+}
+
 .wm-wrapper {
   display: grid;
   grid-template-columns: 320px 1fr;
-  gap: 0;
-  height: 70vh;
-  min-height: 520px;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  flex: 1 1 0;
+  min-height: 0;
   background: #fff;
   overflow: hidden;
 }
@@ -17,12 +54,15 @@
   display: flex;
   flex-direction: column;
   background: #f8fafc;
+  min-height: 0; /* cho phép wm-list-body cuộn bên trong grid */
+  overflow: hidden;
 }
 
 .wm-list-header {
   padding: 16px;
   border-bottom: 1px solid #e2e8f0;
   background: #fff;
+  flex-shrink: 0;
 }
 
 .wm-list-header h3 {
@@ -131,6 +171,38 @@
   text-overflow: ellipsis;
 }
 
+.wm-conv-last.unread {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.wm-conv-context {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #0369A1;
+  background: #F0F9FF;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin: 2px 0 4px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: fit-content;
+}
+.wm-conv-context i {
+  font-size: 10px;
+  color: #0EA5E9;
+  flex-shrink: 0;
+}
+.wm-conv-context span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
 .wm-conv-meta {
   font-size: 11px;
   color: #94a3b8;
@@ -142,6 +214,8 @@
   display: flex;
   flex-direction: column;
   background: #fff;
+  min-height: 0; /* để wm-thread-body cuộn bên trong */
+  overflow: hidden;
 }
 
 .wm-thread-empty {
@@ -169,6 +243,7 @@
   align-items: center;
   gap: 12px;
   background: #fff;
+  flex-shrink: 0;
 }
 
 .wm-thread-header .wm-conv-name {
@@ -181,6 +256,7 @@
 
 .wm-thread-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 20px;
   background: #f8fafc;
@@ -245,6 +321,7 @@
   display: flex;
   gap: 12px;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .wm-input {
@@ -303,11 +380,50 @@
 @media (max-width: 768px) {
   .wm-wrapper {
     grid-template-columns: 1fr;
-    height: auto;
   }
   .wm-list {
     border-right: none;
     border-bottom: 1px solid #e2e8f0;
     max-height: 280px;
   }
+}
+
+
+/* ── Thread Context Banner (yêu cầu/công việc liên quan) ── */
+.wm-thread-context {
+  margin: 0 20px 12px 20px;
+  padding: 10px 16px;
+  background: #F0F9FF;
+  border: 1px solid #BAE6FD;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.wm-thread-context-text {
+  color: #0369A1;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wm-thread-context-text strong {
+  color: #0F172A;
+}
+
+.wm-thread-context-link {
+  color: #0EA5E9;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.wm-thread-context-link:hover {
+  color: #0284C7;
+  text-decoration: underline;
 }
