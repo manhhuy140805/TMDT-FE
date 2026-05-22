@@ -14,7 +14,7 @@ import ProgressPage from "../pages/Progress/ProgressPage";
 import WorkspacePage from "../pages/Workspace/WorkspacePage";
 
 // Import các pages khác khi đã tạo
-// import ProfilePage from "../pages/Profile/ProfilePage";
+import ProfilePage from "../pages/Profile/ProfilePage";
 // import AdminPage from "../pages/Admin/AdminPage";
 
 // 404 Page
@@ -78,7 +78,7 @@ function AppRoutes() {
           <Route path="workspace" element={<WorkspacePage />} />
 
           {/* User routes - uncomment khi đã tạo */}
-          {/* <Route path="profile" element={<ProfilePage />} /> */}
+          <Route path="profile" element={<ProfilePage />} />
 
           {/* Admin routes - uncomment khi đã tạo */}
           {/* <Route path="admin" element={<AdminPage />} /> */}
