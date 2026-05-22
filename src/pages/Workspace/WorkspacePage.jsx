@@ -307,13 +307,13 @@ const WorkspacePage = () => {
           <div className="workspace-title-section">
             <h1>Không gian làm việc</h1>
             {user?.role === "NGUOI_THUE" && (
-              <span className="workspace-badge client">Khách hàng</span>
+              <span className="workspace-badge client">Người thuê</span>
             )}
             {user?.role === "FREELANCER" && (
               <span className="workspace-badge freelancer">Freelancer</span>
             )}
             {!user && (
-              <span className="workspace-badge client">Khách hàng</span>
+              <span className="workspace-badge client">Người thuê</span>
             )}
           </div>
         </div>

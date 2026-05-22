@@ -24,7 +24,7 @@
   display: grid;
   grid-template-columns: 1fr 340px;
   gap: 30px;
-  margin-top: -60px;
+  margin-top: 20px;
   position: relative;
   z-index: 10;
   margin-bottom: 60px;
@@ -320,4 +320,214 @@
   .post-request-page .step-header {
     padding: 20px;
   }
+
+  .post-request-page .post-stepper {
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  .post-request-page .stepper-line {
+    display: none;
+  }
 }
+
+/* Stepper CSS */
+.post-request-page .post-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 40px auto 25px auto;
+  max-width: 800px;
+  position: relative;
+  z-index: 10;
+}
+
+.post-request-page .stepper-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  z-index: 2;
+  transition: transform 0.2s ease;
+}
+
+.post-request-page .stepper-step:hover {
+  transform: translateY(-2px);
+}
+
+.post-request-page .step-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 2px solid #CBD5E1;
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 8px;
+  transition: all 0.3s ease;
+}
+
+.post-request-page .stepper-step.active .step-circle {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #FFFFFF;
+  box-shadow: 0 0 0 4px var(--teal-glow);
+}
+
+.post-request-page .step-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748B;
+  font-family: var(--font-sans);
+  white-space: nowrap;
+}
+
+.post-request-page .stepper-step.active .step-text {
+  color: var(--navy);
+  font-weight: 700;
+}
+
+.post-request-page .stepper-line {
+  flex: 1;
+  height: 2px;
+  background: #E2E8F0;
+  margin: 0 15px;
+  margin-top: -24px; /* aligned with center of circles */
+  z-index: 1;
+}
+
+.post-request-page .stepper-line.active {
+  background: var(--teal);
+}
+
+/* Segmented Control Tabs */
+.post-request-page .segmented-control {
+  display: flex;
+  background: #F1F5F9;
+  border-radius: 10px;
+  padding: 4px;
+  border: 1px solid #E2E8F0;
+}
+
+.post-request-page .segmented-button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.post-request-page .segmented-button:hover {
+  color: var(--navy);
+}
+
+.post-request-page .segmented-button.active {
+  background: #FFFFFF;
+  color: var(--teal);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--border-light);
+}
+
+/* Checklist and Trust Sidebar Mockup */
+.post-request-page .check-list-mock {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+}
+
+.post-request-page .check-list-mock li {
+  font-size: 14px;
+  color: #475569;
+  margin-bottom: 8px;
+  font-family: var(--font-sans);
+  line-height: 1.5;
+}
+
+.post-request-page .infographic-flow-container {
+  background: #F8FAFC;
+  border-radius: 12px;
+  border: 1px solid #E2E8F0;
+  padding: 16px 12px;
+  margin-top: 15px;
+}
+
+.post-request-page .infographic-flow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.post-request-page .flow-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.post-request-page .flow-icon-wrapper {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748B;
+  font-size: 16px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.post-request-page .flow-step.active .flow-icon-wrapper {
+  background: rgba(14, 165, 233, 0.08);
+  border-color: var(--teal);
+  color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+}
+
+.post-request-page .flow-icon-check {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--teal);
+  color: #FFFFFF;
+  font-size: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #FFFFFF;
+}
+
+.post-request-page .flow-step-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748B;
+  font-family: var(--font-sans);
+  text-align: center;
+}
+
+.post-request-page .flow-step.active .flow-step-label {
+  color: var(--teal);
+  font-weight: 700;
+}
+
+.post-request-page .flow-arrow {
+  color: #CBD5E1;
+  font-size: 12px;
+}
+

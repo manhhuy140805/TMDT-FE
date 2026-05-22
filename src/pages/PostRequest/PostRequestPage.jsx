@@ -23,6 +23,23 @@ const PostRequestPage = () => {
     title: 0,
     description: 0
   });
+  const [locationType, setLocationType] = useState('remote');
+
+  const scrollToSection = (id) => {
+    const element = document.getElementById(id);
+    if (element) {
+      const offset = 100; // Offset for sticky header
+      const bodyRect = document.body.getBoundingClientRect().top;
+      const elementRect = element.getBoundingClientRect().top;
+      const elementPosition = elementRect - bodyRect;
+      const offsetPosition = elementPosition - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   const categories = [
     { id: 1, name: 'Công nghệ & Lập trình' },
@@ -164,7 +181,7 @@ const PostRequestPage = () => {
   return (
     <div className="post-request-page" style={{background: '#F8FAFC'}}>
       {/* Hero Banner */}
-      <div className="d-hero" style={{paddingBottom: '80px'}}>
+      <div className="d-hero" style={{paddingTop: '40px', paddingBottom: '40px'}}>
         <div className="d-hero-content" style={{textAlign: 'center'}}>
           <h1 className="d-title">Khởi tạo Dự án của bạn</h1>
           <p className="d-meta" style={{justifyContent: 'center', maxWidth: '600px', margin: '16px auto 0'}}>
@@ -174,22 +191,40 @@ const PostRequestPage = () => {
       </div>
 
       <div className="page-container" style={{maxWidth: '1200px', margin: '0 auto', padding: '0 20px'}}>
+        {/* Stepper Progress Bar */}
+        <div className="post-stepper">
+          <div className="stepper-step active" onClick={() => scrollToSection('project-details-section')}>
+            <div className="step-circle">1</div>
+            <span className="step-text">Project Details</span>
+          </div>
+          <div className="stepper-line active"></div>
+          <div className="stepper-step" onClick={() => scrollToSection('skills-scope-section')}>
+            <div className="step-circle">2</div>
+            <span className="step-text">Skills & Scope</span>
+          </div>
+          <div className="stepper-line"></div>
+          <div className="stepper-step" onClick={() => scrollToSection('budget-timeline-section')}>
+            <div className="step-circle">3</div>
+            <span className="step-text">Budget & Timeline</span>
+          </div>
+        </div>
+
         <div className="post-layout">
           {/* Main Form */}
           <main className="post-main">
             <form onSubmit={handleSubmit} noValidate>
               
               {/* Step 1: Tên dự án & Lĩnh vực */}
-              <div className="step-card">
+              <div className="step-card" id="project-details-section">
                 <div className="step-header">
                   <div className="step-number">1</div>
                   <h2>Tên dự án & Lĩnh vực</h2>
                 </div>
                 <div className="step-body">
                   <div className="input-group">
-                    <label htmlFor="title">
-                      Tên dự án cụ thể <span className="text-danger">*</span>
-                      <span className="char-count" style={{color: charCounts.title > 90 ? '#DC2626' : '#94A3B8'}}>
+                    <label htmlFor="title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Tên dự án cụ thể <span className="text-danger">*</span></span>
+                      <span className="char-count" style={{color: charCounts.title > 90 ? '#DC2626' : '#94A3B8', float: 'none', margin: 0}}>
                         {charCounts.title} / 100
                       </span>
                     </label>
@@ -200,7 +235,7 @@ const PostRequestPage = () => {
                         name="title"
                         value={formData.title}
                         onChange={handleChange}
-                        placeholder="VD: Xây dựng bộ nhận diện thương hiệu cho chuỗi Cafe"
+                        placeholder="Ví dụ: Thiết kế Logo chuyên nghiệp cho startup công nghệ"
                         maxLength="100"
                       />
                       <i className="fa-solid fa-pen-nib icon-left"></i>
@@ -212,52 +247,86 @@ const PostRequestPage = () => {
                     )}
                   </div>
 
-                  <div className="form-grid-2">
-                    <div className="input-group m-0">
-                      <label htmlFor="category">
-                        Lĩnh vực chuyên môn <span className="text-danger">*</span>
-                      </label>
-                      <div className="input-wrapper">
-                        <select
-                          id="category"
-                          name="category"
-                          value={formData.category}
-                          onChange={handleChange}
-                        >
-                          <option value="">--- Chọn lĩnh vực ---</option>
-                          {categories.map(cat => (
-                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                          ))}
-                        </select>
-                        <i className="fa-solid fa-layer-group icon-left"></i>
-                      </div>
-                      {errors.category && (
-                        <span className="error-msg">
-                          <i className="fa-solid fa-circle-exclamation"></i> {errors.category}
-                        </span>
-                      )}
+                  <div className="input-group" style={{marginTop: '24px'}}>
+                    <label htmlFor="category">
+                      Lĩnh vực chuyên môn <span className="text-danger">*</span>
+                    </label>
+                    <div className="input-wrapper">
+                      <select
+                        id="category"
+                        name="category"
+                        value={formData.category}
+                        onChange={handleChange}
+                      >
+                        <option value="">Chọn lĩnh vực (Ví dụ: Thiết kế đồ họa, Lập trình Web...)</option>
+                        {categories.map(cat => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                      <i className="fa-solid fa-layer-group icon-left"></i>
                     </div>
+                    {errors.category && (
+                      <span className="error-msg">
+                        <i className="fa-solid fa-circle-exclamation"></i> {errors.category}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
 
-                    <div className="input-group m-0">
-                      <label htmlFor="location">Địa điểm làm việc</label>
-                      <div className="input-wrapper">
-                        <input
-                          type="text"
-                          id="location"
-                          name="location"
-                          value={formData.location}
-                          onChange={handleChange}
-                          placeholder="VD: Remote, TP.HCM..."
-                        />
-                        <i className="fa-solid fa-map-pin icon-left"></i>
-                      </div>
+              {/* Vị trí & Thể loại dự án */}
+              <div className="step-card">
+                <div className="step-header">
+                  <h2>Vị trí & Thể loại dự án</h2>
+                </div>
+                <div className="step-body">
+                  <div className="input-group">
+                    <label>Vị trí công việc <span className="text-danger">*</span></label>
+                    <div className="segmented-control">
+                      <button
+                        type="button"
+                        className={`segmented-button ${locationType === 'remote' ? 'active' : ''}`}
+                        onClick={() => {
+                          setLocationType('remote');
+                          setFormData(prev => ({ ...prev, location: 'Remote' }));
+                        }}
+                      >
+                        Online/Remote
+                      </button>
+                      <button
+                        type="button"
+                        className={`segmented-button ${locationType === 'onsite' ? 'active' : ''}`}
+                        onClick={() => {
+                          setLocationType('onsite');
+                          if (formData.location === 'Remote') {
+                            setFormData(prev => ({ ...prev, location: '' }));
+                          }
+                        }}
+                      >
+                        Tại địa điểm
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="input-group" style={{marginTop: '24px'}}>
+                    <label htmlFor="location">Địa điểm làm việc <span className="text-danger">*</span></label>
+                    <div className="input-wrapper">
+                      <input
+                        type="text"
+                        id="location"
+                        name="location"
+                        value={formData.location}
+                        onChange={handleChange}
+                        placeholder="VD: Remote, TP.HCM..."
+                      />
+                      <i className="fa-solid fa-map-pin icon-left"></i>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Step 2: Yêu cầu chuyên môn */}
-              <div className="step-card">
+              <div className="step-card" id="skills-scope-section">
                 <div className="step-header">
                   <div className="step-number">2</div>
                   <h2>Yêu cầu chuyên môn</h2>
@@ -333,7 +402,7 @@ const PostRequestPage = () => {
               </div>
 
               {/* Step 3: Ngân sách & Tiến độ */}
-              <div className="step-card">
+              <div className="step-card" id="budget-timeline-section">
                 <div className="step-header">
                   <div className="step-number">3</div>
                   <h2>Ngân sách & Tiến độ</h2>
@@ -454,30 +523,68 @@ const PostRequestPage = () => {
           <aside className="post-sidebar">
             <div className="sidebar-card">
               <h3 className="sidebar-title">
-                <i className="fa-solid fa-bolt" style={{color: '#F59E0B'}}></i> Checklist thành công
+                Checklist thành công
               </h3>
-              <ul className="check-list">
-                <li>
-                  <i className="fa-solid fa-circle-check"></i>
-                  <b>Cụ thể hóa:</b> Đừng nói "Tôi cần 1 website", hãy nói "Tôi cần 1 Landing Page 5 sections bán mỹ phẩm."
-                </li>
-                <li>
-                  <i className="fa-solid fa-circle-check"></i>
-                  <b>Giao tiếp:</b> Trả lời tin nhắn của freelancer ứng tuyển trong vòng 24H để giữ độ nóng dự án.
-                </li>
-                <li>
-                  <i className="fa-solid fa-circle-check"></i>
-                  <b>Kỳ vọng:</b> Nêu rõ bạn yêu cầu số lần chỉnh sửa (Revisions) là bao nhiêu.
-                </li>
+              <ul className="check-list-mock">
+                <li>- Be specific: "Website responsive for mobile"</li>
+                <li>- Use bullet points</li>
+                <li>- Define expectations</li>
               </ul>
+
+              <div className="infographic-flow-container">
+                <div className="infographic-flow">
+                  <div className="flow-step">
+                    <div className="flow-icon-wrapper">
+                      <i className="fa-regular fa-file-lines"></i>
+                    </div>
+                    <span className="flow-step-label">Posting</span>
+                  </div>
+
+                  <div className="flow-arrow">
+                    <i className="fa-solid fa-chevron-right"></i>
+                  </div>
+
+                  <div className="flow-step">
+                    <div className="flow-icon-wrapper">
+                      <i className="fa-solid fa-user-plus"></i>
+                    </div>
+                    <span className="flow-step-label">Hiring</span>
+                  </div>
+
+                  <div className="flow-arrow">
+                    <i className="fa-solid fa-chevron-right"></i>
+                  </div>
+
+                  <div className="flow-step active">
+                    <div className="flow-icon-wrapper">
+                      <i className="fa-solid fa-shield-halved"></i>
+                      <div className="flow-icon-check">
+                        <i className="fa-solid fa-check"></i>
+                      </div>
+                    </div>
+                    <span className="flow-step-label">Escrow</span>
+                  </div>
+
+                  <div className="flow-arrow">
+                    <i className="fa-solid fa-chevron-right"></i>
+                  </div>
+
+                  <div className="flow-step">
+                    <div className="flow-icon-wrapper">
+                      <i className="fa-solid fa-box-open"></i>
+                    </div>
+                    <span className="flow-step-label">Delivery</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="sidebar-card" style={{background: '#ECFDF5', borderColor: '#10B981'}}>
-              <h3 className="sidebar-title" style={{color: '#064E3B'}}>
-                <i className="fa-solid fa-shield-halved" style={{color: '#059669', fontSize: '24px'}}></i> Thanh toán bảo mật
+            <div className="sidebar-card">
+              <h3 className="sidebar-title" style={{ fontSize: '16px', marginBottom: '8px' }}>
+                Đảm bảo an toàn
               </h3>
-              <p style={{color: '#047857', fontSize: '14px', lineHeight: '1.6', margin: 0}}>
-                Hệ thống Escrow (ký quỹ) giữ tiền của bạn an toàn. Bạn chỉ giải ngân khi hài lòng với sản phẩm cuối cùng. 100% yên tâm giao dịch.
+              <p style={{ color: '#475569', fontSize: '13px', lineHeight: '1.6', margin: 0 }}>
+                Thanh toán an toàn qua Escrow - 100% yên tâm giao dịch.
               </p>
             </div>
           </aside>

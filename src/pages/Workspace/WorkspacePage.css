@@ -9,11 +9,20 @@
     "Segoe UI",
     Roboto,
     sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 769px) {
+  .workspace-container {
+    height: 100vh;
+    overflow: hidden;
+  }
 }
 
 /* Header */
 .workspace-header {
-  background: #0c213a;
+  background: #0b1e33;
   color: white;
   padding: 24px 0;
   margin-bottom: 0;
@@ -36,28 +45,29 @@
 }
 
 .workspace-header h1 {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 30px;
+  font-weight: 700;
   margin: 0;
   letter-spacing: -0.5px;
 }
 
 .workspace-badge {
-  color: white;
-  padding: 6px 14px;
+  padding: 5px 14px;
   border-radius: 20px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
 }
 
 .workspace-badge.client {
-  background-color: #009fe3;
+  background-color: #ffffff;
+  color: #0070f3;
 }
 
 .workspace-badge.freelancer {
-  background-color: #2ec4b6;
+  background-color: #ffffff;
+  color: #2ec4b6;
 }
 
 /* Main Layout */
@@ -67,6 +77,15 @@
   margin: 0 auto;
   gap: 24px;
   padding: 24px 20px;
+  width: 100%;
+}
+
+@media (min-width: 769px) {
+  .workspace-main {
+    flex: 1;
+    overflow: hidden;
+    height: calc(100vh - 82px);
+  }
 }
 
 /* Sidebar */
@@ -130,6 +149,15 @@
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.05),
     0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+@media (min-width: 769px) {
+  .workspace-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 }
 
 /* Projects Section */
@@ -209,6 +237,59 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.projects-section {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.overview-section,
+.messages-section,
+.notifications-section {
+  height: 100%;
+  overflow-y: auto;
+}
+
+@media (min-width: 769px) {
+  .projects-list {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 8px;
+  }
+}
+
+/* Premium Scrollbar */
+.projects-list::-webkit-scrollbar,
+.overview-section::-webkit-scrollbar,
+.messages-section::-webkit-scrollbar,
+.notifications-section::-webkit-scrollbar {
+  width: 6px;
+}
+
+.projects-list::-webkit-scrollbar-track,
+.overview-section::-webkit-scrollbar-track,
+.messages-section::-webkit-scrollbar-track,
+.notifications-section::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.projects-list::-webkit-scrollbar-thumb,
+.overview-section::-webkit-scrollbar-thumb,
+.messages-section::-webkit-scrollbar-thumb,
+.notifications-section::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.projects-list::-webkit-scrollbar-thumb:hover,
+.overview-section::-webkit-scrollbar-thumb:hover,
+.messages-section::-webkit-scrollbar-thumb:hover,
+.notifications-section::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .project-card {
@@ -507,15 +588,15 @@
 }
 
 .workspace-page-tab-pill.active.hiring {
-  background: #0070f3;
+  background: #002349;
   color: white;
-  box-shadow: 0 4px 12px rgba(0, 112, 243, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 35, 73, 0.15);
 }
 
 .workspace-page-tab-pill.active.progress {
-  background: #3e7b27;
+  background: #002349;
   color: white;
-  box-shadow: 0 4px 12px rgba(62, 123, 39, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 35, 73, 0.15);
 }
 
 .tab-pill-count {
@@ -538,25 +619,24 @@
 }
 
 .workspace-page-tab-pill.active.hiring .tab-pill-count {
-  color: #0070f3;
+  color: #002349;
 }
 
 .workspace-page-tab-pill.active.progress .tab-pill-count {
-  color: #3e7b27;
+  color: #002349;
 }
 
 /* ==================== DYNAMIC SIDEBAR OVERLAYS ==================== */
 .sidebar-item.active.hiring {
-  background-color: #0070f3;
+  background-color: #009fe3;
 }
 
 .sidebar-item.active.progress {
-  background-color: #3e7b27;
+  background-color: #009fe3;
 }
 
 /* ==================== RECRUITING CARD (DangMo) ==================== */
 .project-card.recruiting-card {
-  border-left: 4px solid #0070f3;
   gap: 16px;
 }
 
@@ -568,8 +648,8 @@
 }
 
 .project-category-badge {
-  background-color: #ebf8ff;
-  color: #2b6cb0;
+  background-color: #fef3c7;
+  color: #d97706;
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 12px;
@@ -645,12 +725,12 @@
 }
 
 .card-action-btn.view-bids {
-  background-color: #0070f3;
+  background-color: #009fe3;
   color: white;
 }
 
 .card-action-btn.view-bids:hover {
-  background-color: #0056b3;
+  background-color: #008cd4;
 }
 
 .card-action-btn.edit-project {
@@ -664,14 +744,7 @@
 
 /* ==================== IN PROGRESS CARD (DaDong) ==================== */
 .project-card.in-progress-card {
-  border: 1px solid rgba(62, 123, 39, 0.2);
-  border-left: 4px solid #3e7b27;
   gap: 16px;
-}
-
-.project-card.in-progress-card:hover {
-  border-color: #3e7b27;
-  box-shadow: 0 4px 15px rgba(62, 123, 39, 0.1);
 }
 
 .progress-card-header {
@@ -703,7 +776,7 @@
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #3e7b27;
+  border: 2px solid #009fe3;
 }
 
 .freelancer-text {
@@ -768,7 +841,7 @@
 
 .progress-bar-fill {
   height: 100%;
-  background-color: #3e7b27;
+  background-color: #009fe3;
   border-radius: 4px;
   transition: width 0.4s ease;
 }
@@ -781,10 +854,10 @@
 }
 
 .card-action-btn.manage-project {
-  background-color: #3e7b27;
+  background-color: #009fe3;
   color: white;
 }
 
 .card-action-btn.manage-project:hover {
-  background-color: #2c591c;
+  background-color: #008cd4;
 }
