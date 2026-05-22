@@ -127,17 +127,7 @@ const Header = () => {
                       Hồ sơ của tôi
                     </Link>
 
-                    {/* Hiển thị "Yêu cầu của tôi" cho NGUOI_THUE */}
-                    {user.role === "NGUOI_THUE" && (
-                      <Link
-                        to="/my-requests"
-                        className="dropdown-item"
-                        onClick={() => setShowDropdown(false)}
-                      >
-                        <i className="fa-solid fa-briefcase"></i>
-                        Yêu cầu của tôi
-                      </Link>
-                    )}
+
 
                     {/* Hiển thị "Báo giá của tôi" cho FREELANCER */}
                     {user.role === "FREELANCER" && (

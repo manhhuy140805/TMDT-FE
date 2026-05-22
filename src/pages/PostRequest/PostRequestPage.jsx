@@ -165,7 +165,7 @@ const PostRequestPage = () => {
         }
 
         setTimeout(() => {
-          navigate('/my-requests');
+          navigate('/workspace');
         }, 2000);
       } else {
         alert('Có lỗi xảy ra. Vui lòng thử lại!');
