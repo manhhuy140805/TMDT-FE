@@ -12,7 +12,26 @@ const Header = () => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        const rawUser = JSON.parse(storedUser);
+        if (rawUser) {
+          // Normalize role and name details
+          let role = "FREELANCER";
+          const r = rawUser.role || rawUser.vaiTro || "";
+          const norm = r.toUpperCase().replace(/_/g, "");
+          if (norm === "NGUOITHUE" || norm === "CLIENT") {
+            role = "NGUOI_THUE";
+          } else if (norm === "ADMIN") {
+            role = "ADMIN";
+          }
+
+          const normalizedUser = {
+            ...rawUser,
+            id: rawUser.taiKhoanId || rawUser.id,
+            name: rawUser.hoTen || rawUser.name,
+            role: role,
+          };
+          setUser(normalizedUser);
+        }
       } catch (error) {
         console.error("Error parsing user data:", error);
       }

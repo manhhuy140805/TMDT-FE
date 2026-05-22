@@ -476,54 +476,315 @@
   }
 }
 
-/* Custom styles for workspace real-API project cards */
-.project-card-divider {
-  border: none;
-  border-top: 1px solid #eef0f2;
-  margin: 16px 0;
+/* ==================== WORKSPACE PAGE TABS CAPSULE ==================== */
+.workspace-page-tabs-capsule {
+  display: inline-flex;
+  background: #f1f5f9;
+  border-radius: 30px;
+  padding: 4px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 24px;
 }
 
-.project-card-footer {
+.workspace-page-tab-pill {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-top: 12px;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  padding: 8px 18px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.project-badge-status {
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+.workspace-page-tab-pill:hover {
+  color: #0f172a;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.workspace-page-tab-pill.active.hiring {
+  background: #0070f3;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 112, 243, 0.25);
+}
+
+.workspace-page-tab-pill.active.progress {
+  background: #3e7b27;
+  color: white;
+  box-shadow: 0 4px 12px rgba(62, 123, 39, 0.25);
+}
+
+.tab-pill-count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  text-align: center;
+  background: #e2e8f0;
+  color: #475569;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 6px;
+  transition: all 0.25s ease;
 }
 
-.project-badge-status.open {
-  background-color: #fef3c7;
-  color: #d97706;
+.workspace-page-tab-pill.active .tab-pill-count {
+  background: white;
 }
 
-.project-badge-status.working {
-  background-color: #eff6ff;
-  color: #1e40af;
+.workspace-page-tab-pill.active.hiring .tab-pill-count {
+  color: #0070f3;
 }
 
-.project-status-footer {
+.workspace-page-tab-pill.active.progress .tab-pill-count {
+  color: #3e7b27;
+}
+
+/* ==================== DYNAMIC SIDEBAR OVERLAYS ==================== */
+.sidebar-item.active.hiring {
+  background-color: #0070f3;
+}
+
+.sidebar-item.active.progress {
+  background-color: #3e7b27;
+}
+
+/* ==================== RECRUITING CARD (DangMo) ==================== */
+.project-card.recruiting-card {
+  border-left: 4px solid #0070f3;
+  gap: 16px;
+}
+
+.card-row-1 {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.project-category-badge {
+  background-color: #ebf8ff;
+  color: #2b6cb0;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
   font-weight: 600;
 }
 
-.project-status-footer.pending {
-  color: #d97706;
+.card-row-2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  border-top: 1px solid #edf2f7;
+  border-bottom: 1px solid #edf2f7;
+  padding: 12px 0;
 }
 
-.project-status-footer.in-progress {
-  color: #009fe3;
+.bids-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
 }
 
+.bids-badge.active {
+  background-color: #feebc8;
+  color: #dd6b20;
+}
+
+.bids-badge.empty {
+  background-color: #edf2f7;
+  color: #718096;
+}
+
+.project-budget-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.budget-label {
+  font-size: 13px;
+  color: #718096;
+}
+
+.budget-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.card-row-3 {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  width: 100%;
+}
+
+.card-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.card-action-btn.view-bids {
+  background-color: #0070f3;
+  color: white;
+}
+
+.card-action-btn.view-bids:hover {
+  background-color: #0056b3;
+}
+
+.card-action-btn.edit-project {
+  background-color: #edf2f7;
+  color: #4a5568;
+}
+
+.card-action-btn.edit-project:hover {
+  background-color: #e2e8f0;
+}
+
+/* ==================== IN PROGRESS CARD (DaDong) ==================== */
+.project-card.in-progress-card {
+  border: 1px solid rgba(62, 123, 39, 0.2);
+  border-left: 4px solid #3e7b27;
+  gap: 16px;
+}
+
+.project-card.in-progress-card:hover {
+  border-color: #3e7b27;
+  box-shadow: 0 4px 15px rgba(62, 123, 39, 0.1);
+}
+
+.progress-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.freelancer-details-block {
+  background-color: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.freelancer-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.freelancer-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #3e7b27;
+}
+
+.freelancer-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.freelancer-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.freelancer-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #e28743;
+}
+
+.milestone-details {
+  border-top: 1px dashed #e2e8f0;
+  padding-top: 10px;
+}
+
+.milestone-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #718096;
+  letter-spacing: 0.5px;
+}
+
+.milestone-notes {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: #4a5568;
+  line-height: 1.5;
+}
+
+.progress-bar-section {
+  width: 100%;
+}
+
+.progress-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 6px;
+}
+
+.progress-bar-track {
+  width: 100%;
+  height: 8px;
+  background-color: #edf2f7;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: #3e7b27;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.progress-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.card-action-btn.manage-project {
+  background-color: #3e7b27;
+  color: white;
+}
+
+.card-action-btn.manage-project:hover {
+  background-color: #2c591c;
+}

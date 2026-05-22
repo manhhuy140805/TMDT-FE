@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { api } from '../../utils/api';
 import './Auth.css';
 
 const SignupPage = () => {
@@ -12,6 +13,8 @@ const SignupPage = () => {
     confirmPassword: '',
     agree: false,
   });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -19,25 +22,49 @@ const SignupPage = () => {
       ...prev,
       [name]: type === 'checkbox' || type === 'radio' ? (type === 'checkbox' ? checked : value) : value,
     }));
+    if (error) setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
 
     if (formData.password !== formData.confirmPassword) {
-      alert('Mật khẩu không khớp!');
+      setError('Mật khẩu không khớp!');
       return;
     }
 
     if (!formData.agree) {
-      alert('Vui lòng đồng ý với điều khoản dịch vụ!');
+      setError('Vui lòng đồng ý với điều khoản dịch vụ!');
       return;
     }
 
-    console.log('Signup data:', formData);
-    // TODO: Implement signup logic
-    // Sau khi signup thành công:
-    // navigate('/login');
+    setLoading(true);
+
+    try {
+      // Derive username from email (everything before @)
+      const username = formData.email.split('@')[0] || 'user';
+
+      const response = await api.post('/auth/register', {
+        tenDangNhap: username.toLowerCase() + Math.floor(Math.random() * 1000), // Ensure uniqueness
+        matKhau: formData.password,
+        email: formData.email,
+        hoTen: formData.fullname,
+        vaiTro: formData.accountType === 'client' ? 'NguoiThue' : 'Freelancer',
+      });
+
+      if (response && response.message) {
+        alert('Đăng ký tài khoản thành công!');
+        navigate('/login');
+      } else {
+        setError('Đăng ký thất bại. Vui lòng thử lại!');
+      }
+    } catch (err) {
+      console.error('Signup error:', err);
+      setError(err.message || 'Có lỗi xảy ra trong quá trình đăng ký!');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -86,6 +113,24 @@ const SignupPage = () => {
           </div>
 
           <form id="signupForm" className="premium-form" onSubmit={handleSubmit}>
+            {/* Error Message */}
+            {error && (
+              <div style={{
+                padding: '12px',
+                background: '#FEF2F2',
+                border: '1px solid #FCA5A5',
+                borderRadius: '8px',
+                color: '#DC2626',
+                fontSize: '13px',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <i className="fa-solid fa-circle-exclamation"></i>
+                <span>{error}</span>
+              </div>
+            )}
             {/* Account Type Selection */}
             <div className="account-type-selection">
               <label className="account-type-card" title="Tìm người tài cho dự án">
@@ -244,8 +289,15 @@ const SignupPage = () => {
             </div>
 
             {/* Submit */}
-            <button type="submit" className="btn-signup-premium">
-              Đăng Ký Tài Khoản Miễn Phí
+            <button type="submit" className="btn-signup-premium" disabled={loading}>
+              {loading ? (
+                <>
+                  <i className="fa-solid fa-circle-notch fa-spin"></i>
+                  Đang đăng ký...
+                </>
+              ) : (
+                'Đăng Ký Tài Khoản Miễn Phí'
+              )}
             </button>
 
             {/* Social Auth */}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import api from '../../services/api';
+import { api } from '../../utils/api';
 import './Auth.css';
 
 const LoginPage = () => {
@@ -29,14 +29,33 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      const response = await api.auth.login({
+      const response = await api.post('/auth/login', {
         email: formData.email,
-        password: formData.password,
+        matKhau: formData.password,
       });
 
-      if (response.success) {
+      if (response && response.user) {
+        const rawUser = response.user;
+        
+        // Normalize role and user details
+        let role = "FREELANCER";
+        const r = rawUser.vaiTro || rawUser.role || "";
+        const norm = r.toUpperCase().replace(/_/g, "");
+        if (norm === "NGUOITHUE" || norm === "CLIENT") {
+          role = "NGUOI_THUE";
+        } else if (norm === "ADMIN") {
+          role = "ADMIN";
+        }
+
+        const normalizedUser = {
+          ...rawUser,
+          id: rawUser.taiKhoanId || rawUser.id,
+          name: rawUser.hoTen || rawUser.name,
+          role: role,
+        };
+
         // Lưu thông tin user vào localStorage
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        localStorage.setItem('user', JSON.stringify(normalizedUser));
         
         // Nếu chọn "Nhớ đăng nhập", lưu thêm flag
         if (formData.remember) {
@@ -46,11 +65,11 @@ const LoginPage = () => {
         // Chuyển hướng về trang chủ
         navigate('/');
       } else {
-        setError(response.message || 'Đăng nhập thất bại');
+        setError('Đăng nhập thất bại. Vui lòng thử lại!');
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError('Có lỗi xảy ra. Vui lòng thử lại!');
+      setError(err.message || 'Email hoặc mật khẩu không đúng!');
     } finally {
       setLoading(false);
     }
