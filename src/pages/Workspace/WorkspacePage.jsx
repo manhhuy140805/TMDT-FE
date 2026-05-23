@@ -1,1004 +1,688 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import api from "../../services/api";
-import {
-  getUserRole,
-  isEmployerRole,
-  isFreelancerRole,
-  isSupervisorRole,
-} from "../../utils/role";
-import PostRequestPage from "../PostRequest/PostRequestPage";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { api } from "../../utils/api";
 import "./WorkspacePage.css";
-
-const mockComplaints = [
-  {
-    id: "KN-2026-001",
-    nguoiKhieuNai: "Nguyễn Văn A (Người thuê)",
-    nguoiBiKhieuNai: "Trần Văn B (Freelancer)",
-    duAn: "Xây dựng Website Thương mại điện tử",
-    lyDo: "Freelancer không bàn giao source code đúng hạn như cam kết trong hợp đồng mặc dù đã nhận tạm ứng 30%.",
-    ngayTao: "05/05/2026",
-    trangThai: "CHUA_XU_LY",
-    mucDo: "Cao",
-  },
-  {
-    id: "KN-2026-002",
-    nguoiKhieuNai: "Lê Thị C (Freelancer)",
-    nguoiBiKhieuNai: "Công ty TNHH ABC (Người thuê)",
-    duAn: "Thiết kế bộ nhận diện thương hiệu",
-    lyDo: "Khách hàng từ chối thanh toán 50% chi phí còn lại sau khi đã nhận đầy đủ file thiết kế gốc.",
-    ngayTao: "04/05/2026",
-    trangThai: "DANG_XEM_XET",
-    mucDo: "Nghiêm trọng",
-  },
-  {
-    id: "KN-2026-003",
-    nguoiKhieuNai: "Hệ thống tự động",
-    nguoiBiKhieuNai: "Phạm Minh E (Freelancer)",
-    duAn: "Lập trình ứng dụng di động",
-    lyDo: "Phát hiện mã độc trong các file được tải lên hệ thống dự án. Nghi ngờ vi phạm an toàn thông tin.",
-    ngayTao: "06/05/2026",
-    trangThai: "CHUA_XU_LY",
-    mucDo: "Rất cao",
-  },
-];
 
 const WorkspacePage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [user, setUser] = useState(null);
+  const [activeMenu, setActiveMenu] = useState("projects");
+  const [projects, setProjects] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview"); // overview, jobs, messages, notifications
-  const [currentUser, setCurrentUser] = useState(null);
-  const [jobs, setJobs] = useState([]);
-  const [conversations, setConversations] = useState([]);
-  const [notifications, setNotifications] = useState([]);
-  const [showCreateProject, setShowCreateProject] = useState(false);
-  const [stats, setStats] = useState({
-    activeJobs: 0,
-    completedJobs: 0,
-    totalEarnings: 0,
-    avgRating: 0,
+  const [tabCounts, setTabCounts] = useState({ hiring: 0, progress: 0 });
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
   });
 
+  const activeTab = searchParams.get("tab") || "hiring";
+
   useEffect(() => {
+    // Lấy thông tin user từ localStorage
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {
-        const user = JSON.parse(storedUser);
-        setCurrentUser(user);
-        fetchWorkspaceData(user);
+        const parsedUser = JSON.parse(storedUser);
+        if (parsedUser) {
+          // Normalize role and name details
+          let role = "FREELANCER";
+          const r = parsedUser.role || parsedUser.vaiTro || "";
+          const norm = r.toUpperCase().replace(/_/g, "");
+          if (norm === "NGUOITHUE" || norm === "CLIENT") {
+            role = "NGUOI_THUE";
+          } else if (norm === "ADMIN") {
+            role = "ADMIN";
+          }
+
+          const normalizedUser = {
+            ...parsedUser,
+            id: parsedUser.taiKhoanId || parsedUser.id,
+            name: parsedUser.hoTen || parsedUser.name,
+            role: role,
+          };
+          setUser(normalizedUser);
+          console.log("Current user (normalized):", normalizedUser);
+        }
       } catch (error) {
         console.error("Error parsing user data:", error);
-        navigate("/login");
       }
-    } else {
-      navigate("/login");
     }
-  }, [navigate]);
+  }, []);
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const tab = params.get("tab");
-    const action = params.get("action");
-    if (tab) setActiveTab(tab);
-    if (action === "new") setShowCreateProject(true);
-  }, [location.search]);
+    if (user) {
+      fetchTabCounts();
+      fetchProjects();
+      fetchStats();
+    }
+  }, [user, activeTab]);
 
-  const fetchWorkspaceData = async (user) => {
-    setLoading(true);
+  const fetchTabCounts = async () => {
+    if (!user) return;
+    const userId = user.taiKhoanId || user.id;
     try {
-      const userId = user.taiKhoanId || user.id;
-
-      // Fetch jobs (Mock API)
-      const jobsResponse = await api.jobs.getAll();
-      if (jobsResponse.success) {
-        let userJobs = jobsResponse.data;
-
-        // Simulate data filtering based on roles since mock API might return all
-        if (user.vaiTro === "Freelancer") {
-          userJobs = userJobs.filter(
-            (j) =>
-              j.freelancer?.id === user.taiKhoanId ||
-              j.freelancer?.id === user.id,
-          );
-          if (userJobs.length === 0)
-            userJobs = jobsResponse.data.slice(
-              0,
-              3 + ((user.taiKhoanId || user.id || 0) % 3),
-            );
-        } else if (user.vaiTro === "NguoiThue") {
-          userJobs = userJobs.filter(
-            (j) =>
-              j.employer?.id === user.taiKhoanId || j.employer?.id === user.id,
-          );
-          if (userJobs.length === 0)
-            userJobs = jobsResponse.data.slice(
-              2,
-              6 + ((user.taiKhoanId || user.id || 0) % 2),
-            );
-        } else if (user.vaiTro === "DonViGiamSat") {
-          userJobs = jobsResponse.data.slice(0, 8);
-        }
-
-        setJobs(userJobs);
-
-        // Calculate stats based on filtered jobs
-        const activeJobs = userJobs.filter(
-          (j) => j.status === "DANG_THUC_HIEN",
+      if (user.role === "NGUOI_THUE") {
+        const response = await api.get(`/users/${userId}/jobs`);
+        const jobs = response.jobs || [];
+        const hiringCount = jobs.filter((j) => j.trangThai === "DangMo").length;
+        const progressCount = jobs.filter(
+          (j) => j.trangThai === "DaDong",
         ).length;
-        const completedJobs = userJobs.filter(
-          (j) => j.status === "HOAN_THANH",
+        setTabCounts({
+          hiring: hiringCount,
+          progress: progressCount,
+        });
+      } else {
+        // FREELANCER
+        const response = await api.get(`/users/${userId}/contracts`);
+        const contracts = response.contracts || [];
+        const progressCount = contracts.filter(
+          (c) => c.trangThai === "DangThucHien",
         ).length;
-        const totalEarnings = userJobs
-          .filter((j) => j.status === "HOAN_THANH")
-          .reduce((sum, j) => sum + (j.agreedPrice || 0), 0);
-        const ratings = userJobs
-          .filter((j) => j.rating && j.rating.score)
-          .map((j) => j.rating.score);
-        const avgRating =
-          ratings.length > 0
-            ? (ratings.reduce((sum, r) => sum + r, 0) / ratings.length).toFixed(
-                1,
-              )
-            : 0;
-
-        // Apply custom stats for Supervisor
-        if (user.vaiTro === "DonViGiamSat") {
-          setStats({
-            activeJobs: 12, // Mock system-wide active
-            completedJobs: 45, // Mock system-wide completed
-            totalEarnings: 0,
-            avgRating: 0,
-          });
-        } else {
-          setStats({
-            activeJobs,
-            completedJobs,
-            totalEarnings,
-            avgRating,
-          });
-        }
-      }
-
-      // Fetch conversations
-      const conversationsResponse = await api.messages.getConversations(userId);
-      if (conversationsResponse.success) {
-        setConversations(conversationsResponse.data);
-      }
-
-      // Fetch notifications
-      const notificationsResponse = await api.notifications.getByUserId(userId);
-      if (notificationsResponse.success) {
-        setNotifications(notificationsResponse.data);
+        setTabCounts({
+          hiring: 0,
+          progress: progressCount,
+        });
       }
     } catch (error) {
-      console.error("Error fetching workspace data:", error);
+      console.error("Error fetching tab counts:", error);
+    }
+  };
+
+  const fetchProjects = async () => {
+    if (!user) return;
+    const userId = user.taiKhoanId || user.id;
+    try {
+      setLoading(true);
+      let mapped = [];
+      if (user.role === "NGUOI_THUE") {
+        const response = await api.get(`/users/${userId}/jobs`);
+        const jobs = response.jobs || [];
+
+        // Map backend jobs to frontend structure
+        mapped = jobs.map((job) => {
+          const minBudget = job.nganSachMin
+            ? Number(job.nganSachMin).toLocaleString("vi-VN")
+            : "0";
+          const maxBudget = job.nganSachMax
+            ? Number(job.nganSachMax).toLocaleString("vi-VN")
+            : "0";
+          return {
+            id: job.yeuCauId,
+            title: job.tieuDe,
+            description: job.moTa,
+            category: job.loaiDichVu?.tenLoai || "Khác",
+            bids: job.soLuongBaoGia || 0,
+            budget: `${minBudget} - ${maxBudget} VNĐ`,
+            status: job.trangThai,
+            postedDate: job.ngayTao,
+          };
+        });
+
+        // Filter projects based on activeTab
+        let filtered = [];
+        if (activeTab === "hiring") {
+          filtered = mapped.filter((p) => p.status === "DangMo");
+        } else if (activeTab === "progress") {
+          filtered = mapped.filter((p) => p.status === "DaDong");
+        } else {
+          filtered = mapped;
+        }
+
+        // Enrich with contract and progress details for progress tab
+        if (activeTab === "progress" && filtered.length > 0) {
+          try {
+            const contractsRes = await api.get(`/users/${userId}/contracts`);
+            const contracts = contractsRes.contracts || [];
+
+            filtered = await Promise.all(
+              filtered.map(async (project) => {
+                const contract = contracts.find(
+                  (c) => c.yeuCauId === project.id,
+                );
+                if (contract) {
+                  let progressPercent = 0;
+                  let progressNotes = "Đang hoàn thành các hạng mục công việc.";
+                  try {
+                    const progressRes = await api.get(
+                      `/contracts/${contract.congViecId}/progress`,
+                    );
+                    const progressList = progressRes.progress || [];
+                    if (progressList.length > 0) {
+                      const latest = progressList[0];
+                      progressPercent = latest.phanTram || 0;
+                      progressNotes =
+                        latest.moTa ||
+                        latest.tieuDe ||
+                        "Đang thực hiện công việc.";
+                    }
+                  } catch (pe) {
+                    console.error(
+                      "Error fetching progress for contract",
+                      contract.congViecId,
+                      pe,
+                    );
+                  }
+
+                  return {
+                    ...project,
+                    job: {
+                      contractId: contract.congViecId,
+                      freelancer: {
+                        name:
+                          contract.freelancer?.taiKhoan?.hoTen || "Không rõ",
+                        avatar:
+                          contract.freelancer?.taiKhoan?.avatar ||
+                          "https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp",
+                        rating: 5.0,
+                      },
+                      progress: progressPercent,
+                      notes: progressNotes,
+                    },
+                  };
+                }
+
+                return {
+                  ...project,
+                  job: {
+                    freelancer: {
+                      name: "Chưa xác định",
+                      avatar:
+                        "https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp",
+                      rating: 5.0,
+                    },
+                    progress: 0,
+                    notes: "Hợp đồng đang được thiết lập.",
+                  },
+                };
+              }),
+            );
+          } catch (ce) {
+            console.error("Error enriching client contracts:", ce);
+          }
+        }
+
+        setProjects(filtered);
+        setPagination({
+          page: 1,
+          limit: 100,
+          total: filtered.length,
+          totalPages: 1,
+        });
+      } else {
+        // FREELANCER
+        const response = await api.get(`/users/${userId}/contracts`);
+        const contracts = response.contracts || [];
+
+        mapped = await Promise.all(
+          contracts.map(async (c) => {
+            const budgetVal = c.giaThoa
+              ? `${Number(c.giaThoa).toLocaleString("vi-VN")} VNĐ`
+              : "Thỏa thuận";
+
+            let progressPercent = 0;
+            let progressNotes = "Đang hoàn thành các hạng mục công việc.";
+            try {
+              const progressRes = await api.get(
+                `/contracts/${c.congViecId}/progress`,
+              );
+              const progressList = progressRes.progress || [];
+              if (progressList.length > 0) {
+                const latest = progressList[0];
+                progressPercent = latest.phanTram || 0;
+                progressNotes =
+                  latest.moTa || latest.tieuDe || "Đang thực hiện công việc.";
+              }
+            } catch (pe) {
+              console.error(
+                "Error fetching progress for contract",
+                c.congViecId,
+                pe,
+              );
+            }
+
+            return {
+              id: c.yeuCau?.yeuCauId || c.congViecId,
+              title: c.yeuCau?.tieuDe || "Dự án Freelance",
+              description: c.yeuCau?.moTa || "",
+              category: "Dịch vụ Freelance",
+              bids: 0,
+              budget: budgetVal,
+              status: c.trangThai === "DangThucHien" ? "DaDong" : "HoanThanh",
+              postedDate: c.ngayTao,
+              job: {
+                contractId: c.congViecId,
+                freelancer: {
+                  name: c.freelancer?.taiKhoan?.hoTen || user.hoTen,
+                  avatar:
+                    c.freelancer?.taiKhoan?.avatar ||
+                    "https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp",
+                  rating: 5.0,
+                },
+                progress: progressPercent,
+                notes: progressNotes,
+              },
+            };
+          }),
+        );
+
+        let filtered = [];
+        if (activeTab === "progress") {
+          filtered = mapped.filter((p) => p.status === "DaDong");
+        } else {
+          filtered = mapped;
+        }
+
+        setProjects(filtered);
+        setPagination({
+          page: 1,
+          limit: 100,
+          total: filtered.length,
+          totalPages: 1,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      setProjects([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("vi-VN").format(amount) + " VNĐ";
+  const fetchStats = async () => {
+    if (!user) return;
+    const userId = user.taiKhoanId || user.id;
+    try {
+      if (user.role === "NGUOI_THUE") {
+        const response = await api.get(`/users/${userId}/jobs`);
+        const jobs = response.jobs || [];
+        setStats({
+          projectCount: jobs.length,
+          activeCount: jobs.filter((j) => j.trangThai === "DaDong").length,
+          completedCount: jobs.filter((j) => j.trangThai === "HoanThanh")
+            .length,
+        });
+      } else {
+        // FREELANCER
+        const response = await api.get(`/users/${userId}/contracts`);
+        const contracts = response.contracts || [];
+        const totalEarnings = contracts
+          .filter((c) => c.trangThai === "HoanThanh")
+          .reduce((sum, c) => sum + Number(c.giaThoa || 0), 0);
+        setStats({
+          projectCount: contracts.length,
+          activeCount: contracts.filter((c) => c.trangThai === "DangThucHien")
+            .length,
+          completedCount: contracts.filter((c) => c.trangThai === "HoanThanh")
+            .length,
+          totalEarnings: totalEarnings.toLocaleString("vi-VN"),
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+    }
   };
 
-  const getStatusBadge = (status) => {
-    const statusMap = {
-      DANG_THUC_HIEN: { text: "Đang thực hiện", class: "status-active" },
-      HOAN_THANH: { text: "Hoàn thành", class: "status-completed" },
-      DA_HUY: { text: "Đã hủy", class: "status-cancelled" },
-    };
-    const statusInfo = statusMap[status] || { text: status, class: "" };
-    return (
-      <span className={`status-badge ${statusInfo.class}`}>
-        {statusInfo.text}
-      </span>
-    );
+  const handleMenuClick = (menu) => {
+    setActiveMenu(menu);
   };
 
-  if (loading) {
-    return (
-      <div className="loading-state">
-        <i className="fa-solid fa-circle-notch fa-spin"></i>
-        <p>Đang tải không gian làm việc...</p>
-      </div>
-    );
-  }
+  const handleTabClick = (type) => {
+    setSearchParams({ tab: type });
+  };
 
-  const allowedRoles = ["NguoiThue", "Freelancer", "DonViGiamSat"];
-  const hasWorkspaceAccess =
-    currentUser && allowedRoles.includes(currentUser.vaiTro);
-  const userRole = getUserRole(currentUser);
-  const workspaceSubtitle = isFreelancerRole(userRole)
-    ? "Quản lý công việc và giao tiếp với khách hàng"
-    : isEmployerRole(userRole)
-      ? "Quản lý dự án và giao tiếp với freelancer"
-      : isSupervisorRole(userRole)
-        ? "Giám sát tiến độ và xử lý khiếu nại"
-        : "Quản lý công việc và giao tiếp";
-
-  if (!hasWorkspaceAccess) {
-    return (
-      <div className="workspace-page">
-        <div className="d-hero">
-          <div className="d-hero-content" style={{ textAlign: "center" }}>
-            <h1 className="d-title">Không gian làm việc</h1>
-            <p className="d-meta" style={{ justifyContent: "center" }}>
-              {workspaceSubtitle}
-            </p>
-          </div>
-        </div>
-        <div className="workspace-container" style={{ marginTop: "40px" }}>
-          <div className="empty-state">
-            <i
-              className="fa-solid fa-lock"
-              style={{
-                fontSize: "64px",
-                color: "#CBD5E1",
-                marginBottom: "20px",
-              }}
-            ></i>
-            <h3
-              style={{
-                fontSize: "24px",
-                color: "var(--navy)",
-                marginBottom: "12px",
-              }}
-            >
-              Không có quyền truy cập
-            </h3>
-            <p
-              style={{ color: "#64748B", fontSize: "16px", lineHeight: "1.6" }}
-            >
-              Không có không gian làm việc dành cho vai trò{" "}
-              <strong>{currentUser?.vaiTro || "của bạn"}</strong>.<br />
-              Chỉ <strong>Người thuê</strong>, <strong>Freelancer</strong> và{" "}
-              <strong>Đơn vị giám sát</strong> mới có quyền truy cập khu vực
-              này.
-            </p>
-            <div style={{ marginTop: "24px" }}>
-              <Link to="/" className="btn-primary">
-                <i className="fa-solid fa-home"></i> Về trang chủ
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handleCreateRequest = () => {
+    navigate("/post-request");
+  };
 
   return (
-    <div className="workspace-page">
+    <div className="workspace-container">
       {/* Header */}
-      <div className="d-hero">
-        <div className="d-hero-content" style={{ textAlign: "center" }}>
-          <h1 className="d-title">Không gian làm việc</h1>
-          <p className="d-meta" style={{ justifyContent: "center" }}>
-            {workspaceSubtitle}
-          </p>
+      <div className="workspace-header">
+        <div className="workspace-header-content">
+          <div className="workspace-title-section">
+            <h1>Không gian làm việc</h1>
+            {user?.role === "NGUOI_THUE" && (
+              <span className="workspace-badge client">Khách hàng</span>
+            )}
+            {user?.role === "FREELANCER" && (
+              <span className="workspace-badge freelancer">Freelancer</span>
+            )}
+            {!user && (
+              <span className="workspace-badge client">Khách hàng</span>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="workspace-container" style={{ marginTop: "-60px", position: "relative", zIndex: 10 }}>
-        {/* Main Layout (Sidebar + Content) */}
-        <div className="workspace-main-layout">
-          {/* Tabs Sidebar */}
-          <div className="workspace-sidebar">
-            <div className="workspace-tabs">
-              <button
-                className={`tab-btn ${activeTab === "overview" ? "active" : ""}`}
-                onClick={() => setActiveTab("overview")}
-              >
-                <i className="fa-solid fa-chart-line"></i>
-                Tổng quan
-              </button>
-              <button
-                className={`tab-btn ${activeTab === "jobs" ? "active" : ""}`}
-                onClick={() => setActiveTab("jobs")}
-              >
-                <i className="fa-solid fa-briefcase"></i>
-                {currentUser?.vaiTro === "Freelancer" ? "Công việc" : "Dự án"} (
-                {jobs.length})
-              </button>
-              <button
-                className={`tab-btn ${activeTab === "messages" ? "active" : ""}`}
-                onClick={() => setActiveTab("messages")}
-              >
-                <i className="fa-solid fa-comments"></i>
-                Tin nhắn
-                {conversations.filter((c) => c.unreadCount > 0).length > 0 && (
-                  <span className="badge">
-                    {conversations.filter((c) => c.unreadCount > 0).length}
-                  </span>
-                )}
-              </button>
-              <button
-                className={`tab-btn ${activeTab === "notifications" ? "active" : ""}`}
-                onClick={() => setActiveTab("notifications")}
-              >
-                <i className="fa-solid fa-bell"></i>
-                Thông báo
-                {notifications.filter((n) => !n.read).length > 0 && (
-                  <span className="badge">
-                    {notifications.filter((n) => !n.read).length}
-                  </span>
-                )}
-              </button>
-              {currentUser?.vaiTro === "DonViGiamSat" && (
+      <div className="workspace-main">
+        {/* Sidebar */}
+        <aside className="workspace-sidebar">
+          <nav className="sidebar-nav">
+            <button
+              className={`sidebar-item ${activeMenu === "overview" ? "active" : ""}`}
+              onClick={() => handleMenuClick("overview")}
+            >
+              <i className="fa-solid fa-chart-line"></i>
+              Tổng quan
+            </button>
+
+            <button
+              className={`sidebar-item ${activeMenu === "projects" ? `active ${activeTab}` : ""}`}
+              onClick={() => handleMenuClick("projects")}
+            >
+              <i className="fa-solid fa-briefcase"></i>
+              Dự án
+            </button>
+
+            <button
+              className={`sidebar-item ${activeMenu === "messages" ? "active" : ""}`}
+              onClick={() => handleMenuClick("messages")}
+            >
+              <i className="fa-solid fa-message"></i>
+              Tin nhắn
+            </button>
+
+            <button
+              className={`sidebar-item ${activeMenu === "notifications" ? "active" : ""}`}
+              onClick={() => handleMenuClick("notifications")}
+            >
+              <i className="fa-solid fa-bell"></i>
+              Thông báo
+            </button>
+          </nav>
+        </aside>
+
+        {/* Main Content */}
+        <main className="workspace-content">
+          {activeMenu === "projects" && (
+            <div className="projects-section">
+              {/* Projects Header */}
+              <div className="projects-header">
+                <div>
+                  <h2>Dự án của tôi</h2>
+                </div>
                 <button
-                  className={`tab-btn ${activeTab === "complaints" ? "active" : ""}`}
-                  onClick={() => setActiveTab("complaints")}
+                  className="btn-create-request"
+                  onClick={handleCreateRequest}
                 >
-                  <i className="fa-solid fa-scale-balanced"></i>
-                  Xử lý khiếu nại
-                  <span
-                    className="badge"
-                    style={{
-                      background: "#EA580C",
-                      boxShadow: "0 2px 5px rgba(234, 88, 12, 0.3)",
-                    }}
-                  >
-                    5
-                  </span>
+                  <i className="fa-solid fa-plus"></i>
+                  Đăng yêu cầu mới
                 </button>
-              )}
-            </div>
-          </div>
+              </div>
 
-          {/* Tab Content Area */}
-          <div className="workspace-content-area">
-            <div className="tab-content">
-              {/* Overview Tab */}
-              {activeTab === "overview" && (
-                <div className="overview-content">
-                  {/* Stats Cards */}
-                  <div className="stats-grid">
-                    {currentUser?.vaiTro === "Freelancer" && (
-                      <>
-                        <div className="stat-card">
-                          <div
-                            className="stat-icon"
-                            style={{ background: "#EFF6FF", color: "#0EA5E9" }}
-                          >
-                            <i className="fa-solid fa-briefcase"></i>
-                          </div>
-                          <div className="stat-info">
-                            <div className="stat-value">{stats.activeJobs}</div>
-                            <div className="stat-label">Công việc đang làm</div>
-                          </div>
-                        </div>
-                        <div className="stat-card">
-                          <div
-                            className="stat-icon"
-                            style={{ background: "#F0FDF4", color: "#16A34A" }}
-                          >
-                            <i className="fa-solid fa-check-circle"></i>
-                          </div>
-                          <div className="stat-info">
-                            <div className="stat-value">
-                              {stats.completedJobs}
-                            </div>
-                            <div className="stat-label">Đã hoàn thành</div>
-                          </div>
-                        </div>
-                        <div className="stat-card">
-                          <div
-                            className="stat-icon"
-                            style={{ background: "#FEF3C7", color: "#D97706" }}
-                          >
-                            <i className="fa-solid fa-wallet"></i>
-                          </div>
-                          <div className="stat-info">
-                            <div className="stat-value">
-                              {formatCurrency(stats.totalEarnings)}
-                            </div>
-                            <div className="stat-label">Tổng thu nhập</div>
-                          </div>
-                        </div>
-                        <div className="stat-card">
-                          <div
-                            className="stat-icon"
-                            style={{ background: "#FEF2F2", color: "#DC2626" }}
-                          >
-                            <i className="fa-solid fa-star"></i>
-                          </div>
-                          <div className="stat-info">
-                            <div className="stat-value">
-                              {stats.avgRating}/5.0
-                            </div>
-                            <div className="stat-label">
-                              Đánh giá trung bình
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    )}
+              {/* Projects Tabs Capsule */}
+              <div className="workspace-page-tabs-capsule">
+                <button
+                  className={`workspace-page-tab-pill hiring ${
+                    activeTab === "hiring" ? "active" : ""
+                  }`}
+                  onClick={() => handleTabClick("hiring")}
+                >
+                  Đang tuyển dụng
+                  <span className="tab-pill-count">{tabCounts.hiring}</span>
+                </button>
+                <button
+                  className={`workspace-page-tab-pill progress ${
+                    activeTab === "progress" ? "active" : ""
+                  }`}
+                  onClick={() => handleTabClick("progress")}
+                >
+                  Đang thực hiện
+                  <span className="tab-pill-count">{tabCounts.progress}</span>
+                </button>
+              </div>
 
-                    {currentUser?.vaiTro === "NguoiThue" && (
-                      <>
-                        <div className="stat-card">
-                          <div
-                            className="stat-icon"
-                            style={{ background: "#EFF6FF", color: "#0EA5E9" }}
-                          >
-                            <i className="fa-solid fa-file-contract"></i>
-                          </div>
-                          <div className="stat-info">
-                            <div className="stat-value">{stats.activeJobs}</div>
-                            <div className="stat-label">Dự án đang thuê</div>
-                          </div>
-                        </div>
-                        <div className="stat-card">
-                          <div
-                            className="stat-icon"
-                            style={{ background: "#F0FDF4", color: "#16A34A" }}
-                          >
-                            <i className="fa-solid fa-check-circle"></i>
-                          </div>
-                          <div className="stat-info">
-                            <div className="stat-value">
-                              {stats.completedJobs}
-                            </div>
-                            <div className="stat-label">Dự án hoàn thành</div>
-                          </div>
-                        </div>
-                        <div className="stat-card">
-                          <div
-                            className="stat-icon"
-                            style={{ background: "#FEF3C7", color: "#D97706" }}
-                          >
-                            <i className="fa-solid fa-money-bill-wave"></i>
-                          </div>
-                          <div className="stat-info">
-                            <div className="stat-value">
-                              {formatCurrency(stats.totalEarnings)}
-                            </div>
-                            <div className="stat-label">Tổng chi phí</div>
-                          </div>
-                        </div>
-                        <div className="stat-card">
-                          <div
-                            className="stat-icon"
-                            style={{ background: "#F3E8FF", color: "#9333EA" }}
-                          >
-                            <i className="fa-solid fa-users"></i>
-                          </div>
-                          <div className="stat-info">
-                            <div className="stat-value">
-                              {stats.activeJobs + stats.completedJobs}
-                            </div>
-                            <div className="stat-label">
-                              Freelancer đã hợp tác
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    )}
-
-                    {currentUser?.vaiTro === "DonViGiamSat" && (
-                      <>
-                        <div className="stat-card">
-                          <div
-                            className="stat-icon"
-                            style={{ background: "#EFF6FF", color: "#0EA5E9" }}
-                          >
-                            <i className="fa-solid fa-shield-halved"></i>
-                          </div>
-                          <div className="stat-info">
-                            <div className="stat-value">{stats.activeJobs}</div>
-                            <div className="stat-label">
-                              Dự án đang giám sát
-                            </div>
-                          </div>
-                        </div>
-                        <div className="stat-card">
-                          <div
-                            className="stat-icon"
-                            style={{ background: "#F0FDF4", color: "#16A34A" }}
-                          >
-                            <i className="fa-solid fa-file-circle-check"></i>
-                          </div>
-                          <div className="stat-info">
-                            <div className="stat-value">
-                              {stats.completedJobs}
-                            </div>
-                            <div className="stat-label">
-                              Dự án đã nghiệm thu
-                            </div>
-                          </div>
-                        </div>
-                        <div className="stat-card">
-                          <div
-                            className="stat-icon"
-                            style={{ background: "#FEF2F2", color: "#DC2626" }}
-                          >
-                            <i className="fa-solid fa-triangle-exclamation"></i>
-                          </div>
-                          <div className="stat-info">
-                            <div className="stat-value">2</div>
-                            <div className="stat-label">Báo cáo vi phạm</div>
-                          </div>
-                        </div>
-                        <div className="stat-card">
-                          <div
-                            className="stat-icon"
-                            style={{ background: "#FFF7ED", color: "#EA580C" }}
-                          >
-                            <i className="fa-solid fa-scale-balanced"></i>
-                          </div>
-                          <div className="stat-info">
-                            <div className="stat-value">5</div>
-                            <div className="stat-label">Xử lý khiếu nại</div>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="overview-grid">
-                    {/* Active Jobs */}
-                    <div className="overview-section">
-                      <div className="section-header">
-                        <h3>Công việc đang làm</h3>
-                        <Link to="#" onClick={() => setActiveTab("jobs")}>
-                          Xem tất cả
-                        </Link>
-                      </div>
-                      <div className="jobs-list">
-                        {jobs
-                          .filter((j) => j.status === "DANG_THUC_HIEN")
-                          .slice(0, 3)
-                          .map((job) => (
-                            <div key={job.id} className="job-item">
-                              <div className="job-header">
-                                <h4>{job.title}</h4>
-                                {getStatusBadge(job.status)}
-                              </div>
-                              <div className="job-meta">
-                                <span>
-                                  <i className="fa-solid fa-user"></i>{" "}
-                                  {currentUser?.vaiTro === "NguoiThue"
-                                    ? job.freelancer?.name
-                                    : job.employer?.name}
-                                </span>
-                                <span>
-                                  <i className="fa-solid fa-calendar"></i> Hạn:{" "}
-                                  {job.endDate}
-                                </span>
-                              </div>
-                              <div className="job-progress">
-                                <div className="progress-bar">
-                                  <div
-                                    className="progress-fill"
-                                    style={{ width: `${job.progress}%` }}
-                                  ></div>
-                                </div>
-                                <span className="progress-text">
-                                  {job.progress}%
-                                </span>
-                              </div>
-                              <div className="job-footer">
-                                <span className="job-price">
-                                  {job.agreedPriceText}
-                                </span>
-                                <Link
-                                  to={`/jobs/${job.id}`}
-                                  className="btn-view"
-                                >
-                                  Xem chi tiết
-                                </Link>
-                              </div>
-                            </div>
-                          ))}
-                        {jobs.filter((j) => j.status === "DANG_THUC_HIEN")
-                          .length === 0 && (
-                          <div className="empty-state-small">
-                            <i className="fa-regular fa-folder-open"></i>
-                            <p>Chưa có công việc đang làm</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Recent Messages */}
-                    <div className="overview-section">
-                      <div className="section-header">
-                        <h3>Tin nhắn gần đây</h3>
-                        <Link to="#" onClick={() => setActiveTab("messages")}>
-                          Xem tất cả
-                        </Link>
-                      </div>
-                      <div className="messages-list">
-                        {conversations.slice(0, 5).map((conv) => (
-                          <div
-                            key={conv.id}
-                            className="message-item"
-                            onClick={() => navigate(`/messages/${conv.id}`)}
-                          >
-                            <img
-                              src={conv.participant1.avatar}
-                              alt={conv.participant1.name}
-                              className="message-avatar"
-                            />
-                            <div className="message-content">
-                              <div className="message-header">
-                                <h4>{conv.participant1.name}</h4>
-                                <span className="message-time">
-                                  {conv.lastMessageTimeText}
-                                </span>
-                              </div>
-                              <p className="message-preview">
-                                {conv.lastMessage}
-                              </p>
-                            </div>
-                            {conv.unreadCount > 0 && (
-                              <span className="unread-badge">
-                                {conv.unreadCount}
-                              </span>
-                            )}
-                          </div>
-                        ))}
-                        {conversations.length === 0 && (
-                          <div className="empty-state-small">
-                            <i className="fa-regular fa-comments"></i>
-                            <p>Chưa có tin nhắn nào</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Jobs Tab */}
-              {activeTab === "jobs" && (
-                <div className="jobs-content">
-                  {showCreateProject && currentUser?.vaiTro === "NguoiThue" ? (
-                    <PostRequestPage
-                      isEmbedded={true}
-                      onCancel={() => setShowCreateProject(false)}
-                    />
-                  ) : (
-                    <>
-                      <div
-                        className="jobs-header-actions"
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          gap: "16px",
-                          marginBottom: "24px",
-                          flexWrap: "wrap",
-                        }}
-                      >
+              {/* Projects List */}
+              <div className="projects-list">
+                {loading ? (
+                  <div className="loading">Đang tải...</div>
+                ) : projects && projects.length > 0 ? (
+                  projects.map((project) => {
+                    if (activeTab === "hiring") {
+                      return (
                         <div
-                          className="jobs-filters"
-                          style={{ marginBottom: 0 }}
+                          key={project.id}
+                          className="project-card recruiting-card"
+                          onClick={() => navigate(`/requests/${project.id}`)}
                         >
-                          <button className="filter-btn active">
-                            Tất cả ({jobs.length})
-                          </button>
-                          <button className="filter-btn">
-                            Đang làm (
-                            {
-                              jobs.filter((j) => j.status === "DANG_THUC_HIEN")
-                                .length
-                            }
-                            )
-                          </button>
-                          <button className="filter-btn">
-                            Hoàn thành (
-                            {
-                              jobs.filter((j) => j.status === "HOAN_THANH")
-                                .length
-                            }
-                            )
-                          </button>
-                        </div>
-                        {currentUser?.vaiTro === "NguoiThue" && (
-                          <button
-                            className="btn-primary"
-                            onClick={() => setShowCreateProject(true)}
-                            style={{
-                              padding: "10px 24px",
-                              borderRadius: "12px",
-                              whiteSpace: "nowrap",
-                              width: "fit-content",
-                              height: "fit-content",
-                            }}
-                          >
-                            <i
-                              className="fa-solid fa-plus"
-                              style={{ marginRight: "8px" }}
-                            ></i>{" "}
-                            Đăng yêu cầu thuê mới
-                          </button>
-                        )}
-                      </div>
-                      <div className="jobs-grid">
-                        {jobs.map((job) => (
-                          <div key={job.id} className="job-card">
-                            <div className="job-card-header">
-                              <h3>{job.title}</h3>
-                              {getStatusBadge(job.status)}
-                            </div>
-                            <p className="job-description">
-                              {job.description.substring(0, 120)}...
-                            </p>
-                            <div className="job-meta-grid">
-                              <div className="meta-item">
-                                <i className="fa-solid fa-user"></i>
-                                <span>
-                                  {currentUser?.vaiTro === "NguoiThue"
-                                    ? job.freelancer?.name
-                                    : job.employer?.name}
-                                </span>
-                              </div>
-                              <div className="meta-item">
-                                <i className="fa-solid fa-calendar"></i>
-                                <span>
-                                  {job.startDate} - {job.endDate}
-                                </span>
-                              </div>
-                              <div className="meta-item">
-                                <i className="fa-solid fa-money-bill-wave"></i>
-                                <span>{job.agreedPriceText}</span>
-                              </div>
-                              {job.status === "DANG_THUC_HIEN" && (
-                                <div className="meta-item">
-                                  <i className="fa-solid fa-chart-line"></i>
-                                  <span>Tiến độ: {job.progress}%</span>
-                                </div>
-                              )}
-                            </div>
-                            {job.status === "HOAN_THANH" && job.rating && (
-                              <div className="job-rating">
-                                <div className="stars">
-                                  {[...Array(5)].map((_, i) => (
-                                    <i
-                                      key={i}
-                                      className={`fa-solid fa-star ${i < job.rating.score ? "filled" : ""}`}
-                                    ></i>
-                                  ))}
-                                </div>
-                                <span>{job.rating.score}/5.0</span>
-                              </div>
-                            )}
-                            <div className="job-card-footer">
-                              <Link
-                                to={`/jobs/${job.id}`}
-                                className="btn-view-detail"
-                              >
-                                Xem chi tiết
-                                <i className="fa-solid fa-arrow-right"></i>
-                              </Link>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* Messages Tab */}
-              {activeTab === "messages" && (
-                <div className="messages-content">
-                  <div className="conversations-list">
-                    {conversations.map((conv) => (
-                      <div
-                        key={conv.id}
-                        className={`conversation-item ${conv.unreadCount > 0 ? "unread" : ""}`}
-                        onClick={() => navigate(`/messages/${conv.id}`)}
-                      >
-                        <img
-                          src={conv.participant1.avatar}
-                          alt={conv.participant1.name}
-                          className="conv-avatar"
-                        />
-                        <div className="conv-content">
-                          <div className="conv-header">
-                            <h4>{conv.participant1.name}</h4>
-                            <span className="conv-time">
-                              {conv.lastMessageTimeText}
+                          <div className="card-row-1">
+                            <h3 className="project-title">{project.title}</h3>
+                            <span className="project-category-badge">
+                              {project.category || "Khác"}
                             </span>
                           </div>
-                          {conv.requestTitle && (
-                            <p className="conv-request">{conv.requestTitle}</p>
-                          )}
-                          <p className="conv-message">{conv.lastMessage}</p>
-                        </div>
-                        {conv.unreadCount > 0 && (
-                          <span className="conv-unread">
-                            {conv.unreadCount}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                    {conversations.length === 0 && (
-                      <div className="empty-state">
-                        <i className="fa-regular fa-comments"></i>
-                        <h3>Chưa có cuộc trò chuyện nào</h3>
-                        <p>
-                          Khi bạn gửi báo giá hoặc nhận được tin nhắn, chúng sẽ
-                          xuất hiện ở đây
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
 
-              {/* Notifications Tab */}
-              {activeTab === "notifications" && (
-                <div className="notifications-content">
-                  <div className="notifications-list">
-                    {notifications.map((notif) => (
-                      <div
-                        key={notif.id}
-                        className={`notification-item ${!notif.read ? "unread" : ""}`}
-                      >
-                        <div className="notif-icon">
-                          {notif.type === "BAO_GIA" && (
-                            <i className="fa-solid fa-file-invoice"></i>
-                          )}
-                          {notif.type === "CONG_VIEC" && (
-                            <i className="fa-solid fa-briefcase"></i>
-                          )}
-                          {notif.type === "THANH_TOAN" && (
-                            <i className="fa-solid fa-money-bill-wave"></i>
-                          )}
-                          {notif.type === "HE_THONG" && (
-                            <i className="fa-solid fa-bell"></i>
-                          )}
-                          {notif.type === "YEU_CAU" && (
-                            <i className="fa-solid fa-clipboard-list"></i>
-                          )}
-                        </div>
-                        <div className="notif-content">
-                          <h4>{notif.title}</h4>
-                          <p>{notif.content}</p>
-                          <span className="notif-time">
-                            {notif.createdTime}
-                          </span>
-                        </div>
-                        {!notif.read && <span className="notif-dot"></span>}
-                      </div>
-                    ))}
-                    {notifications.length === 0 && (
-                      <div className="empty-state">
-                        <i className="fa-regular fa-bell"></i>
-                        <h3>Chưa có thông báo nào</h3>
-                        <p>
-                          Các thông báo về công việc, tin nhắn và thanh toán sẽ
-                          xuất hiện ở đây
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Complaints Tab */}
-              {activeTab === "complaints" &&
-                currentUser?.vaiTro === "DonViGiamSat" && (
-                  <div className="complaints-content">
-                    <div
-                      className="section-header"
-                      style={{ marginBottom: "24px" }}
-                    >
-                      <h2
-                        style={{
-                          fontSize: "22px",
-                          color: "var(--navy)",
-                          margin: 0,
-                        }}
-                      >
-                        Danh sách khiếu nại chờ xử lý
-                      </h2>
-                      <span style={{ color: "#64748B", fontSize: "14px" }}>
-                        Hiển thị {mockComplaints.length} khiếu nại
-                      </span>
-                    </div>
-
-                    <div className="complaints-list">
-                      {mockComplaints.map((complaint) => (
-                        <div key={complaint.id} className="complaint-card">
-                          <div className="complaint-header">
-                            <div className="complaint-id">
-                              <i
-                                className="fa-solid fa-file-shield"
-                                style={{ color: "#EA580C" }}
-                              ></i>
-                              Mã số: {complaint.id}
+                          <div className="card-row-2">
+                            <div className="bids-badge-container">
+                              {project.bids > 0 ? (
+                                <span className="bids-badge active">
+                                  <i className="fa-solid fa-users"></i>{" "}
+                                  {project.bids} hồ sơ mới
+                                </span>
+                              ) : (
+                                <span className="bids-badge empty">
+                                  <i className="fa-solid fa-users"></i> 0 hồ sơ
+                                </span>
+                              )}
                             </div>
-                            <div className="complaint-date">
-                              Ngày báo cáo: {complaint.ngayTao}
+                            <div className="project-budget-display">
+                              <span className="budget-label">Ngân sách:</span>
+                              <span className="budget-value">
+                                {project.budget || "Thỏa thuận"}
+                              </span>
                             </div>
                           </div>
 
-                          <div className="complaint-body">
-                            <div className="complaint-info-group">
-                              <label>Người khiếu nại</label>
-                              <span>
-                                <i
-                                  className="fa-regular fa-user"
-                                  style={{
-                                    marginRight: "6px",
-                                    color: "#64748B",
-                                  }}
-                                ></i>
-                                {complaint.nguoiKhieuNai}
-                              </span>
-                            </div>
-                            <div className="complaint-info-group">
-                              <label>Người bị khiếu nại</label>
-                              <span>
-                                <i
-                                  className="fa-solid fa-user-xmark"
-                                  style={{
-                                    marginRight: "6px",
-                                    color: "#DC2626",
-                                  }}
-                                ></i>
-                                {complaint.nguoiBiKhieuNai}
-                              </span>
-                            </div>
-                            <div
-                              className="complaint-info-group"
-                              style={{ gridColumn: "span 2" }}
-                            >
-                              <label>Dự án liên quan</label>
-                              <span
-                                style={{
-                                  fontWeight: "600",
-                                  color: "var(--navy)",
-                                }}
-                              >
-                                {complaint.duAn}
-                              </span>
-                            </div>
-                            <div className="complaint-reason">
-                              <strong
-                                style={{
-                                  display: "block",
-                                  marginBottom: "4px",
-                                }}
-                              >
-                                Lý do khiếu nại:
-                              </strong>
-                              {complaint.lyDo}
-                            </div>
-                          </div>
-
-                          <div className="complaint-footer">
+                          <div className="card-row-3">
                             <button
-                              className="btn-primary"
-                              style={{ padding: "8px 16px", fontSize: "14px" }}
+                              className="card-action-btn view-bids"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/requests/${project.id}`);
+                              }}
                             >
-                              <i className="fa-solid fa-gavel"></i> Xem xét /
-                              Phân xử
-                            </button>
-                            <button className="btn-warning">
-                              <i className="fa-solid fa-envelope"></i> Yêu cầu
-                              giải trình
+                              Xem hồ sơ{" "}
+                              <i className="fa-solid fa-arrow-right"></i>
                             </button>
                             <button
-                              className="btn-danger"
-                              style={{ marginLeft: "auto" }}
+                              className="card-action-btn edit-project"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/edit-request/${project.id}`);
+                              }}
                             >
-                              <i className="fa-solid fa-lock"></i> Đóng băng tài
-                              khoản
+                              Chỉnh sửa{" "}
+                              <i className="fa-solid fa-arrow-right"></i>
                             </button>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                      );
+                    } else {
+                      // progress
+                      return (
+                        <div
+                          key={project.id}
+                          className="project-card in-progress-card"
+                          onClick={() => navigate(`/requests/${project.id}`)}
+                        >
+                          <div className="progress-card-header">
+                            <h3 className="project-title">{project.title}</h3>
+                            <span className="project-category-badge">
+                              {project.category || "Khác"}
+                            </span>
+                          </div>
+
+                          <div className="freelancer-details-block">
+                            <div className="freelancer-info">
+                              <img
+                                src={
+                                  project.job?.freelancer?.avatar ||
+                                  "https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp"
+                                }
+                                alt={project.job?.freelancer?.name}
+                                className="freelancer-avatar"
+                                onError={(e) => {
+                                  e.target.src =
+                                    "https://png.pngtree.com/png-vector/20251230/ourlarge/pngtree-cartoon-character-avatar-png-image_18347258.webp";
+                                }}
+                              />
+                              <div className="freelancer-text">
+                                <span className="freelancer-name">
+                                  {project.job?.freelancer?.name ||
+                                    "Nguyễn Văn A"}
+                                </span>
+                                <div className="freelancer-rating">
+                                  <i className="fa-solid fa-star"></i>
+                                  <span>
+                                    {project.job?.freelancer?.rating || 4.9}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="milestone-details">
+                              <span className="milestone-label">
+                                Chi tiết công việc:
+                              </span>
+                              <p className="milestone-notes">
+                                {project.job?.notes ||
+                                  "Đang hoàn thành các hạng mục công việc."}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="progress-bar-section">
+                            <div className="progress-bar-label">
+                              <span>Tiến độ</span>
+                              <span>{project.job?.progress || 45}%</span>
+                            </div>
+                            <div className="progress-bar-track">
+                              <div
+                                className="progress-bar-fill"
+                                style={{
+                                  width: `${project.job?.progress || 45}%`,
+                                }}
+                              ></div>
+                            </div>
+                          </div>
+
+                          <div className="progress-card-footer">
+                            <div className="project-budget-display">
+                              <span className="budget-label">
+                                Ngân sách thống nhất:{" "}
+                              </span>
+                              <span className="budget-value">
+                                {project.budget || "Thỏa thuận"}
+                              </span>
+                            </div>
+                            <button
+                              className="card-action-btn manage-project"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/requests/${project.id}`);
+                              }}
+                            >
+                              Quản lý{" "}
+                              <i className="fa-solid fa-arrow-right"></i>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+                  })
+                ) : (
+                  <div className="no-projects">
+                    <i className="fa-solid fa-inbox"></i>
+                    <p>Không có dự án nào</p>
                   </div>
                 )}
+              </div>
             </div>
-          </div>
-        </div>
+          )}
+
+          {activeMenu === "overview" && (
+            <div className="overview-section">
+              {stats ? (
+                <div className="stats-grid">
+                  <div className="stat-card">
+                    <div className="stat-icon">
+                      <i className="fa-solid fa-briefcase"></i>
+                    </div>
+                    <div className="stat-content">
+                      <h3>{stats.projectCount}</h3>
+                      <p>Tổng dự án</p>
+                    </div>
+                  </div>
+
+                  <div className="stat-card">
+                    <div className="stat-icon active">
+                      <i className="fa-solid fa-spinner"></i>
+                    </div>
+                    <div className="stat-content">
+                      <h3>{stats.activeCount}</h3>
+                      <p>Đang hoạt động</p>
+                    </div>
+                  </div>
+
+                  {user?.role === "NGUOI_THUE" && (
+                    <div className="stat-card">
+                      <div className="stat-icon completed">
+                        <i className="fa-solid fa-check-circle"></i>
+                      </div>
+                      <div className="stat-content">
+                        <h3>{stats.completedCount}</h3>
+                        <p>Đã hoàn thành</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {user?.role === "FREELANCER" && (
+                    <div className="stat-card">
+                      <div className="stat-icon earnings">
+                        <i className="fa-solid fa-dollar-sign"></i>
+                      </div>
+                      <div className="stat-content">
+                        <h3>${stats.totalEarnings}</h3>
+                        <p>Tổng thu nhập</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="overview-placeholder">
+                  <i className="fa-solid fa-chart-line"></i>
+                  <h2>Tổng quan</h2>
+                  <p>Các số liệu và thống kê của bạn sẽ hiển thị tại đây</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeMenu === "messages" && (
+            <div className="messages-section">
+              <div className="placeholder">
+                <i className="fa-solid fa-message"></i>
+                <h2>Tin nhắn</h2>
+                <p>Các cuộc trò chuyện của bạn sẽ hiển thị tại đây</p>
+              </div>
+            </div>
+          )}
+
+          {activeMenu === "notifications" && (
+            <div className="notifications-section">
+              <div className="placeholder">
+                <i className="fa-solid fa-bell"></i>
+                <h2>Thông báo</h2>
+                <p>Các thông báo của bạn sẽ hiển thị tại đây</p>
+              </div>
+            </div>
+          )}
+        </main>
       </div>
     </div>
   );
