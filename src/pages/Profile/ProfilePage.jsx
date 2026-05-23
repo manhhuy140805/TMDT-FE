@@ -2,6 +2,25 @@ import { useState, useEffect } from "react";
 import { api } from "../../utils/api";
 import "./ProfilePage.css";
 
+const normalizeRole = (role) =>
+  role?.toString().trim().toLowerCase().replace(/[\s_-]/g, "") || "";
+
+const isEmployerRole = (role) => {
+  const normalized = normalizeRole(role);
+  return (
+    normalized === "nguoithue" ||
+    normalized === "client" ||
+    normalized === "employer"
+  );
+};
+
+const getDisplayRole = (user, profile) => {
+  const role = profile?.role || user?.vaiTro || user?.role;
+  return isEmployerRole(role) ? "Người thuê" : "Freelancer";
+};
+
+const getUserId = (user) => user?.taiKhoanId || user?.id || user?.TaiKhoanID;
+
 const ProfilePage = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -69,11 +88,7 @@ const ProfilePage = () => {
           };
 
           const formattedAccount = {
-            vaiTro:
-              initialUser.role === "NGUOI_THUE" ||
-              initialUser.vaiTro === "NGUOI_THUE"
-                ? "Người thuê"
-                : "Freelancer",
+            vaiTro: getDisplayRole(initialUser),
             ngayTao: initialUser.ngayTao
               ? new Date(initialUser.ngayTao).toLocaleDateString("vi-VN")
               : "22/05/2026",
@@ -97,10 +112,11 @@ const ProfilePage = () => {
         }
 
         // 3. Cố gắng lấy thông tin chi tiết nhất từ API backend nếu có
-        if (initialUser?.id) {
+        const userId = getUserId(initialUser);
+        if (userId) {
           try {
             const profileRes = await api.get(
-              `/users/${initialUser.id}/profile`,
+              `/users/${userId}/profile`,
             );
             if (profileRes && profileRes.user) {
               const u = profileRes.user;
@@ -117,7 +133,7 @@ const ProfilePage = () => {
                 avatar: u.avatar || infoForm.avatar,
               };
               const apiAccount = {
-                vaiTro: u.vaiTro === "NGUOI_THUE" ? "Người thuê" : "Freelancer",
+                vaiTro: getDisplayRole(u, profileRes.profile),
                 ngayTao: u.ngayTao
                   ? new Date(u.ngayTao).toLocaleDateString("vi-VN")
                   : accountForm.ngayTao,
@@ -127,6 +143,7 @@ const ProfilePage = () => {
               };
               setInfoForm(apiInfo);
               setAccountForm(apiAccount);
+              setUser((prev) => ({ ...prev, ...u }));
             }
           } catch (apiErr) {
             console.warn(
@@ -173,9 +190,10 @@ const ProfilePage = () => {
       setUser(updatedUser);
 
       // 2. Đồng bộ lên API backend
-      if (user && user.id) {
+      const userId = getUserId(user);
+      if (userId) {
         try {
-          await api.put(`/users/${user.id}`, {
+          await api.put(`/users/${userId}`, {
             hoTen: infoForm.hoTen,
             email: infoForm.email,
             soDienThoai: infoForm.soDienThoai,
@@ -211,7 +229,7 @@ const ProfilePage = () => {
   const handleSaveAccount = async () => {
     try {
       const dbRole =
-        accountForm.vaiTro === "Người thuê" ? "NGUOI_THUE" : "FREELANCER";
+        accountForm.vaiTro === "Người thuê" ? "NguoiThue" : "Freelancer";
       const updatedUser = {
         ...user,
         role: dbRole,
@@ -223,9 +241,10 @@ const ProfilePage = () => {
       setUser(updatedUser);
 
       // 2. Đồng bộ lên API backend
-      if (user && user.id) {
+      const userId = getUserId(user);
+      if (userId) {
         try {
-          await api.put(`/users/${user.id}`, {
+          await api.put(`/users/${userId}`, {
             vaiTro: dbRole,
           });
         } catch (apiErr) {
@@ -302,7 +321,7 @@ const ProfilePage = () => {
           <aside className="profile-sidebar-column">
             {/* Card: Thẻ Hồ sơ nhanh */}
             <div className="profile-card quick-profile-card">
-              <h2 className="quick-profile-title">Thẻ Hồ sơ nhanh</h2>
+              <h2 className="quick-profile-title">Thẻ hồ sơ nhanh</h2>
 
               <div className="quick-profile-body">
                 <div
@@ -591,11 +610,7 @@ const ProfilePage = () => {
                             if (user) {
                               setAccountForm((prev) => ({
                                 ...prev,
-                                vaiTro:
-                                  user.role === "NGUOI_THUE" ||
-                                  user.vaiTro === "NGUOI_THUE"
-                                    ? "Người thuê"
-                                    : "Freelancer",
+                                vaiTro: getDisplayRole(user),
                               }));
                             }
                           }}

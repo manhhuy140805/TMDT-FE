@@ -174,6 +174,68 @@
   background: #0284C7;
 }
 
+.wl-project-status-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  margin-bottom: 24px;
+  padding: 4px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+}
+
+.wl-project-status-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 8px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.wl-project-status-tab:hover {
+  color: #0f172a;
+}
+
+.wl-project-status-tab.active {
+  background: #0EA5E9;
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(14, 165, 233, 0.28);
+}
+
+.wl-project-status-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.wl-project-status-tab.active .wl-project-status-count {
+  background: #ffffff;
+  color: #0EA5E9;
+}
+
 /* Vùng content — phần duy nhất được phép cuộn */
 .wl-content {
   height: 100%;
