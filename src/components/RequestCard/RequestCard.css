@@ -2,24 +2,17 @@
 
 .r-job-card {
   background: #fff;
-  border: 1px solid var(--border-light);
-  border-radius: 16px;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
   padding: 24px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   position: relative;
-}
-
-.r-job-card:hover {
-  border-color: var(--teal);
-  box-shadow: 0 10px 30px rgba(14, 165, 233, 0.08);
-  transform: translateY(-2px);
 }
 
 .r-job-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: 12px;
   gap: 16px;
 }
@@ -31,43 +24,42 @@
   color: var(--navy);
   line-height: 1.4;
   margin: 0;
-  flex: 1;
-  transition: 0.2s;
 }
 
-.r-job-card:hover .r-job-title {
-  color: var(--teal);
-}
-
-.r-save-btn {
-  background: transparent;
-  border: 2px solid #E2E8F0;
-  color: #64748B;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: 0.3s;
-  display: flex;
+/* Status Badge Styles */
+.r-status-badge {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
   flex-shrink: 0;
 }
 
-.r-save-btn:hover {
-  background: var(--teal);
-  color: #fff;
-  border-color: var(--teal);
+.r-status-badge.status-open {
+  background: #ECFDF5;
+  color: #059669;
+  border: 1px solid #A7F3D0;
 }
 
-.r-save-btn.saved {
-  background: var(--teal);
-  color: #fff;
-  border-color: var(--teal);
+.r-status-badge.status-closed {
+  background: #F3F4F6;
+  color: #6B7280;
+  border: 1px solid #D1D5DB;
 }
 
-.r-save-btn.saved i {
-  font-weight: 900;
+.r-status-badge.status-cancelled {
+  background: #FEF2F2;
+  color: #DC2626;
+  border: 1px solid #FECACA;
+}
+
+.r-status-badge.status-default {
+  background: #F1F5F9;
+  color: #475569;
+  border: 1px solid #CBD5E1;
 }
 
 .r-job-meta {
@@ -115,12 +107,6 @@
   padding: 6px 12px;
   border-radius: 16px;
   font-weight: 500;
-  transition: 0.2s;
-}
-
-.r-job-card:hover .r-skill-tag {
-  background: #E0F2FE;
-  color: var(--teal);
 }
 
 .r-job-footer {

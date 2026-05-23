@@ -1,77 +1,92 @@
-const RequestInfo = ({ request }) => {
-  const getFileIcon = (fileType) => {
-    if (fileType.includes('pdf')) return 'fa-file-pdf';
-    if (fileType.includes('word') || fileType.includes('document')) return 'fa-file-word';
-    if (fileType.includes('excel') || fileType.includes('spreadsheet')) return 'fa-file-excel';
-    if (fileType.includes('powerpoint') || fileType.includes('presentation')) return 'fa-file-powerpoint';
-    if (fileType.includes('image')) return 'fa-file-image';
-    if (fileType.includes('video')) return 'fa-file-video';
-    if (fileType.includes('audio')) return 'fa-file-audio';
-    if (fileType.includes('zip') || fileType.includes('rar') || fileType.includes('compressed')) return 'fa-file-zipper';
-    if (fileType.includes('figma')) return 'fa-file-code';
-    return 'fa-file';
-  };
+const FILE_ICONS = {
+  pdf: 'fa-file-pdf', word: 'fa-file-word', document: 'fa-file-word',
+  excel: 'fa-file-excel', spreadsheet: 'fa-file-excel',
+  powerpoint: 'fa-file-powerpoint', presentation: 'fa-file-powerpoint',
+  image: 'fa-file-image', video: 'fa-file-video', audio: 'fa-file-audio',
+  zip: 'fa-file-zipper', rar: 'fa-file-zipper', compressed: 'fa-file-zipper',
+  figma: 'fa-file-code',
+};
+const getFileIcon = (type = '') => {
+  const t = type.toLowerCase();
+  return Object.entries(FILE_ICONS).find(([k]) => t.includes(k))?.[1] ?? 'fa-file';
+};
 
-  return (
-    <div className="d-card">
-      {/* Meta Row */}
-      <div className="d-meta-row">
-        <div className="d-meta-item">
-          <i className="fa-solid fa-fingerprint"></i> ID: <strong style={{color: 'var(--navy)'}}>{request.id}</strong>
-        </div>
-        <div className="d-meta-item">
-          <i className="fa-solid fa-location-dot"></i> <span>{request.location}</span>
-        </div>
-        <div className="d-meta-item">
-          <i className="fa-solid fa-briefcase"></i> <span>{request.category}</span>
-        </div>
-        <div className="d-meta-item" style={{marginLeft: 'auto'}}>
-          <i className="fa-regular fa-clock"></i> <span>Đăng {request.postedTime}</span>
-        </div>
-      </div>
+const formatDate = (d) => {
+  if (!d) return 'N/A';
+  const date = new Date(d);
+  if (isNaN(date)) return d;
+  return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
 
-      <h3 className="d-section-title">Mô tả công việc chi tiết</h3>
-      <div className="d-desc">
-        <p>{request.description}</p>
-      </div>
+const RequestInfo = ({ request }) => (
+  <div className="rd-card">
+    {/* Meta chips */}
+    <div className="rd-meta-chips">
+      <span className="rd-chip">
+        <i className="fa-solid fa-fingerprint"></i>
+        ID: <strong>#{request.id}</strong>
+      </span>
+      {request.category && (
+        <span className="rd-chip">
+          <i className="fa-solid fa-briefcase"></i> {request.category}
+        </span>
+      )}
+      <span className="rd-chip">
+        <i className="fa-solid fa-location-dot"></i> {request.location}
+      </span>
+      <span className="rd-chip">
+        <i className="fa-regular fa-calendar"></i>
+        Hạn: <strong>{formatDate(request.deadline)}</strong>
+      </span>
+    </div>
 
-      <hr style={{border: 'none', borderTop: '1px solid var(--border-light)', margin: '30px 0'}} />
+    {/* Description */}
+    <h3 className="rd-card-title">
+      <i className="fa-solid fa-align-left"></i> Mô tả công việc
+    </h3>
+    <div className="rd-desc">{request.description}</div>
 
-      <h3 className="d-section-title">Kỹ năng chuyên môn yêu cầu</h3>
-      <div className="large-tags">
-        {request.skills.map((skill, index) => (
-          <span key={index} className="job-tag outline">{skill}</span>
+    <hr className="rd-divider" />
+
+    {/* Skills */}
+    <h3 className="rd-card-title">
+      <i className="fa-solid fa-code"></i> Kỹ năng yêu cầu
+    </h3>
+    {request.skills?.length > 0 ? (
+      <div className="rd-skill-list">
+        {request.skills.map((s, i) => (
+          <span key={i} className="rd-skill">{s}</span>
         ))}
       </div>
+    ) : (
+      <p className="rd-empty-text">Không có kỹ năng cụ thể được yêu cầu</p>
+    )}
 
-      <hr style={{border: 'none', borderTop: '1px solid var(--border-light)', margin: '30px 0'}} />
+    <hr className="rd-divider" />
 
-      <h3 className="d-section-title">Tài liệu đính kèm</h3>
-      {request.attachments && request.attachments.length > 0 ? (
-        <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
-          {request.attachments.map((file, index) => (
-            <div key={index} className="attach-item">
-              <i className={`fa-solid ${getFileIcon(file.type)}`}></i>
-              <div className="attach-info">
-                <a href={file.url} download>{file.name}</a>
-                <span>{file.size}</span>
-              </div>
-              <button 
-                style={{border: 'none', background: 'none', cursor: 'pointer', color: '#64748B', fontSize: '20px'}}
-                onClick={() => window.open(file.url, '_blank')}
-              >
-                <i className="fa-solid fa-download"></i>
-              </button>
+    {/* Attachments */}
+    <h3 className="rd-card-title">
+      <i className="fa-solid fa-paperclip"></i> Tài liệu đính kèm
+    </h3>
+    {request.attachments?.length > 0 ? (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {request.attachments.map((file, i) => (
+          <div key={i} className="rd-attach-item">
+            <i className={`fa-solid ${getFileIcon(file.type)}`}></i>
+            <div className="rd-attach-info">
+              <a href={file.url} download>{file.name}</a>
+              <span>{file.size}</span>
             </div>
-          ))}
-        </div>
-      ) : (
-        <p style={{color: '#94A3B8', fontSize: '14px', fontStyle: 'italic'}}>
-          Không có tài liệu đính kèm
-        </p>
-      )}
-    </div>
-  );
-};
+            <button className="rd-attach-dl" onClick={() => window.open(file.url, '_blank')}>
+              <i className="fa-solid fa-download"></i>
+            </button>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p className="rd-empty-text">Không có tài liệu đính kèm</p>
+    )}
+  </div>
+);
 
 export default RequestInfo;
