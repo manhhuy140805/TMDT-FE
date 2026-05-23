@@ -32,12 +32,13 @@
 .profile-layout-grid {
   display: grid;
   grid-template-columns: 280px 1fr;
-  gap: 24px;
+  gap: 32px;
   align-items: flex-start;
 }
 
 /* Cards Base Style */
 .profile-card {
+  box-sizing: border-box;
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
@@ -70,6 +71,7 @@
   margin: 0 0 20px 0;
   text-align: left;
   letter-spacing: -0.2px;
+  text-transform: none;
 }
 
 .quick-profile-body {

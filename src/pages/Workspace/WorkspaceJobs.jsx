@@ -8,7 +8,7 @@ const WorkspaceJobs = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [showCreateProject, setShowCreateProject] = useState(false);
-  const [filter, setFilter] = useState("ALL"); // ALL, RECRUITING, ACTIVE, COMPLETED
+  const [filter, setFilter] = useState("RECRUITING"); // RECRUITING, ACTIVE
   const [requests, setRequests] = useState([]);
 
   useEffect(() => {
@@ -35,17 +35,25 @@ const WorkspaceJobs = () => {
     );
   }
 
-  const activeRequests = requests.filter(r => r.trangThai === "DangMo");
+  const contractedRequestIds = new Set(
+    jobs.map((j) => j.yeuCauId || j.yeuCau?.yeuCauId).filter(Boolean),
+  );
 
-  const filteredJobs = jobs.filter(j => {
-    if (filter === "ALL") return true;
-    if (filter === "ACTIVE") return j.trangThai === "DangThucHien";
-    if (filter === "COMPLETED") return j.trangThai === "HoanThanh";
-    if (filter === "RECRUITING") return false;
-    return true;
+  const recruitingRequests = requests.filter((r) => {
+    const requestId = r.yeuCauId || r.id;
+    const isOpen = r.trangThai === "DangMo" || r.trangThai === "MoDau";
+    return isOpen && !contractedRequestIds.has(requestId);
   });
 
-  const filteredRequests = filter === "ALL" || filter === "RECRUITING" ? activeRequests : [];
+  const inProgressJobs = jobs.filter((j) => j.trangThai === "DangThucHien");
+
+  const filteredJobs = jobs.filter(j => {
+    if (filter === "ACTIVE") return j.trangThai === "DangThucHien";
+    if (filter === "RECRUITING") return false;
+    return false;
+  });
+
+  const filteredRequests = filter === "RECRUITING" ? recruitingRequests : [];
 
   const getStatusBadge = (status) => {
     if (status === "DangThucHien") return <span style={{ background: "#DBEAFE", color: "#1D4ED8", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: 600 }}>Đang làm</span>;
@@ -80,20 +88,20 @@ const WorkspaceJobs = () => {
         )}
       </div>
 
-      <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
-        <button onClick={() => setFilter("ALL")} style={{ padding: "6px 16px", borderRadius: "20px", border: "1px solid #E2E8F0", background: filter === "ALL" ? "#0F172A" : "#F8FAFC", color: filter === "ALL" ? "white" : "#64748B", fontWeight: 600, cursor: "pointer", transition: "0.2s" }}>
-          Tất cả ({jobs.length + activeRequests.length})
+      <div className="wl-project-status-tabs">
+        <button
+          className={`wl-project-status-tab ${filter === "RECRUITING" ? "active" : ""}`}
+          onClick={() => setFilter("RECRUITING")}
+        >
+          <span>Đang tuyển dụng</span>
+          <span className="wl-project-status-count">{recruitingRequests.length}</span>
         </button>
-        {currentUser?.vaiTro === "NguoiThue" && (
-          <button onClick={() => setFilter("RECRUITING")} style={{ padding: "6px 16px", borderRadius: "20px", border: "1px solid #E2E8F0", background: filter === "RECRUITING" ? "#0F172A" : "#F8FAFC", color: filter === "RECRUITING" ? "white" : "#64748B", fontWeight: 600, cursor: "pointer", transition: "0.2s" }}>
-            Đang nhận hồ sơ ({activeRequests.length})
-          </button>
-        )}
-        <button onClick={() => setFilter("ACTIVE")} style={{ padding: "6px 16px", borderRadius: "20px", border: "1px solid #E2E8F0", background: filter === "ACTIVE" ? "#0F172A" : "#F8FAFC", color: filter === "ACTIVE" ? "white" : "#64748B", fontWeight: 600, cursor: "pointer", transition: "0.2s" }}>
-          Đang làm ({jobs.filter(j => j.trangThai === "DangThucHien").length})
-        </button>
-        <button onClick={() => setFilter("COMPLETED")} style={{ padding: "6px 16px", borderRadius: "20px", border: "1px solid #E2E8F0", background: filter === "COMPLETED" ? "#0F172A" : "#F8FAFC", color: filter === "COMPLETED" ? "white" : "#64748B", fontWeight: 600, cursor: "pointer", transition: "0.2s" }}>
-          Hoàn thành ({jobs.filter(j => j.trangThai === "HoanThanh").length})
+        <button
+          className={`wl-project-status-tab ${filter === "ACTIVE" ? "active" : ""}`}
+          onClick={() => setFilter("ACTIVE")}
+        >
+          <span>Đang thực hiện</span>
+          <span className="wl-project-status-count">{inProgressJobs.length}</span>
         </button>
       </div>
 
@@ -118,7 +126,7 @@ const WorkspaceJobs = () => {
                     </span>
                   </div>
                 </div>
-                <span style={{ background: "#FEF3C7", color: "#D97706", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: 600 }}>Đang nhận hồ sơ</span>
+                <span style={{ background: "#FEF3C7", color: "#D97706", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: 600 }}>Đang tuyển dụng</span>
               </div>
               <p style={{ color: "#475569", fontSize: "14px", lineHeight: "1.5", margin: "0 0 16px 0" }}>
                 {req.moTa?.substring(0, 150) || "Không có mô tả"}
@@ -130,7 +138,7 @@ const WorkspaceJobs = () => {
                   {req.nganSachMax && req.nganSachMax !== req.nganSachMin ? ` - ${formatCurrency(req.nganSachMax)}` : ""}
                 </div>
                 <div style={{ fontSize: "13px", color: "#D97706", fontWeight: 600 }}>
-                  <i className="fa-solid fa-file-signature"></i> Đang chờ
+                  <i className="fa-solid fa-file-signature"></i> Chưa chốt freelancer
                 </div>
               </div>
             </div>
