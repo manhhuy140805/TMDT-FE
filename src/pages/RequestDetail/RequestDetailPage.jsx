@@ -33,6 +33,15 @@ const RequestDetailPage = () => {
     description: "",
   });
 
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast({ show: false, message: "", type: "success" });
+    }, 4000);
+  };
+
   // ============ Helper Functions ============
   const getCurrentUser = () => {
     const storedUser = localStorage.getItem("user");
@@ -63,6 +72,7 @@ const RequestDetailPage = () => {
     deadline: job.thoiHan,
     status: job.trangThai,
     requiresSupervision: job.yeuCauGiamSat,
+    supervisorId: job.giamSatId ?? job.giamSat?.taiKhoanId ?? null,
     supervisorFee: job.phiGiamSat ?? 2000000,
     bids: job.soLuongBaoGia ?? 0,
     category: job.loaiDichVu?.tenLoai ?? "",
@@ -137,8 +147,8 @@ const RequestDetailPage = () => {
   // Yêu cầu còn nhận hồ sơ khi: trạng thái MoiTao VÀ chưa có freelancer được chọn
   const isAcceptingBids =
     request &&
-    request.status === "MoiTao" &&
-    !quotes.some((q) => q.status === "DaChapNhan" || q.status === "DuocChon");
+    (request.status === "DangNhanHoSo" || request.status === "DangMo" || request.status === "MoDau" || request.status === "MoiTao") &&
+    !quotes.some((q) => q.status === "DaChapNhan" || q.status === "DuocChon" || q.status === "DA_CHAP_NHAN");
 
   const canSubmitQuote = isFreelancer && isAcceptingBids && !isOwner;
 
@@ -179,8 +189,17 @@ const RequestDetailPage = () => {
       const mapped = list.map(mapProposalToQuote);
       setQuotes(mapped);
 
-      // Đồng bộ bids count từ số proposals thực tế trả về
-      setRequest((prev) => prev ? { ...prev, bids: mapped.length } : prev);
+      // Đồng bộ bids count từ số proposals thực tế trả về và thông minh hóa trạng thái
+      setRequest((prev) => {
+        if (!prev) return prev;
+        const hasAccepted = mapped.some((q) => q.status === "DaChapNhan" || q.status === "DuocChon" || q.status === "DA_CHAP_NHAN");
+        const status = (hasAccepted && (prev.status === "DangNhanHoSo" || prev.status === "DangMo" || prev.status === "MoDau" || prev.status === "MoiTao")) ? "DaChot" : prev.status;
+        return {
+          ...prev,
+          bids: mapped.length,
+          status: status
+        };
+      });
     } catch (err) {
       console.error("Lỗi tải danh sách báo giá:", err);
       setQuotes([]);
@@ -199,14 +218,14 @@ const RequestDetailPage = () => {
     e.preventDefault();
 
     if (!currentUser) {
-      alert("Vui lòng đăng nhập để gửi báo giá!");
+      showToast("Vui lòng đăng nhập để gửi báo giá!", "warning");
       navigate("/login");
       return;
     }
 
     const { minPrice, duration, description } = quoteForm;
     if (!minPrice || !duration || !description) {
-      alert("Vui lòng điền đầy đủ thông tin!");
+      showToast("Vui lòng điền đầy đủ thông tin!", "warning");
       return;
     }
 
@@ -219,12 +238,12 @@ const RequestDetailPage = () => {
         thoiGianThucHien: Number(duration),
         noiDung: description,
       });
-      alert("Gửi báo giá thành công!");
+      showToast("Gửi báo giá thành công!", "success");
       setShowQuoteModal(false);
       setQuoteForm({ minPrice: "", maxPrice: "", duration: "", description: "" });
       fetchQuotes();
     } catch (err) {
-      alert(err.message || "Gửi báo giá thất bại, vui lòng thử lại!");
+      showToast(err.message || "Gửi báo giá thất bại, vui lòng thử lại!", "error");
     } finally {
       setSubmitting(false);
     }
@@ -237,17 +256,19 @@ const RequestDetailPage = () => {
 
   const handleChat = async (quote) => {
     if (!currentUser) {
-      alert("Vui lòng đăng nhập để nhắn tin!");
+      showToast("Vui lòng đăng nhập để nhắn tin!", "warning");
       navigate("/login");
       return;
     }
     const targetId = quote.freelancer?.taiKhoanId;
     if (!targetId) {
-      alert("Không tìm thấy thông tin freelancer!");
+      showToast("Không tìm thấy thông tin freelancer!", "error");
       return;
     }
 
-    // Bước 1: Tìm conversation hiện có cùng (partner + requestId) trong localStorage mapping
+    const currentUserId = currentUser.taiKhoanId || currentUser.id;
+
+    // Bước 1: Tìm conversation hiện có cùng partner
     let contexts = {};
     try {
       contexts = JSON.parse(localStorage.getItem("chat_contexts") || "{}");
@@ -260,25 +281,31 @@ const RequestDetailPage = () => {
       const list =
         listRes?.conversations || listRes?.data || (Array.isArray(listRes) ? listRes : []);
 
-      // Tìm conversation đã tồn tại cho cặp partner + request hiện tại
+      // Tìm conversation đã tồn tại cho cặp partner
       const existing = list.find((c) => {
         const m1 = Number(c.thanhVien1?.taiKhoanId);
         const m2 = Number(c.thanhVien2?.taiKhoanId);
         const isSamePair =
           (m1 === Number(currentUserId) && m2 === Number(targetId)) ||
           (m2 === Number(currentUserId) && m1 === Number(targetId));
-        if (!isSamePair) return false;
-
-        const convId = c.cuocHoiThoaiId;
-        const ctx = contexts[convId];
-        // Khớp khi: hội thoại có context = yêu cầu hiện tại
-        return ctx?.type === "request" && Number(ctx.id) === Number(request.id);
+        return isSamePair;
       });
 
       if (existing) {
-        navigate(
-          `/workspace/messages?conversationId=${existing.cuocHoiThoaiId}`
-        );
+        const existingId = existing.cuocHoiThoaiId ?? existing.id;
+        if (existingId && request) {
+          contexts[existingId] = {
+            type: "request",
+            id: request.id,
+            title: request.title,
+          };
+          try {
+            localStorage.setItem("chat_contexts", JSON.stringify(contexts));
+          } catch (e) {
+            console.warn("Không thể lưu chat context:", e);
+          }
+        }
+        navigate(`/workspace/messages?conversationId=${existingId}`);
         return;
       }
     } catch (err) {
@@ -292,7 +319,7 @@ const RequestDetailPage = () => {
         thanhVien2Id: targetId,
       });
       const conv = res?.conversation ?? res;
-      const conversationId = conv?.cuocHoiThoaiId;
+      const conversationId = conv?.cuocHoiThoaiId ?? conv?.id;
       if (conversationId && request) {
         contexts[conversationId] = {
           type: "request",
@@ -316,58 +343,42 @@ const RequestDetailPage = () => {
     if (!selectedQuote) return;
 
     // Guard: không cho chấp nhận nếu yêu cầu đã đóng hoặc đã có quote được chấp nhận
-    if (request.status === "DangNhan" || request.status === "HoanThanh" || request.status === "DaHuy") {
-      alert("Yêu cầu này đã được chấp nhận hoặc không còn mở!");
+    const isInactiveStatus =
+      request.status === "DangNhan" ||
+      request.status === "DangThucHien" ||
+      request.status === "DaChot" ||
+      request.status === "DaDong" ||
+      request.status === "HoanThanh" ||
+      request.status === "DaHuy";
+
+    if (isInactiveStatus) {
+      showToast("Yêu cầu này đã được chấp nhận hoặc không còn mở!", "error");
       setShowAcceptModal(false);
       return;
     }
-    if (quotes.some((q) => q.id !== selectedQuote.id && (q.status === "DaChapNhan" || q.status === "DuocChon"))) {
-      alert("Đã có báo giá khác được chấp nhận cho yêu cầu này!");
+    if (quotes.some((q) => q.id !== selectedQuote.id && (q.status === "DaChapNhan" || q.status === "DuocChon" || q.status === "DA_CHAP_NHAN"))) {
+      showToast("Đã có báo giá khác được chấp nhận cho yêu cầu này!", "error");
       setShowAcceptModal(false);
       return;
     }
 
     setAccepting(true);
     try {
-      // Bước 1: Cập nhật proposal sang DaChapNhan
-      await api.proposals.update(selectedQuote.id, { trangThai: "DaChapNhan" });
-
-      // Bước 2: Tạo hợp đồng từ báo giá được chọn
-      const contractRes = await api.contracts.create({
-        yeuCauId: request.id,
-        freelancerId: selectedQuote.freelancer.taiKhoanId,
+      // Gọi API nguyên tử /contracts/accept-proposal để tạo contract và escrow atomically
+      await api.contracts.acceptProposal({
+        baoGiaId: selectedQuote.id,
         nguoiThueId: currentUserId,
-        giaThoa: paymentInfo.agreedPrice,
-        thoiGianThoa: selectedQuote.durationDays,
+        giamSatId: request.requiresSupervision ? paymentInfo.supervisorId || null : null,
+        phiGiamSat: request.requiresSupervision ? Number(paymentInfo.supervisorFee || 0) : 0,
       });
 
-      const contractId = contractRes?.congViecId ?? contractRes?.contract?.congViecId;
-
-      // Bước 3: Thanh toán escrow — 100% tiền freelancer + phí giám sát (nếu có)
-      if (contractId) {
-        const depositAmount = paymentInfo.agreedPrice + (paymentInfo.supervisorFee || 0);
-        await api.payments.deposit({
-          contractId: contractId,
-          amount: depositAmount,
-          paymentMethod: paymentInfo.paymentMethod,
-          note: `Thanh toán escrow cho hợp đồng #${contractId}`,
-        });
-      }
-
-      // Bước 4: Đóng yêu cầu thuê (chuyển trạng thái sang DangNhan)
-      try {
-        await api.jobs.update(request.id, { trangThai: "DangNhan" });
-      } catch (statusErr) {
-        console.warn("[confirmAcceptQuote] Lỗi đổi trạng thái job:", statusErr.message);
-      }
-
-      alert("Đã chấp nhận báo giá và thanh toán escrow thành công! Tiền sẽ được hệ thống giữ cho đến khi công việc hoàn thành.");
+      showToast("Đã chấp nhận báo giá và thanh toán escrow thành công! Tiền sẽ được hệ thống giữ cho đến khi công việc hoàn thành.", "success");
       setShowAcceptModal(false);
       setSelectedQuote(null);
       fetchQuotes();
       fetchRequestDetail();
     } catch (err) {
-      alert(err.message || "Chấp nhận báo giá thất bại, vui lòng thử lại!");
+      showToast(err.message || "Chấp nhận báo giá thất bại, vui lòng thử lại!", "error");
     } finally {
       setAccepting(false);
     }
@@ -408,7 +419,9 @@ const RequestDetailPage = () => {
             request={request}
             onSubmitQuote={() => setShowQuoteModal(true)}
             isOwner={isOwner}
-            canSubmitQuote={canSubmitQuote}
+            isAcceptingBids={isAcceptingBids}
+            isFreelancer={isFreelancer}
+            currentUser={currentUser}
           />
           <ClientCard employer={request.employer} location={request.location} />
         </div>
@@ -439,6 +452,20 @@ const RequestDetailPage = () => {
         requiresSupervision={request?.requiresSupervision ?? false}
         supervisorFee={request?.supervisorFee ?? 2000000}
       />
+
+      {toast.show && (
+        <div className={`rd-toast rd-toast-${toast.type}`}>
+          <div className="rd-toast-inner">
+            {toast.type === "success" && <i className="fa-solid fa-circle-check rd-toast-icon"></i>}
+            {toast.type === "error" && <i className="fa-solid fa-circle-xmark rd-toast-icon"></i>}
+            {toast.type === "warning" && <i className="fa-solid fa-triangle-exclamation rd-toast-icon"></i>}
+            <span className="rd-toast-msg">{toast.message}</span>
+            <button className="rd-toast-close" onClick={() => setToast({ ...toast, show: false })}>
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 };

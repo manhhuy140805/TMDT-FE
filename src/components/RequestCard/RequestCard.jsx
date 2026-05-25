@@ -5,9 +5,11 @@ const RequestCard = ({ request, onClick }) => {
   const getStatusBadge = () => {
     const statusMap = {
       'DangMo': { text: 'Đang nhận hồ sơ', class: 'status-open' },
+      'DangNhanHoSo': { text: 'Đang nhận hồ sơ', class: 'status-open' },
       'MoDau': { text: 'Đang nhận hồ sơ', class: 'status-open' },
       'DaDong': { text: 'Đã đóng', class: 'status-closed' },
       'DaHuy': { text: 'Đã hủy', class: 'status-cancelled' },
+      'DaChot': { text: 'Đã chốt', class: 'status-selected' },
     };
     return statusMap[request.status] || { text: request.statusText || 'Không xác định', class: 'status-default' };
   };

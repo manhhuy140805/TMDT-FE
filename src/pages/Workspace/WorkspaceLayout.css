@@ -174,46 +174,54 @@
   background: #0284C7;
 }
 
+/* ── Sleek SaaS Status Tabs (Vercel/Linear Style) ── */
 .wl-project-status-tabs {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 4px;
-  width: fit-content;
-  margin-bottom: 24px;
-  padding: 4px;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  border-radius: 999px;
+  gap: 8px;
+  margin-bottom: 28px;
+  border-bottom: 1px solid #E2E8F0;
+  padding-bottom: 8px;
+  width: 100%;
 }
 
 .wl-project-status-tab {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-height: 36px;
-  padding: 8px 18px;
-  border: 0;
-  border-radius: 999px;
+  gap: 8px;
+  padding: 8px 16px;
+  border: none;
   background: transparent;
-  color: #64748b;
+  color: #64748B;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition:
-    background 0.2s ease,
-    color 0.2s ease,
-    box-shadow 0.2s ease;
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 6px;
 }
 
 .wl-project-status-tab:hover {
-  color: #0f172a;
+  color: #0F172A;
+  background: #F1F5F9;
 }
 
 .wl-project-status-tab.active {
+  color: #0EA5E9;
+  background: rgba(14, 165, 233, 0.06);
+}
+
+/* Active bottom bar animation indicator */
+.wl-project-status-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -9px;
+  left: 0;
+  right: 0;
+  height: 2px;
   background: #0EA5E9;
-  color: #ffffff;
-  box-shadow: 0 6px 16px rgba(14, 165, 233, 0.28);
+  border-radius: 99px;
+  box-shadow: 0 1px 3px rgba(14, 165, 233, 0.4);
 }
 
 .wl-project-status-count {
@@ -224,17 +232,45 @@
   height: 20px;
   padding: 0 6px;
   border-radius: 999px;
-  background: #e2e8f0;
-  color: #64748b;
-  font-size: 12px;
+  background: #F1F5F9;
+  color: #64748B;
+  font-size: 11px;
   font-weight: 800;
   line-height: 1;
+  transition: all 0.2s;
 }
 
 .wl-project-status-tab.active .wl-project-status-count {
-  background: #ffffff;
-  color: #0EA5E9;
+  background: #0EA5E9;
+  color: #FFFFFF;
 }
+
+.wl-project-status-tab i {
+  font-size: 14px;
+  transition: transform 0.2s ease;
+}
+
+.wl-project-status-tab:hover i {
+  transform: translateY(-1px);
+}
+
+/* Icon specific colors for visual richness */
+.wl-project-status-tab .icon-recruiting { color: #D97706; }
+.wl-project-status-tab .icon-finalized { color: #16A34A; }
+.wl-project-status-tab .icon-closed { color: #64748B; }
+.wl-project-status-tab .icon-all { color: #0EA5E9; }
+
+.wl-project-status-tab .icon-active { color: #2563EB; }
+.wl-project-status-tab .icon-completed { color: #16A34A; }
+.wl-project-status-tab .icon-cancelled { color: #DC2626; }
+
+@keyframes wl-spin-slow {
+  to { transform: rotate(360deg); }
+}
+.fa-spin-slow {
+  animation: wl-spin-slow 6s linear infinite;
+}
+
 
 /* Vùng content — phần duy nhất được phép cuộn */
 .wl-content {
@@ -264,5 +300,110 @@
   .wl-content {
     height: auto;
     overflow: visible;
+  }
+}
+
+/* ── Floating Custom Toast (Premium Glassmorphic) ── */
+.rd-toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 10000;
+  animation: rd-toast-slide-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: auto;
+}
+
+.rd-toast-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15), 
+              0 1px 3px rgba(15, 23, 42, 0.05);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  transition: all 0.3s ease;
+  max-width: 420px;
+}
+
+/* Success style */
+.rd-toast-success .rd-toast-inner {
+  background: rgba(240, 253, 244, 0.95);
+  border: 1px solid rgba(74, 222, 128, 0.4);
+}
+.rd-toast-success .rd-toast-icon {
+  color: #10B981;
+  font-size: 18px;
+}
+
+/* Error style */
+.rd-toast-error .rd-toast-inner {
+  background: rgba(254, 242, 242, 0.95);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+}
+.rd-toast-error .rd-toast-icon {
+  color: #EF4444;
+  font-size: 18px;
+}
+
+/* Warning style */
+.rd-toast-warning .rd-toast-inner {
+  background: rgba(255, 251, 235, 0.95);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+}
+.rd-toast-warning .rd-toast-icon {
+  color: #F59E0B;
+  font-size: 18px;
+}
+
+.rd-toast-msg {
+  font-family: var(--font-sans, Inter, system-ui, -apple-system, sans-serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: #0F172A;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.rd-toast-close {
+  background: transparent;
+  border: none;
+  color: #94A3B8;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s;
+  margin-left: 8px;
+}
+
+.rd-toast-close:hover {
+  background: rgba(15, 23, 42, 0.05);
+  color: #0F172A;
+}
+
+@keyframes rd-toast-slide-in {
+  from {
+    transform: translateX(120%) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes rd-toast-fade-out {
+  from {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(120%) scale(0.9);
+    opacity: 0;
   }
 }

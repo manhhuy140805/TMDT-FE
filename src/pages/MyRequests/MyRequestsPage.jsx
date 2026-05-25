@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import jobService from "../../services/jobService";
+import api from "../../services/api";
 import { getUserRole, isEmployerRole } from "../../utils/role";
 import "./MyRequestsPage.css";
 
@@ -16,23 +17,40 @@ const MyRequestsPage = () => {
   async function fetchMyRequests(userId) {
     setLoading(true);
     try {
-      const response = await jobService.getByUserId(userId);
-      const rawData = response.data || response.jobs || response || [];
-      const mappedRequests = Array.isArray(rawData) ? rawData.map(r => ({
-        id: r.yeuCauId || r.id,
-        title: r.tieuDe || r.title,
-        status: r.trangThai || r.status,
-        category: r.loaiDichVu?.tenLoai || r.category || "Khác",
-        location: r.location || "Từ xa",
-        postedTime: r.ngayTao ? new Date(r.ngayTao).toLocaleDateString("vi-VN") : r.postedTime || "N/A",
-        description: r.moTa || r.description || "",
-        skills: r.kyNangs ? r.kyNangs.map(k => k.tenKyNang) : r.skills || [],
-        budget: r.nganSachMin ? `${Number(r.nganSachMin).toLocaleString("vi-VN")} – ${Number(r.nganSachMax).toLocaleString("vi-VN")} VNĐ` : r.budget || "Thỏa thuận",
-        submissionDeadlineDate: r.thoiHan || r.submissionDeadlineDate,
-        deadlineDate: r.deadlineDate,
-        bids: r.soLuongBaoGia || r.bids || 0,
-        views: r.luotXem || r.views || 0
-      })) : [];
+      const [jobsRes, contractsRes] = await Promise.allSettled([
+        jobService.getByUserId(userId),
+        api.users.getContracts(userId)
+      ]);
+
+      const rawJobs = jobsRes.status === "fulfilled" ? (jobsRes.value?.data || jobsRes.value?.jobs || jobsRes.value || []) : [];
+      const contracts = contractsRes.status === "fulfilled" ? (contractsRes.value?.contracts || contractsRes.value?.data || (Array.isArray(contractsRes.value) ? contractsRes.value : [])) : [];
+
+      const contractedRequestIds = new Set(
+        contracts.map((c) => c.yeuCauId || c.yeuCau?.yeuCauId).filter(Boolean)
+      );
+
+      const mappedRequests = Array.isArray(rawJobs) ? rawJobs.map(r => {
+        const reqId = r.yeuCauId || r.id;
+        let status = r.trangThai || r.status;
+        if (contractedRequestIds.has(reqId) && (status === "DangNhanHoSo" || status === "DangMo" || status === "MoDau" || status === "MoiTao")) {
+          status = "DaChot";
+        }
+        return {
+          id: reqId,
+          title: r.tieuDe || r.title,
+          status: status,
+          category: r.loaiDichVu?.tenLoai || r.category || "Khác",
+          location: r.location || "Từ xa",
+          postedTime: r.ngayTao ? new Date(r.ngayTao).toLocaleDateString("vi-VN") : r.postedTime || "N/A",
+          description: r.moTa || r.description || "",
+          skills: r.kyNangs ? r.kyNangs.map(k => k.tenKyNang) : r.skills || [],
+          budget: r.nganSachMin ? `${Number(r.nganSachMin).toLocaleString("vi-VN")} – ${Number(r.nganSachMax).toLocaleString("vi-VN")} VNĐ` : r.budget || "Thỏa thuận",
+          submissionDeadlineDate: r.thoiHan || r.submissionDeadlineDate,
+          deadlineDate: r.deadlineDate,
+          bids: r.soLuongBaoGia || r.bids || 0,
+          views: r.luotXem || r.views || 0
+        };
+      }) : [];
       setRequests(mappedRequests);
     } catch (error) {
       console.error("Error fetching requests:", error);
@@ -45,7 +63,7 @@ const MyRequestsPage = () => {
     if (filter === "all") return requests;
     if (filter === "active") {
       return requests.filter(
-        (req) => req.status === "DangMo" || req.status === "DA_CHON_BAO_GIA",
+        (req) => req.status === "DangNhanHoSo" || req.status === "DangMo" || req.status === "DA_CHON_BAO_GIA" || req.status === "DaChot",
       );
     }
     if (filter === "closed") {
@@ -79,7 +97,9 @@ const MyRequestsPage = () => {
   const getStatusBadge = (status) => {
     const statusMap = {
       DangMo: { text: "Đang nhận hồ sơ", class: "status-active" },
+      DangNhanHoSo: { text: "Đang nhận hồ sơ", class: "status-active" },
       DA_CHON_BAO_GIA: { text: "Đã chọn báo giá", class: "status-selected" },
+      DaChot: { text: "Đã chốt", class: "status-selected" },
       DaDong: { text: "Đã đóng", class: "status-closed" },
     };
     const statusInfo = statusMap[status] || { text: status, class: "" };
@@ -201,7 +221,7 @@ const MyRequestsPage = () => {
                 </div>
                 <div className="stat-info">
                   <div className="stat-value">
-                    {requests.filter((r) => r.status === "DangMo").length}
+                    {requests.filter((r) => r.status === "DangNhanHoSo" || r.status === "DangMo").length}
                   </div>
                   <div className="stat-label">Đang nhận hồ sơ</div>
                 </div>
@@ -216,7 +236,7 @@ const MyRequestsPage = () => {
                 <div className="stat-info">
                   <div className="stat-value">
                     {
-                      requests.filter((r) => r.status === "DA_CHON_BAO_GIA")
+                      requests.filter((r) => r.status === "DA_CHON_BAO_GIA" || r.status === "DaChot")
                         .length
                     }
                   </div>
@@ -255,7 +275,7 @@ const MyRequestsPage = () => {
                 {
                   requests.filter(
                     (r) =>
-                      r.status === "DangMo" || r.status === "DA_CHON_BAO_GIA",
+                      r.status === "DangNhanHoSo" || r.status === "DangMo" || r.status === "DA_CHON_BAO_GIA" || r.status === "DaChot",
                   ).length
                 }
                 )

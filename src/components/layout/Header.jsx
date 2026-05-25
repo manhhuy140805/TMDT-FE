@@ -27,6 +27,7 @@ const Header = () => {
         const parsed = JSON.parse(storedUser);
         // Handle cả data cũ dạng { message, user } lẫn data mới dạng user trực tiếp
         const userData = parsed?.user ?? parsed;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setUser(userData);
       } catch (error) {
         console.error("Error parsing user data:", error);

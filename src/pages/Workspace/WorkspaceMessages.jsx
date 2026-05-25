@@ -217,7 +217,7 @@ const WorkspaceMessages = () => {
     if (!s) return;
 
     const handleNewMessage = (msg) => {
-      if (msg.cuocHoiThoaiId === activeId) {
+      if (Number(msg.cuocHoiThoaiId) === Number(activeId)) {
         setMessages((prev) => {
           // Nếu tin nhắn do mình gửi → thay thế optimistic msg
           if (msg.nguoiGui?.taiKhoanId === currentUserId) {
@@ -243,13 +243,13 @@ const WorkspaceMessages = () => {
       // Cập nhật tinNhanCuoi ở list + track ai gửi cuối
       setConversations((prev) =>
         prev.map((c) =>
-          (c.cuocHoiThoaiId ?? c.id) === msg.cuocHoiThoaiId
+          Number(c.cuocHoiThoaiId ?? c.id) === Number(msg.cuocHoiThoaiId)
             ? { ...c, tinNhanCuoi: msg.noiDung, lastSenderId: msg.nguoiGui?.taiKhoanId }
             : c
         )
       );
       // Nếu tin nhắn từ người khác và conversation không phải đang active → đánh dấu unread
-      if (msg.nguoiGui?.taiKhoanId !== currentUserId && msg.cuocHoiThoaiId !== activeId) {
+      if (msg.nguoiGui?.taiKhoanId !== currentUserId && Number(msg.cuocHoiThoaiId) !== Number(activeId)) {
         setUnreadIds((prev) => new Set([...prev, msg.cuocHoiThoaiId]));
       }
     };
@@ -259,26 +259,26 @@ const WorkspaceMessages = () => {
       const convId = data.cuocHoiThoaiId;
       setConversations((prev) =>
         prev.map((c) =>
-          (c.cuocHoiThoaiId ?? c.id) === convId
+          Number(c.cuocHoiThoaiId ?? c.id) === Number(convId)
             ? { ...c, tinNhanCuoi: data.message?.noiDung || c.tinNhanCuoi }
             : c
         )
       );
       // Đánh dấu unread
-      if (convId !== activeId) {
+      if (Number(convId) !== Number(activeId)) {
         setUnreadIds((prev) => new Set([...prev, convId]));
       }
     };
 
     const handleTyping = (data) => {
-      if (data.cuocHoiThoaiId === activeId && data.userId !== currentUserId) {
+      if (Number(data.cuocHoiThoaiId) === Number(activeId) && data.userId !== currentUserId) {
         setPartnerTyping(data.isTyping);
       }
     };
 
     const handleMessagesRead = (data) => {
       // Khi đối phương đọc tin → cập nhật daDoc cho tin nhắn mình gửi
-      if (data.cuocHoiThoaiId === activeId && data.userId !== currentUserId) {
+      if (Number(data.cuocHoiThoaiId) === Number(activeId) && data.userId !== currentUserId) {
         setMessages((prev) =>
           prev.map((m) =>
             m.nguoiGui?.taiKhoanId === currentUserId && !m.daDoc
@@ -521,7 +521,7 @@ const WorkspaceMessages = () => {
                 return (
                   <div
                     key={id}
-                    className={`wm-conv-item ${activeId === id ? "active" : ""}`}
+                    className={`wm-conv-item ${Number(activeId) === Number(id) ? "active" : ""}`}
                     onClick={() => {
                       setActiveId(id);
                       // Đọc rồi → xóa khỏi unread

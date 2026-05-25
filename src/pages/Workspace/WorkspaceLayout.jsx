@@ -19,6 +19,15 @@ const WorkspaceLayout = () => {
   const [notifications, setNotifications] = useState([]);
   const [stats, setStats] = useState({ activeJobs: 0, completedJobs: 0, totalEarnings: 0, avgRating: 0 });
 
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast({ show: false, message: "", type: "success" });
+    }, 4000);
+  };
+
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -124,8 +133,13 @@ const WorkspaceLayout = () => {
             <Link to="/workspace" className={`wl-nav-item ${location.pathname === "/workspace" ? "active" : ""}`}>
               <i className="fa-solid fa-chart-line"></i> Tổng quan
             </Link>
+            {currentUser.vaiTro === "NguoiThue" && (
+              <Link to="/workspace/requests" className={`wl-nav-item ${location.pathname.includes("/workspace/requests") ? "active" : ""}`}>
+                <i className="fa-solid fa-file-invoice-dollar"></i> Yêu cầu thuê
+              </Link>
+            )}
             <Link to="/workspace/jobs" className={`wl-nav-item ${location.pathname.includes("/workspace/jobs") ? "active" : ""}`}>
-              <i className="fa-solid fa-briefcase"></i> {currentUser.vaiTro === "Freelancer" ? "Công việc" : "Dự án"}
+              <i className="fa-solid fa-briefcase"></i> Công việc
             </Link>
             <Link to="/workspace/messages" className={`wl-nav-item ${location.pathname.includes("/workspace/messages") ? "active" : ""}`}>
               <i className="fa-solid fa-comments"></i> Tin nhắn
@@ -154,10 +168,24 @@ const WorkspaceLayout = () => {
                <p>Đang tải dữ liệu...</p>
              </div>
           ) : (
-             <Outlet context={{ currentUser, jobs, stats, conversations, notifications }} />
+             <Outlet context={{ currentUser, jobs, stats, conversations, notifications, showToast }} />
           )}
         </main>
       </div>
+
+      {toast.show && (
+        <div className={`rd-toast rd-toast-${toast.type}`}>
+          <div className="rd-toast-inner">
+            {toast.type === "success" && <i className="fa-solid fa-circle-check rd-toast-icon"></i>}
+            {toast.type === "error" && <i className="fa-solid fa-circle-xmark rd-toast-icon"></i>}
+            {toast.type === "warning" && <i className="fa-solid fa-triangle-exclamation rd-toast-icon"></i>}
+            <span className="rd-toast-msg">{toast.message}</span>
+            <button className="rd-toast-close" onClick={() => setToast({ ...toast, show: false })}>
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

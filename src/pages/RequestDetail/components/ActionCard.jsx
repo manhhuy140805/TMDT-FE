@@ -7,7 +7,14 @@ const fmt = (d) => {
   return date.toLocaleDateString('vi-VN');
 };
 
-const ActionCard = ({ request, onSubmitQuote, isOwner, canSubmitQuote = true }) => {
+const ActionCard = ({
+  request,
+  onSubmitQuote,
+  isOwner,
+  isAcceptingBids = true,
+  isFreelancer = false,
+  currentUser = null,
+}) => {
   const navigate = useNavigate();
   const hasSelectedFreelancer = request.selectedQuoteId && request.selectedFreelancerId;
 
@@ -68,11 +75,18 @@ const ActionCard = ({ request, onSubmitQuote, isOwner, canSubmitQuote = true }) 
               <i className="fa-solid fa-pen"></i> Chỉnh sửa
             </button>
           </>
-        ) : canSubmitQuote ? (
+        ) : isAcceptingBids ? (
           <>
-            <button className="ac-btn-primary" onClick={onSubmitQuote}>
-              <i className="fa-solid fa-paper-plane"></i> Nộp Hồ Sơ Báo Giá
-            </button>
+            {isFreelancer || !currentUser ? (
+              <button className="ac-btn-primary" onClick={onSubmitQuote}>
+                <i className="fa-solid fa-paper-plane"></i> Nộp Hồ Sơ Báo Giá
+              </button>
+            ) : (
+              <div className="ac-closed" style={{ background: '#F1F5F9', borderColor: '#CBD5E1', color: '#475569' }}>
+                <i className="fa-solid fa-circle-info"></i>
+                Chỉ dành cho Freelancer
+              </div>
+            )}
             <button className="ac-btn-outline">
               <i className="fa-regular fa-bookmark"></i> Lưu dự án
             </button>

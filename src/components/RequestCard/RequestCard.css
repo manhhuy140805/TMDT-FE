@@ -56,6 +56,12 @@
   border: 1px solid #FECACA;
 }
 
+.r-status-badge.status-selected {
+  background: #EFF6FF;
+  color: #1D4ED8;
+  border: 1px solid #BFDBFE;
+}
+
 .r-status-badge.status-default {
   background: #F1F5F9;
   color: #475569;

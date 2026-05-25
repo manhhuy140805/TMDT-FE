@@ -31,6 +31,8 @@ const contractService = {
   create: (data) => api.post("/contracts", data),
   // data: { baoGiaId (required), giaThucTe?, thoiHanThucTe? }
 
+  acceptProposal: (data) => api.post("/contracts/accept-proposal", data),
+
   updateStatus: (id, trangThai) =>
     api.put(`/contracts/${id}/status`, { trangThai }),
   // trangThai: MoiTao | DangThucHien | HoanThanh | DaHuy | TranhChap

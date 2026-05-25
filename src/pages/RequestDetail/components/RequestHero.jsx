@@ -1,6 +1,13 @@
 const STATUS_MAP = {
   MoiTao:    { label: 'Đang mở',      cls: 'rd-badge-green' },
+  DangMo:    { label: 'Đang mở',      cls: 'rd-badge-green' },
+  MoDau:     { label: 'Đang mở',      cls: 'rd-badge-green' },
+  DangNhanHoSo: { label: 'Đang mở',   cls: 'rd-badge-green' },
   DangNhan:  { label: 'Đang thực hiện', cls: 'rd-badge-teal' },
+  DangThucHien: { label: 'Đang thực hiện', cls: 'rd-badge-teal' },
+  DA_CHON_BAO_GIA: { label: 'Đã chọn báo giá', cls: 'rd-badge-teal' },
+  DaChot:    { label: 'Đã chốt',       cls: 'rd-badge-teal' },
+  DaDong:    { label: 'Đã đóng',       cls: 'rd-badge-white' },
   HoanThanh: { label: 'Hoàn thành',   cls: 'rd-badge-gold' },
   DaHuy:     { label: 'Đã hủy',       cls: 'rd-badge-red'  },
 };
@@ -36,7 +43,7 @@ const RequestHero = ({ request, onNavigate, isAcceptingBids = true }) => {
             <i className="fa-solid fa-circle" style={{ fontSize: '7px' }}></i>
             {status.label}
           </span>
-          {!isAcceptingBids && request.status === 'MoiTao' && (
+          {!isAcceptingBids && (request.status === 'DangNhanHoSo' || request.status === 'DangMo' || request.status === 'MoDau' || request.status === 'MoiTao') && (
             <span className="rd-badge rd-badge-red">
               <i className="fa-solid fa-lock"></i> Ngừng nhận hồ sơ
             </span>

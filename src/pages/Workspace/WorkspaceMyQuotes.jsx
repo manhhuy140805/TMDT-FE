@@ -11,7 +11,7 @@ import "./WorkspaceMyQuotes.css";
  * API: GET /freelancers/:id/proposals
  */
 const WorkspaceMyQuotes = () => {
-  const { currentUser } = useOutletContext();
+  const { currentUser, showToast } = useOutletContext();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
@@ -158,10 +158,10 @@ const WorkspaceMyQuotes = () => {
     try {
       await api.proposals.delete(quoteToDelete);
       setQuotes((prev) => prev.filter((q) => q.id !== quoteToDelete));
-      alert("Xóa báo giá thành công!");
+      showToast("Xóa báo giá thành công!", "success");
     } catch (err) {
       console.error("Error deleting quote:", err);
-      alert(err.message || "Có lỗi xảy ra khi xóa báo giá!");
+      showToast(err.message || "Có lỗi xảy ra khi xóa báo giá!", "error");
     }
     setShowDeleteModal(false);
     setQuoteToDelete(null);

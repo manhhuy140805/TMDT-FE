@@ -1,127 +1,92 @@
 # FRAS-TMDT Backend API Guide
 
-> Complete API documentation for the Freelancer Marketplace (FRAS-TMDT) backend.
-> Base URL: `http://localhost:8080`
+**Base URL:** `http://localhost:8080`
+
+---
+
+## BREAKING CHANGES - Schema Refactor
+
+### All Business Foreign Keys Now Use TaiKhoanID (User Account ID)
+
+The entire database schema has been refactored. The key changes are:
+
+1. **ALL business foreign keys now use `TaiKhoanID` directly** (the user account ID from the `TaiKhoan` table).
+2. Tables `NguoiThue`, `Freelancer`, `DonViGiamSat` are now **ONLY profile/supplementary tables** - they store extra profile data but are NOT used as foreign keys in business tables.
+3. **Creating a job (YeuCau):** You pass `nguoiThueId` which is the **TaiKhoanID** of the job creator, NOT a NguoiThue table ID.
+4. **Creating a proposal (BaoGia):** You pass `freelancerId` which is the **TaiKhoanID** of the freelancer, NOT a Freelancer table ID.
+5. **Contracts (CongViec):** `freelancerId` and `nguoiThueId` fields ARE TaiKhoanIDs directly.
+6. **Supervision:** `giamSatId` in jobs, contracts, disputes, and contract details is the supervisor's **TaiKhoanID**, not `DonViGiamSat.GiamSatID`.
+7. **Role determination:** The system determines user role by checking `TaiKhoan.VaiTro` field (values: `NguoiThue`, `Freelancer`, `DonViGiamSat`, `Admin`, `KhachVangLai`).
+
+### Migration Summary
+
+| Before (Old Schema) | After (New Schema) |
+|---|---|
+| `YeuCau.NguoiThueID` -> `NguoiThue.NguoiThueID` | `YeuCau.TaiKhoanID` -> `TaiKhoan.TaiKhoanID` |
+| `BaoGia.FreelancerID` -> `Freelancer.FreelancerID` | `BaoGia.TaiKhoanID` -> `TaiKhoan.TaiKhoanID` |
+| `CongViec.FreelancerID` -> `Freelancer.FreelancerID` | `CongViec.FreelancerID` -> `TaiKhoan.TaiKhoanID` |
+| `CongViec.NguoiThueID` -> `NguoiThue.NguoiThueID` | `CongViec.NguoiThueID` -> `TaiKhoan.TaiKhoanID` |
+| `CongViec.GiamSatID` -> supervisor profile ID | `CongViec.GiamSatID` -> `TaiKhoan.TaiKhoanID` |
+
+### What This Means for Frontend
+
+- When calling any API, use the **logged-in user's `taiKhoanId`** as the identifier.
+- No need to look up NguoiThue/Freelancer profile IDs for business operations.
+- Use `giamSat.giamSatId` or `giamSat.taiKhoanId` from contract responses as the supervisor account ID. Both fields return the same `TaiKhoanID`.
+- Profile tables are only needed for displaying extra profile info (company name, experience, etc.).
 
 ---
 
 ## Table of Contents
 
-1. [Health](#1-health)
-2. [Auth](#2-auth)
-3. [Users](#3-users)
-4. [Categories](#4-categories)
-5. [Skills](#5-skills)
-6. [Jobs](#6-jobs)
-7. [Proposals](#7-proposals)
+1. [Authentication](#1-authentication)
+2. [Users](#2-users)
+3. [Jobs (YeuCau)](#3-jobs)
+4. [Proposals (BaoGia)](#4-proposals)
+5. [Contracts (CongViec)](#5-contracts)
+6. [Contract Flow](#6-contract-flow)
+7. [Progress (TienDo)](#7-progress)
 8. [Freelancers](#8-freelancers)
-9. [Contracts](#9-contracts)
-10. [Supervisors](#10-supervisors)
-11. [Progress](#11-progress)
+9. [Skills (KyNang)](#9-skills)
+10. [Categories (LoaiDichVu)](#10-categories)
+11. [Supervisors (DonViGiamSat)](#11-supervisors)
 12. [Chat](#12-chat)
-13. [Payments](#13-payments)
-14. [Disputes](#14-disputes)
-15. [Evidences](#15-evidences)
-16. [Reviews](#16-reviews)
-17. [Notifications](#17-notifications)
-18. [Reports](#18-reports)
-19. [Admin](#19-admin)
+13. [WebSocket Chat Gateway](#13-websocket-chat-gateway)
+14. [Recommendations](#14-recommendations)
+15. [Payments (ThanhToan)](#15-payments)
+16. [Disputes (TranhChap)](#16-disputes)
+17. [Evidences (BangChung)](#17-evidences)
+18. [Reviews (DanhGia)](#18-reviews)
+19. [Notifications (ThongBao)](#19-notifications)
+20. [Reports (BaoCao)](#20-reports)
+21. [Admin](#21-admin)
 
 ---
 
-## General Information
-
-### Authentication
-Most endpoints require a valid JWT token in the `Authorization` header:
-```
-Authorization: Bearer <token>
-```
-
-### Common Error Response Format
-```json
-{
-  "statusCode": 400,
-  "message": "Error description",
-  "error": "Bad Request"
-}
-```
-
-### Enum Values Reference
-
-| Enum | Values |
-|------|--------|
-| VaiTroTaiKhoan | `KhachVangLai`, `NguoiThue`, `Freelancer`, `DonViGiamSat`, `Admin` |
-| TrangThaiTaiKhoan | `HoatDong`, `Khoa`, `TamNgung` |
-| GioiTinh | `Nam`, `Nu`, `Khac` |
-| TrangThaiYeuCau | `MoiTao`, `DangNhan`, `HoanThanh`, `DaHuy` |
-| TrangThaiBaoGia | `ChoXacNhan`, `DaChapNhan`, `DaTuChoi`, `DaHuy` |
-| TrangThaiCongViec | `DangThucHien`, `HoanThanh`, `DaHuy`, `TamDung` |
-| TrangThaiGiamSatCongViec | `ChuaYeuCau`, `ChoChapNhan`, `DaChapNhan`, `DaTuChoi` |
-| TrangThaiDonViGiamSat | `ChoDuyet`, `DaDuyet`, `TuChoi`, `TamNgung` |
-| TrangThaiXacNhanTienDo | `ChoXacNhan`, `DaXacNhan`, `TuChoi` |
-| TrangThaiTranhChap | `DangMo`, `DangXuLy`, `DaDong` |
-| KetQuaTranhChap | `HoanTien`, `KhongHoanTien`, `HoanMotPhan` |
-| BenChiuPhiKetLuan | `NguoiThue`, `Freelancer`, `ChiaDeu` |
-| LoaiThanhToan | `DatCoc`, `ThanhToan`, `HoanTien` |
-| PhuongThucThanhToan | `ViDienTu`, `ChuyenKhoan`, `TheTinDung` |
-| TrangThaiThanhToan | `ChoXuLy`, `ThanhCong`, `ThatBai`, `DaHoan` |
-| LoaiTinNhan | `VanBan`, `HinhAnh`, `TepTin` |
-| TrangThaiCuocHoiThoai | `DangMo`, `DaDong` |
-| LoaiBangChung | `HinhAnh`, `Video`, `TaiLieu`, `VanBan` |
-| LoaiDanhGia | `NguoiThue_DanhGia_Freelancer`, `Freelancer_DanhGia_NguoiThue` |
-| LoaiThongBao | `HeThong`, `CongViec`, `ThanhToan`, `TranhChap` |
-| TrangThaiBaoCao | `ChoXuLy`, `DaXuLy`, `TuChoi` |
-
----
-
-
-## 1. Health
-
-### GET /health
-
-Check if the API server is running and healthy.
-
-**Request:**
-- No parameters required.
-
-**Response 200:**
-```json
-{
-  "status": "ok",
-  "timestamp": "2025-01-15T10:30:00.000Z"
-}
-```
-
----
-
-## 2. Auth
+## 1. Authentication
 
 ### POST /auth/register
 
 Register a new user account.
 
-**Request:**
-- Body:
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| tenDangNhap | Yes | Username |
+| matKhau | Yes | Password |
+| email | Yes | Email address |
+| hoTen | Yes | Full name |
+| soDienThoai | Optional | Phone number |
+| gioiTinh | Optional | Gender: `Nam`, `Nu`, `Khac` |
+| diaChi | Optional | Address |
+| vaiTro | Optional | Role: `NguoiThue`, `Freelancer`, `DonViGiamSat`, `KhachVangLai` (default: `KhachVangLai`) |
+| tenDonVi | Optional | Company/unit name (for DonViGiamSat role) |
+
+**Response (200):**
 ```json
 {
-  "tenDangNhap": "nguyenvana",
-  "matKhau": "password123",
-  "email": "nguyenvana@email.com",
-  "hoTen": "Nguyen Van A",
-  "soDienThoai": "0901234567",
-  "gioiTinh": "Nam",
-  "diaChi": "Ho Chi Minh City",
-  "vaiTro": "Freelancer",
-  "tenDonVi": "ABC Supervision Co."
-}
-```
-
-> Note: `tenDonVi` is only required when `vaiTro` is `DonViGiamSat`.
-
-**Response 201:**
-```json
-{
-  "message": "Registration successful",
+  "message": "Dang ky thanh cong",
   "user": {
     "taiKhoanId": 1,
     "tenDangNhap": "nguyenvana",
@@ -129,38 +94,35 @@ Register a new user account.
     "hoTen": "Nguyen Van A",
     "soDienThoai": "0901234567",
     "gioiTinh": "Nam",
-    "diaChi": "Ho Chi Minh City",
-    "vaiTro": "Freelancer",
+    "diaChi": "Ha Noi",
+    "vaiTro": "NguoiThue",
     "trangThai": "HoatDong",
-    "ngayTao": "2025-01-15T10:30:00.000Z"
+    "ngayTao": "2025-01-01T00:00:00.000Z"
   }
 }
 ```
 
-**Errors:**
-- `400` - Missing required fields or invalid data
-- `409` - Email or username already exists
+**Error Codes:**
+- `400` - Missing required fields / Email already exists / Username already exists
 
 ---
-
 
 ### POST /auth/login
 
-Authenticate a user and return user info.
+Login with email and password.
 
-**Request:**
-- Body:
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| email | Yes | Email address |
+| matKhau | Yes | Password |
+
+**Response (200):**
+
 ```json
 {
-  "email": "nguyenvana@email.com",
-  "matKhau": "password123"
-}
-```
-
-**Response 200:**
-```json
-{
-  "message": "Login successful",
+  "message": "Dang nhap thanh cong",
   "user": {
     "taiKhoanId": 1,
     "tenDangNhap": "nguyenvana",
@@ -168,34 +130,32 @@ Authenticate a user and return user info.
     "hoTen": "Nguyen Van A",
     "soDienThoai": "0901234567",
     "gioiTinh": "Nam",
-    "diaChi": "Ho Chi Minh City",
-    "vaiTro": "Freelancer",
+    "diaChi": "Ha Noi",
+    "vaiTro": "NguoiThue",
     "trangThai": "HoatDong",
-    "ngayTao": "2025-01-15T10:30:00.000Z"
+    "ngayTao": "2025-01-01T00:00:00.000Z"
   }
 }
 ```
 
-**Errors:**
+**Error Codes:**
 - `400` - Missing email or password
 - `401` - Invalid credentials
-- `403` - Account is locked or suspended
+- `403` - Account is banned/inactive
 
 ---
 
-## 3. Users
+## 2. Users
 
 ### GET /users
 
-Get all users in the system.
+Get all users.
 
-**Request:**
-- No parameters required.
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "total": 2,
+  "total": 5,
   "users": [
     {
       "taiKhoanId": 1,
@@ -204,11 +164,11 @@ Get all users in the system.
       "hoTen": "Nguyen Van A",
       "soDienThoai": "0901234567",
       "gioiTinh": "Nam",
-      "diaChi": "Ho Chi Minh City",
-      "vaiTro": "Freelancer",
+      "diaChi": "Ha Noi",
+      "vaiTro": "NguoiThue",
       "trangThai": "HoatDong",
-      "ngayTao": "2025-01-15T10:30:00.000Z",
-      "ngayCapNhat": "2025-01-15T10:30:00.000Z"
+      "ngayTao": "2025-01-01T00:00:00.000Z",
+      "ngayCapNhat": "2025-01-01T00:00:00.000Z"
     }
   ]
 }
@@ -216,48 +176,26 @@ Get all users in the system.
 
 ---
 
-
-### GET /users/search
+### GET /users/search?keyword=nguyen
 
 Search users by keyword (matches name or email).
 
-**Request:**
-- Query params: `keyword` - search term (optional)
+**Query Parameters:**
 
-Example: `GET /users/search?keyword=nguyen`
+| Param | Required | Description |
+|---|---|---|
+| keyword | Optional | Search keyword |
 
-**Response 200:**
-```json
-{
-  "total": 1,
-  "users": [
-    {
-      "taiKhoanId": 1,
-      "tenDangNhap": "nguyenvana",
-      "email": "nguyenvana@email.com",
-      "hoTen": "Nguyen Van A",
-      "soDienThoai": "0901234567",
-      "gioiTinh": "Nam",
-      "diaChi": "Ho Chi Minh City",
-      "vaiTro": "Freelancer",
-      "trangThai": "HoatDong",
-      "ngayTao": "2025-01-15T10:30:00.000Z",
-      "ngayCapNhat": "2025-01-15T10:30:00.000Z"
-    }
-  ]
-}
-```
+**Response:** Same format as GET /users.
 
 ---
 
 ### GET /users/:id
 
-Get a single user by ID.
+Get a single user by TaiKhoanID.
 
-**Request:**
-- Path params: `:id` - user account ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
   "user": {
@@ -267,29 +205,26 @@ Get a single user by ID.
     "hoTen": "Nguyen Van A",
     "soDienThoai": "0901234567",
     "gioiTinh": "Nam",
-    "diaChi": "Ho Chi Minh City",
-    "vaiTro": "Freelancer",
+    "diaChi": "Ha Noi",
+    "vaiTro": "NguoiThue",
     "trangThai": "HoatDong",
-    "ngayTao": "2025-01-15T10:30:00.000Z",
-    "ngayCapNhat": "2025-01-15T10:30:00.000Z"
+    "ngayTao": "2025-01-01T00:00:00.000Z",
+    "ngayCapNhat": "2025-01-01T00:00:00.000Z"
   }
 }
 ```
 
-**Errors:**
+**Error Codes:**
 - `404` - User not found
 
 ---
 
-
 ### GET /users/:id/profile
 
-Get user profile with role-specific details (NguoiThue, Freelancer, or DonViGiamSat profile).
+Get user profile with role-specific supplementary data.
 
-**Request:**
-- Path params: `:id` - user account ID (integer)
+**Response (200) - Example for NguoiThue:**
 
-**Response 200 (Freelancer example):**
 ```json
 {
   "user": {
@@ -299,576 +234,168 @@ Get user profile with role-specific details (NguoiThue, Freelancer, or DonViGiam
     "hoTen": "Nguyen Van A",
     "soDienThoai": "0901234567",
     "gioiTinh": "Nam",
-    "diaChi": "Ho Chi Minh City",
-    "vaiTro": "Freelancer",
+    "diaChi": "Ha Noi",
+    "vaiTro": "NguoiThue",
     "trangThai": "HoatDong",
-    "ngayTao": "2025-01-15T10:30:00.000Z",
-    "ngayCapNhat": "2025-01-15T10:30:00.000Z"
+    "ngayTao": "2025-01-01T00:00:00.000Z",
+    "ngayCapNhat": "2025-01-01T00:00:00.000Z"
   },
-  "profile": {
-    "role": "Freelancer",
-    "freelancer": {
-      "freelancerId": 1,
-      "kinhNghiem": 3,
-      "chuyenGia": "Web Development",
-      "kyNang": "React, Node.js",
-      "xepHang": "4.5",
-      "soDu": "5000000",
-      "xacThucEmail": true,
-      "xacThucSDT": true,
-      "tongCongViec": 10,
-      "tyLeHoanThanh": "90.00"
-    }
-  }
-}
-```
-
-**Response 200 (NguoiThue example):**
-```json
-{
-  "user": { "...same as above..." },
   "profile": {
     "role": "NguoiThue",
     "nguoiThue": {
       "nguoiThueId": 1,
       "congTy": "ABC Corp",
       "moTa": "Looking for developers",
-      "diemTinCay": "4.8",
-      "tongYeuCau": 5,
+      "diemTinCay": "4.5",
+      "tongYeuCau": 10,
       "tyLeHoanThanh": "80.00"
     }
   }
 }
 ```
 
-**Errors:**
+**Response (200) - Example for Freelancer:**
+
+```json
+{
+  "user": { "..." : "..." },
+  "profile": {
+    "role": "Freelancer",
+    "freelancer": {
+      "freelancerId": 1,
+      "kinhNghiem": 5,
+      "chuyenGia": "Web Development",
+      "kyNang": "React, Node.js",
+      "xepHang": "4.8",
+      "soDu": "5000000",
+      "xacThucEmail": true,
+      "xacThucSDT": true,
+      "tongCongViec": 15,
+      "tyLeHoanThanh": "93.33"
+    }
+  }
+}
+```
+
+**Error Codes:**
 - `404` - User not found
 
 ---
 
-
 ### GET /users/:id/jobs
 
-Get all jobs posted by a user (NguoiThue).
+Get all jobs created by a user (by TaiKhoanID).
 
-**Request:**
-- Path params: `:id` - user account ID (integer)
-
-**Response 200:**
-```json
-{
-  "total": 1,
-  "jobs": [
-    {
-      "yeuCauId": 1,
-      "nguoiThueId": 1,
-      "loaiDichVuId": 2,
-      "tieuDe": "Build a React website",
-      "moTa": "Need a responsive website",
-      "nganSachMin": "5000000",
-      "nganSachMax": "10000000",
-      "thoiHan": "2025-03-01T00:00:00.000Z",
-      "trangThai": "MoiTao",
-      "soLuongBaoGia": 3,
-      "yeuCauGiamSat": false,
-      "ngayTao": "2025-01-15T10:30:00.000Z",
-      "ngayCapNhat": "2025-01-15T10:30:00.000Z",
-      "nguoiThue": {
-        "taiKhoanId": 1,
-        "hoTen": "Nguyen Van A",
-        "email": "nguyenvana@email.com"
-      },
-      "loaiDichVu": {
-        "loaiDichVuId": 2,
-        "tenLoai": "Web Development"
-      },
-      "kyNangs": [
-        { "kyNangId": 1, "tenKyNang": "React" },
-        { "kyNangId": 2, "tenKyNang": "Node.js" }
-      ]
-    }
-  ]
-}
-```
-
-**Errors:**
-- `404` - User not found
+**Response:** Same format as GET /jobs.
 
 ---
 
 ### GET /users/:id/contracts
 
-Get all contracts associated with a user.
+Get all contracts for a user as client, freelancer, or assigned supervisor. The `id` parameter is `TaiKhoanID`.
 
-**Request:**
-- Path params: `:id` - user account ID (integer)
-
-**Response 200:**
-```json
-{
-  "total": 1,
-  "contracts": [
-    {
-      "congViecId": 1,
-      "yeuCauId": 1,
-      "freelancerId": 2,
-      "nguoiThueId": 1,
-      "giaThoa": "8000000",
-      "thoiGianThoa": 30,
-      "trangThai": "DangThucHien",
-      "ngayBatDau": "2025-01-20T00:00:00.000Z",
-      "ngayKetThuc": null,
-      "giamSatId": null,
-      "trangThaiGiamSat": "ChuaYeuCau",
-      "phiGiamSat": "0",
-      "ngayTao": "2025-01-18T10:30:00.000Z",
-      "yeuCau": {
-        "yeuCauId": 1,
-        "tieuDe": "Build a React website",
-        "moTa": "Need a responsive website"
-      },
-      "freelancer": {
-        "freelancerId": 2,
-        "taiKhoanId": 3,
-        "hoTen": "Tran Van B",
-        "email": "tranvanb@email.com"
-      },
-      "nguoiThue": {
-        "nguoiThueId": 1,
-        "taiKhoanId": 1,
-        "hoTen": "Nguyen Van A",
-        "email": "nguyenvana@email.com"
-      },
-      "giamSat": null
-    }
-  ]
-}
-```
-
-**Errors:**
-- `404` - User not found
+**Response:** Same format as GET /contracts.
 
 ---
 
 ### GET /users/:id/conversations
 
-Get all chat conversations for a user.
+Get all chat conversations for a user. An accepted supervisor also receives conversations linked to contracts they supervise.
 
-**Request:**
-- Path params: `:id` - user account ID (integer)
-
-**Response 200:**
-```json
-{
-  "total": 1,
-  "conversations": [
-    {
-      "cuocHoiThoaiId": 1,
-      "congViecId": 1,
-      "thanhVien1": {
-        "taiKhoanId": 1,
-        "hoTen": "Nguyen Van A",
-        "email": "nguyenvana@email.com"
-      },
-      "thanhVien2": {
-        "taiKhoanId": 3,
-        "hoTen": "Tran Van B",
-        "email": "tranvanb@email.com"
-      },
-      "giamSatId": null,
-      "tinNhanCuoi": "Hello, I am interested in your project",
-      "trangThai": "DangMo",
-      "ngayTao": "2025-01-18T10:30:00.000Z"
-    }
-  ]
-}
-```
-
-**Errors:**
-- `404` - User not found
+**Response:** Same format as conversation list.
 
 ---
-
 
 ### PUT /users/:id
 
 Update user information.
 
-**Request:**
-- Path params: `:id` - user account ID (integer)
-- Body:
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| tenDangNhap | Optional | Username |
+| email | Optional | Email |
+| hoTen | Optional | Full name |
+| soDienThoai | Optional | Phone number |
+| gioiTinh | Optional | Gender: `Nam`, `Nu`, `Khac` |
+| diaChi | Optional | Address |
+| trangThai | Optional | Status: `HoatDong`, `BiKhoa`, `ChoDuyet`, `DaBi` |
+
+**Response (200):**
+
 ```json
 {
-  "hoTen": "Nguyen Van A Updated",
-  "soDienThoai": "0909876543",
-  "gioiTinh": "Nam",
-  "diaChi": "Ha Noi",
-  "trangThai": "HoatDong"
+  "message": "Cap nhat thanh cong",
+  "user": { "...": "same as UserDto" }
 }
 ```
 
-> All fields are optional. Only provided fields will be updated.
-
-**Response 200:**
-```json
-{
-  "message": "User updated successfully",
-  "user": {
-    "taiKhoanId": 1,
-    "tenDangNhap": "nguyenvana",
-    "email": "nguyenvana@email.com",
-    "hoTen": "Nguyen Van A Updated",
-    "soDienThoai": "0909876543",
-    "gioiTinh": "Nam",
-    "diaChi": "Ha Noi",
-    "vaiTro": "Freelancer",
-    "trangThai": "HoatDong",
-    "ngayTao": "2025-01-15T10:30:00.000Z",
-    "ngayCapNhat": "2025-01-16T08:00:00.000Z"
-  }
-}
-```
-
-**Errors:**
-- `400` - Invalid data
+**Error Codes:**
+- `400` - No valid fields to update
 - `404` - User not found
 
 ---
 
 ### DELETE /users/:id
 
-Soft-delete (deactivate) a user account.
+Soft-delete (ban) a user account.
 
-**Request:**
-- Path params: `:id` - user account ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "message": "User deleted successfully",
+  "message": "Xoa tai khoan thanh cong",
   "userId": 1,
-  "trangThai": "Khoa"
+  "trangThai": "BiKhoa"
 }
 ```
 
-**Errors:**
+**Error Codes:**
 - `404` - User not found
 
 ---
 
-## 4. Categories
+## 3. Jobs
 
-### GET /categories
+`YeuCau` represents a hiring request, while `CongViec` represents the work created after a freelancer is selected.
 
-Get all service categories.
+### Hiring Request Lifecycle
 
-**Request:**
-- No parameters required.
+| Status | Meaning | How it is reached |
+|---|---|---|
+| `DangNhanHoSo` | The request accepts new freelancer proposals | Set automatically by `POST /jobs` |
+| `DaDong` | No new proposals are accepted; existing proposals can still be selected | `PUT /jobs/:id` with `{ "trangThai": "DaDong" }` |
+| `DaChot` | A freelancer is selected and a corresponding `CongViec` has been created | Set automatically by `POST /contracts/accept-proposal` |
+| `DaHuy` | The hiring request is cancelled | `DELETE /jobs/:id` or `PUT /jobs/:id` with `{ "trangThai": "DaHuy" }` |
 
-**Response 200:**
-```json
-{
-  "total": 3,
-  "categories": [
-    {
-      "loaiDichVuId": 1,
-      "tenLoai": "Web Development",
-      "moTa": "Website and web application development",
-      "hinhAnh": "https://example.com/web-dev.png"
-    }
-  ]
-}
-```
-
----
-
-
-### GET /categories/:id
-
-Get a single category by ID.
-
-**Request:**
-- Path params: `:id` - category ID (integer)
-
-**Response 200:**
-```json
-{
-  "category": {
-    "loaiDichVuId": 1,
-    "tenLoai": "Web Development",
-    "moTa": "Website and web application development",
-    "hinhAnh": "https://example.com/web-dev.png"
-  }
-}
-```
-
-**Errors:**
-- `404` - Category not found
-
----
-
-### POST /categories
-
-Create a new service category.
-
-**Request:**
-- Body:
-```json
-{
-  "tenLoai": "Mobile Development",
-  "moTa": "iOS and Android app development",
-  "hinhAnh": "https://example.com/mobile-dev.png"
-}
-```
-
-> `moTa` and `hinhAnh` are optional.
-
-**Response 201:**
-```json
-{
-  "message": "Category created successfully",
-  "category": {
-    "loaiDichVuId": 4,
-    "tenLoai": "Mobile Development",
-    "moTa": "iOS and Android app development",
-    "hinhAnh": "https://example.com/mobile-dev.png"
-  }
-}
-```
-
-**Errors:**
-- `400` - Missing required field `tenLoai`
-- `409` - Category name already exists
-
----
-
-### PUT /categories/:id
-
-Update an existing category.
-
-**Request:**
-- Path params: `:id` - category ID (integer)
-- Body:
-```json
-{
-  "tenLoai": "Full-Stack Development",
-  "moTa": "End-to-end web development",
-  "hinhAnh": "https://example.com/fullstack.png"
-}
-```
-
-> All fields are optional.
-
-**Response 200:**
-```json
-{
-  "message": "Category updated successfully",
-  "category": {
-    "loaiDichVuId": 1,
-    "tenLoai": "Full-Stack Development",
-    "moTa": "End-to-end web development",
-    "hinhAnh": "https://example.com/fullstack.png"
-  }
-}
-```
-
-**Errors:**
-- `400` - Invalid data
-- `404` - Category not found
-
----
-
-
-### DELETE /categories/:id
-
-Delete a category.
-
-**Request:**
-- Path params: `:id` - category ID (integer)
-
-**Response 200:**
-```json
-{
-  "message": "Category deleted successfully",
-  "categoryId": 1
-}
-```
-
-**Errors:**
-- `404` - Category not found
-- `409` - Category is in use by existing jobs
-
----
-
-## 5. Skills
-
-### GET /skills
-
-Get all skills.
-
-**Request:**
-- No parameters required.
-
-**Response 200:**
-```json
-{
-  "total": 5,
-  "skills": [
-    {
-      "kyNangId": 1,
-      "tenKyNang": "React",
-      "moTa": "React.js frontend framework"
-    },
-    {
-      "kyNangId": 2,
-      "tenKyNang": "Node.js",
-      "moTa": "Server-side JavaScript runtime"
-    }
-  ]
-}
-```
-
----
-
-### GET /skills/:id
-
-Get a single skill by ID.
-
-**Request:**
-- Path params: `:id` - skill ID (integer)
-
-**Response 200:**
-```json
-{
-  "skill": {
-    "kyNangId": 1,
-    "tenKyNang": "React",
-    "moTa": "React.js frontend framework"
-  }
-}
-```
-
-**Errors:**
-- `404` - Skill not found
-
----
-
-### POST /skills
-
-Create a new skill.
-
-**Request:**
-- Body:
-```json
-{
-  "tenKyNang": "TypeScript",
-  "moTa": "Typed superset of JavaScript"
-}
-```
-
-> `moTa` is optional.
-
-**Response 201:**
-```json
-{
-  "message": "Skill created successfully",
-  "skill": {
-    "kyNangId": 6,
-    "tenKyNang": "TypeScript",
-    "moTa": "Typed superset of JavaScript"
-  }
-}
-```
-
-**Errors:**
-- `400` - Missing required field `tenKyNang`
-- `409` - Skill name already exists
-
----
-
-
-### PUT /skills/:id
-
-Update an existing skill.
-
-**Request:**
-- Path params: `:id` - skill ID (integer)
-- Body:
-```json
-{
-  "tenKyNang": "React.js",
-  "moTa": "A JavaScript library for building user interfaces"
-}
-```
-
-> All fields are optional.
-
-**Response 200:**
-```json
-{
-  "message": "Skill updated successfully",
-  "skill": {
-    "kyNangId": 1,
-    "tenKyNang": "React.js",
-    "moTa": "A JavaScript library for building user interfaces"
-  }
-}
-```
-
-**Errors:**
-- `400` - Invalid data
-- `404` - Skill not found
-
----
-
-### DELETE /skills/:id
-
-Delete a skill.
-
-**Request:**
-- Path params: `:id` - skill ID (integer)
-
-**Response 200:**
-```json
-{
-  "message": "Skill deleted successfully",
-  "kyNangId": 1
-}
-```
-
-**Errors:**
-- `404` - Skill not found
-
----
-
-## 6. Jobs
+Allowed manual transitions are `DangNhanHoSo -> DaDong`, `DangNhanHoSo -> DaHuy`, and `DaDong -> DaHuy`. The `DaChot` state cannot be set directly from the jobs API.
 
 ### GET /jobs
 
-Get all job postings.
+Get all jobs.
 
-**Request:**
-- No parameters required.
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "total": 2,
+  "total": 3,
   "jobs": [
     {
       "yeuCauId": 1,
       "nguoiThueId": 1,
       "loaiDichVuId": 2,
       "tieuDe": "Build a React website",
-      "moTa": "Need a responsive website with modern UI",
+      "moTa": "Need a responsive website...",
       "nganSachMin": "5000000",
       "nganSachMax": "10000000",
       "thoiHan": "2025-03-01T00:00:00.000Z",
-      "trangThai": "MoiTao",
+      "trangThai": "DangNhanHoSo",
       "soLuongBaoGia": 3,
       "yeuCauGiamSat": false,
-      "ngayTao": "2025-01-15T10:30:00.000Z",
-      "ngayCapNhat": "2025-01-15T10:30:00.000Z",
+      "giamSatId": null,
+      "ngayTao": "2025-01-15T00:00:00.000Z",
+      "ngayCapNhat": "2025-01-15T00:00:00.000Z",
       "nguoiThue": {
         "taiKhoanId": 1,
         "hoTen": "Nguyen Van A",
@@ -878,9 +405,10 @@ Get all job postings.
         "loaiDichVuId": 2,
         "tenLoai": "Web Development"
       },
+      "giamSat": null,
       "kyNangs": [
         { "kyNangId": 1, "tenKyNang": "React" },
-        { "kyNangId": 2, "tenKyNang": "Node.js" }
+        { "kyNangId": 2, "tenKyNang": "TypeScript" }
       ]
     }
   ]
@@ -889,55 +417,20 @@ Get all job postings.
 
 ---
 
-
 ### GET /jobs/search
 
-Search jobs by keyword, category, budget, and skills.
+Search jobs with filters.
 
-**Request:**
-- Query params:
-  - `keyword` - search in title/description (optional)
-  - `category` - category ID (optional)
-  - `budget` - budget range filter (optional)
-  - `skills` - comma-separated skill IDs, e.g. "1,2,3" (optional)
+**Query Parameters:**
 
-Example: `GET /jobs/search?keyword=react&category=2&skills=1,2`
+| Param | Required | Description |
+|---|---|---|
+| keyword | Optional | Search in title and description |
+| category | Optional | Category ID (LoaiDichVuID) |
+| budget | Optional | Budget amount (finds jobs where min <= budget <= max) |
+| skills | Optional | Comma-separated skill IDs (e.g. "1,2,3") |
 
-**Response 200:**
-```json
-{
-  "total": 1,
-  "jobs": [
-    {
-      "yeuCauId": 1,
-      "nguoiThueId": 1,
-      "loaiDichVuId": 2,
-      "tieuDe": "Build a React website",
-      "moTa": "Need a responsive website with modern UI",
-      "nganSachMin": "5000000",
-      "nganSachMax": "10000000",
-      "thoiHan": "2025-03-01T00:00:00.000Z",
-      "trangThai": "MoiTao",
-      "soLuongBaoGia": 3,
-      "yeuCauGiamSat": false,
-      "ngayTao": "2025-01-15T10:30:00.000Z",
-      "ngayCapNhat": "2025-01-15T10:30:00.000Z",
-      "nguoiThue": {
-        "taiKhoanId": 1,
-        "hoTen": "Nguyen Van A",
-        "email": "nguyenvana@email.com"
-      },
-      "loaiDichVu": {
-        "loaiDichVuId": 2,
-        "tenLoai": "Web Development"
-      },
-      "kyNangs": [
-        { "kyNangId": 1, "tenKyNang": "React" }
-      ]
-    }
-  ]
-}
-```
+**Response:** Same format as GET /jobs.
 
 ---
 
@@ -945,108 +438,36 @@ Example: `GET /jobs/search?keyword=react&category=2&skills=1,2`
 
 Get a single job by ID.
 
-**Request:**
-- Path params: `:id` - job ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "job": {
-    "yeuCauId": 1,
-    "nguoiThueId": 1,
-    "loaiDichVuId": 2,
-    "tieuDe": "Build a React website",
-    "moTa": "Need a responsive website with modern UI",
-    "nganSachMin": "5000000",
-    "nganSachMax": "10000000",
-    "thoiHan": "2025-03-01T00:00:00.000Z",
-    "trangThai": "MoiTao",
-    "soLuongBaoGia": 3,
-    "yeuCauGiamSat": false,
-    "ngayTao": "2025-01-15T10:30:00.000Z",
-    "ngayCapNhat": "2025-01-15T10:30:00.000Z",
-    "nguoiThue": {
-      "taiKhoanId": 1,
-      "hoTen": "Nguyen Van A",
-      "email": "nguyenvana@email.com"
-    },
-    "loaiDichVu": {
-      "loaiDichVuId": 2,
-      "tenLoai": "Web Development"
-    },
-    "kyNangs": [
-      { "kyNangId": 1, "tenKyNang": "React" }
-    ]
-  }
+  "job": { "...": "same as job object above" }
 }
 ```
 
-**Errors:**
+**Error Codes:**
 - `404` - Job not found
 
 ---
 
-
 ### GET /jobs/:id/proposals
 
-Get all proposals submitted for a specific job.
+Get all proposals for a specific job.
 
-**Request:**
-- Path params: `:id` - job ID (integer)
-
-**Response 200:**
-```json
-{
-  "total": 2,
-  "proposals": [
-    {
-      "baoGiaId": 1,
-      "yeuCauId": 1,
-      "freelancerId": 2,
-      "giaDeXuat": "7000000",
-      "thoiGianThucHien": 25,
-      "noiDung": "I can build this with React and Next.js",
-      "trangThai": "ChoXacNhan",
-      "ngayTao": "2025-01-16T08:00:00.000Z",
-      "ngayCapNhat": "2025-01-16T08:00:00.000Z",
-      "freelancer": {
-        "freelancerId": 2,
-        "taiKhoanId": 3,
-        "hoTen": "Tran Van B",
-        "email": "tranvanb@email.com",
-        "kinhNghiem": 5,
-        "kyNang": "React, Node.js",
-        "kyNangs": [
-          { "kyNangId": 1, "tenKyNang": "React" }
-        ],
-        "xepHang": "4.5"
-      },
-      "yeuCau": {
-        "yeuCauId": 1,
-        "tieuDe": "Build a React website",
-        "nguoiThueId": 1
-      }
-    }
-  ]
-}
-```
-
-**Errors:**
-- `404` - Job not found
+**Response:** Same format as proposals list.
 
 ---
 
 ### GET /jobs/:id/skills
 
-Get skills required for a specific job.
+Get skills required for a job.
 
-**Request:**
-- Path params: `:id` - job ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "message": "Job skills retrieved successfully",
+  "message": "Lay danh sach ky nang thanh cong",
   "kyNangs": [
     { "kyNangId": 1, "tenKyNang": "React" },
     { "kyNangId": 2, "tenKyNang": "Node.js" }
@@ -1054,192 +475,119 @@ Get skills required for a specific job.
 }
 ```
 
-**Errors:**
-- `404` - Job not found
-
 ---
-
 
 ### POST /jobs
 
-Create a new job posting.
+Create a new hiring request in status `DangNhanHoSo`. **IMPORTANT: `nguoiThueId` is the TaiKhoanID of the creator.**
 
-**Request:**
-- Body:
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| nguoiThueId | Yes | **TaiKhoanID** of the job creator (NOT NguoiThue table ID) |
+| loaiDichVuId | Yes | Category ID |
+| tieuDe | Yes | Job title |
+| moTa | Yes | Job description |
+| nganSachMin | Yes | Minimum budget (>= 0) |
+| nganSachMax | Yes | Maximum budget (>= nganSachMin) |
+| thoiHan | Yes | Deadline (ISO date string) |
+| yeuCauGiamSat | Optional | Whether supervision is required (boolean) |
+| giamSatId | Optional | Supervisor TaiKhoanID (auto-sets yeuCauGiamSat=true) |
+| kyNangIds | Optional | Array of skill IDs required |
+
+**Response (201):**
+
 ```json
 {
-  "nguoiThueId": 1,
-  "loaiDichVuId": 2,
-  "tieuDe": "Build a React website",
-  "moTa": "Need a responsive website with modern UI",
-  "nganSachMin": 5000000,
-  "nganSachMax": 10000000,
-  "thoiHan": "2025-03-01T00:00:00.000Z",
-  "yeuCauGiamSat": false,
-  "kyNangIds": [1, 2, 3]
+  "message": "Tao yeu cau thanh cong",
+  "job": { "...": "full job object with details" }
 }
 ```
 
-> `yeuCauGiamSat` defaults to `false`. `kyNangIds` is optional.
-
-**Response 201:**
-```json
-{
-  "message": "Job created successfully",
-  "job": {
-    "yeuCauId": 5,
-    "nguoiThueId": 1,
-    "loaiDichVuId": 2,
-    "tieuDe": "Build a React website",
-    "moTa": "Need a responsive website with modern UI",
-    "nganSachMin": "5000000",
-    "nganSachMax": "10000000",
-    "thoiHan": "2025-03-01T00:00:00.000Z",
-    "trangThai": "MoiTao",
-    "soLuongBaoGia": 0,
-    "yeuCauGiamSat": false,
-    "ngayTao": "2025-01-15T10:30:00.000Z",
-    "ngayCapNhat": "2025-01-15T10:30:00.000Z",
-    "nguoiThue": {
-      "taiKhoanId": 1,
-      "hoTen": "Nguyen Van A",
-      "email": "nguyenvana@email.com"
-    },
-    "loaiDichVu": {
-      "loaiDichVuId": 2,
-      "tenLoai": "Web Development"
-    },
-    "kyNangs": [
-      { "kyNangId": 1, "tenKyNang": "React" },
-      { "kyNangId": 2, "tenKyNang": "Node.js" }
-    ]
-  }
-}
-```
-
-**Errors:**
-- `400` - Missing required fields
-- `404` - NguoiThue or category not found
+**Error Codes:**
+- `400` - Invalid input / User not found / Category not found / Budget validation failed / Invalid skills
 
 ---
 
-
 ### PUT /jobs/:id
 
-Update an existing job.
+Update a job.
 
-**Request:**
-- Path params: `:id` - job ID (integer)
-- Body:
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| loaiDichVuId | Optional | Category ID |
+| tieuDe | Optional | Job title |
+| moTa | Optional | Job description |
+| nganSachMin | Optional | Minimum budget |
+| nganSachMax | Optional | Maximum budget |
+| thoiHan | Optional | Deadline (ISO date string) |
+| trangThai | Optional | Status: `DangNhanHoSo`, `DaDong`, `DaHuy`. `DaChot` is set only by accepting a proposal. |
+| yeuCauGiamSat | Optional | Whether supervision is required |
+
+**Response (200):**
+
 ```json
 {
-  "tieuDe": "Build a React + Next.js website",
-  "moTa": "Updated description",
-  "nganSachMin": 6000000,
-  "nganSachMax": 12000000,
-  "thoiHan": "2025-04-01T00:00:00.000Z",
-  "trangThai": "DangNhan",
-  "yeuCauGiamSat": true
+  "message": "Cap nhat yeu cau thanh cong",
+  "job": { "...": "full job object" }
 }
 ```
 
-> All fields are optional.
-
-**Response 200:**
-```json
-{
-  "message": "Job updated successfully",
-  "job": {
-    "yeuCauId": 1,
-    "nguoiThueId": 1,
-    "loaiDichVuId": 2,
-    "tieuDe": "Build a React + Next.js website",
-    "moTa": "Updated description",
-    "nganSachMin": "6000000",
-    "nganSachMax": "12000000",
-    "thoiHan": "2025-04-01T00:00:00.000Z",
-    "trangThai": "DangNhan",
-    "soLuongBaoGia": 3,
-    "yeuCauGiamSat": true,
-    "ngayTao": "2025-01-15T10:30:00.000Z",
-    "ngayCapNhat": "2025-01-16T08:00:00.000Z",
-    "nguoiThue": {
-      "taiKhoanId": 1,
-      "hoTen": "Nguyen Van A",
-      "email": "nguyenvana@email.com"
-    },
-    "loaiDichVu": {
-      "loaiDichVuId": 2,
-      "tenLoai": "Web Development"
-    },
-    "kyNangs": [
-      { "kyNangId": 1, "tenKyNang": "React" }
-    ]
-  }
-}
-```
-
-**Errors:**
-- `400` - Invalid data
+**Error Codes:**
+- `400` - No valid fields / Invalid status or status transition / Budget validation
 - `404` - Job not found
 
 ---
 
 ### PUT /jobs/:id/skills
 
-Replace all skills for a job (set operation).
+Replace all skills for a job (bulk set).
 
-**Request:**
-- Path params: `:id` - job ID (integer)
-- Body:
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| kyNangIds | Yes | Array of skill IDs (empty array removes all) |
+
+**Response (200):**
+
 ```json
 {
-  "kyNangIds": [1, 3, 5]
-}
-```
-
-**Response 200:**
-```json
-{
-  "message": "Job skills updated successfully",
+  "message": "Cap nhat ky nang yeu cau thanh cong",
   "kyNangs": [
-    { "kyNangId": 1, "tenKyNang": "React" },
-    { "kyNangId": 3, "tenKyNang": "TypeScript" },
-    { "kyNangId": 5, "tenKyNang": "PostgreSQL" }
+    { "kyNangId": 1, "tenKyNang": "React" }
   ]
 }
 ```
 
-**Errors:**
+**Error Codes:**
+- `400` - Invalid skill IDs
 - `404` - Job not found
 
 ---
-
 
 ### POST /jobs/:id/skills/:kyNangId
 
 Add a single skill to a job.
 
-**Request:**
-- Path params:
-  - `:id` - job ID (integer)
-  - `:kyNangId` - skill ID to add (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "message": "Skill added to job successfully",
+  "message": "Lay danh sach ky nang thanh cong",
   "kyNangs": [
     { "kyNangId": 1, "tenKyNang": "React" },
-    { "kyNangId": 2, "tenKyNang": "Node.js" },
-    { "kyNangId": 3, "tenKyNang": "TypeScript" }
+    { "kyNangId": 3, "tenKyNang": "Docker" }
   ]
 }
 ```
 
-**Errors:**
-- `404` - Job or skill not found
-- `409` - Skill already assigned to this job
+**Error Codes:**
+- `400` - Invalid skill ID
+- `404` - Job not found
 
 ---
 
@@ -1247,58 +595,37 @@ Add a single skill to a job.
 
 Remove a single skill from a job.
 
-**Request:**
-- Path params:
-  - `:id` - job ID (integer)
-  - `:kyNangId` - skill ID to remove (integer)
-
-**Response 200:**
-```json
-{
-  "message": "Skill removed from job successfully",
-  "kyNangs": [
-    { "kyNangId": 1, "tenKyNang": "React" },
-    { "kyNangId": 2, "tenKyNang": "Node.js" }
-  ]
-}
-```
-
-**Errors:**
-- `404` - Job or skill not found
+**Response:** Same format as POST /jobs/:id/skills/:kyNangId.
 
 ---
 
 ### DELETE /jobs/:id
 
-Delete a job posting.
+Cancel a hiring request (sets status to `DaHuy`). Requests already in `DaChot` cannot be cancelled through this endpoint.
 
-**Request:**
-- Path params: `:id` - job ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "message": "Job deleted successfully",
+  "message": "Xoa yeu cau thanh cong",
   "jobId": 1
 }
 ```
 
-**Errors:**
+**Error Codes:**
+- `400` - Request has already been finalized or cancelled
 - `404` - Job not found
-- `409` - Cannot delete job with active contracts
 
 ---
 
-## 7. Proposals
+## 4. Proposals
 
 ### GET /proposals/:id
 
 Get a single proposal by ID.
 
-**Request:**
-- Path params: `:id` - proposal ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
   "proposal": {
@@ -1306,14 +633,14 @@ Get a single proposal by ID.
     "yeuCauId": 1,
     "freelancerId": 2,
     "giaDeXuat": "7000000",
-    "thoiGianThucHien": 25,
-    "noiDung": "I can build this with React and Next.js",
-    "trangThai": "ChoXacNhan",
-    "ngayTao": "2025-01-16T08:00:00.000Z",
-    "ngayCapNhat": "2025-01-16T08:00:00.000Z",
+    "thoiGianThucHien": 30,
+    "noiDung": "I can build this in 30 days...",
+    "trangThai": "DaGui",
+    "ngayTao": "2025-01-16T00:00:00.000Z",
+    "ngayCapNhat": "2025-01-16T00:00:00.000Z",
     "freelancer": {
-      "freelancerId": 2,
-      "taiKhoanId": 3,
+      "freelancerId": 1,
+      "taiKhoanId": 2,
       "hoTen": "Tran Van B",
       "email": "tranvanb@email.com",
       "kinhNghiem": 5,
@@ -1321,7 +648,7 @@ Get a single proposal by ID.
       "kyNangs": [
         { "kyNangId": 1, "tenKyNang": "React" }
       ],
-      "xepHang": "4.5"
+      "xepHang": "4.8"
     },
     "yeuCau": {
       "yeuCauId": 1,
@@ -1332,317 +659,94 @@ Get a single proposal by ID.
 }
 ```
 
-**Errors:**
+**Error Codes:**
 - `404` - Proposal not found
 
 ---
 
-
 ### POST /proposals
 
-Create a new proposal (freelancer submits a bid for a job).
+Create a new proposal. This endpoint only accepts proposals while the hiring request is in `DangNhanHoSo`. **IMPORTANT: `freelancerId` is the TaiKhoanID of the freelancer.**
 
-**Request:**
-- Body:
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| yeuCauId | Yes | Job ID to submit proposal for |
+| freelancerId | Yes | **TaiKhoanID** of the freelancer (NOT Freelancer table ID) |
+| giaDeXuat | Yes | Proposed price |
+| thoiGianThucHien | Yes | Estimated days to complete |
+| noiDung | Optional | Proposal description/cover letter |
+
+**Response (201):**
+
 ```json
 {
-  "yeuCauId": 1,
-  "freelancerId": 2,
-  "giaDeXuat": 7000000,
-  "thoiGianThucHien": 25,
-  "noiDung": "I can build this with React and Next.js"
+  "message": "Tao bao gia thanh cong",
+  "proposal": { "...": "full proposal object with details" }
 }
 ```
 
-> `noiDung` is optional.
-
-**Response 201:**
-```json
-{
-  "message": "Proposal created successfully",
-  "proposal": {
-    "baoGiaId": 5,
-    "yeuCauId": 1,
-    "freelancerId": 2,
-    "giaDeXuat": "7000000",
-    "thoiGianThucHien": 25,
-    "noiDung": "I can build this with React and Next.js",
-    "trangThai": "ChoXacNhan",
-    "ngayTao": "2025-01-16T08:00:00.000Z",
-    "ngayCapNhat": "2025-01-16T08:00:00.000Z",
-    "freelancer": {
-      "freelancerId": 2,
-      "taiKhoanId": 3,
-      "hoTen": "Tran Van B",
-      "email": "tranvanb@email.com",
-      "kinhNghiem": 5,
-      "kyNang": "React, Node.js",
-      "kyNangs": [],
-      "xepHang": "4.5"
-    },
-    "yeuCau": {
-      "yeuCauId": 1,
-      "tieuDe": "Build a React website",
-      "nguoiThueId": 1
-    }
-  }
-}
-```
-
-**Errors:**
-- `400` - Missing required fields
-- `404` - Job or freelancer not found
-- `409` - Freelancer already submitted a proposal for this job
+**Error Codes:**
+- `400` - Invalid input / Job not found / Request is not accepting proposals / Freelancer not found / Already submitted
+- `404` - Job not found
 
 ---
 
 ### PUT /proposals/:id
 
-Update an existing proposal.
+Update a proposal.
 
-**Request:**
-- Path params: `:id` - proposal ID (integer)
-- Body:
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| giaDeXuat | Optional | Updated price |
+| thoiGianThucHien | Optional | Updated timeline (days) |
+| noiDung | Optional | Updated description |
+| trangThai | Optional | Status: `DaGui`, `DuocChon`, `TuChoi`, `HetHan` |
+
+**Response (200):**
+
 ```json
 {
-  "giaDeXuat": 6500000,
-  "thoiGianThucHien": 20,
-  "noiDung": "Updated proposal content",
-  "trangThai": "DaChapNhan"
+  "message": "Cap nhat bao gia thanh cong",
+  "proposal": { "...": "full proposal object" }
 }
 ```
 
-> All fields are optional.
-
-**Response 200:**
-```json
-{
-  "message": "Proposal updated successfully",
-  "proposal": {
-    "baoGiaId": 1,
-    "yeuCauId": 1,
-    "freelancerId": 2,
-    "giaDeXuat": "6500000",
-    "thoiGianThucHien": 20,
-    "noiDung": "Updated proposal content",
-    "trangThai": "DaChapNhan",
-    "ngayTao": "2025-01-16T08:00:00.000Z",
-    "ngayCapNhat": "2025-01-17T09:00:00.000Z",
-    "freelancer": {
-      "freelancerId": 2,
-      "taiKhoanId": 3,
-      "hoTen": "Tran Van B",
-      "email": "tranvanb@email.com",
-      "kinhNghiem": 5,
-      "kyNang": "React, Node.js",
-      "kyNangs": [],
-      "xepHang": "4.5"
-    },
-    "yeuCau": {
-      "yeuCauId": 1,
-      "tieuDe": "Build a React website",
-      "nguoiThueId": 1
-    }
-  }
-}
-```
-
-**Errors:**
-- `400` - Invalid data
+**Error Codes:**
+- `400` - No valid fields to update
 - `404` - Proposal not found
 
 ---
-
 
 ### DELETE /proposals/:id
 
 Delete a proposal.
 
-**Request:**
-- Path params: `:id` - proposal ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "message": "Proposal deleted successfully",
+  "message": "Xoa bao gia thanh cong",
   "proposalId": 1
 }
 ```
 
-**Errors:**
+**Error Codes:**
 - `404` - Proposal not found
 
 ---
 
-## 8. Freelancers
-
-### GET /freelancers/:id/proposals
-
-Get all proposals submitted by a freelancer.
-
-**Request:**
-- Path params: `:id` - freelancer ID (integer)
-
-**Response 200:**
-```json
-{
-  "total": 2,
-  "proposals": [
-    {
-      "baoGiaId": 1,
-      "yeuCauId": 1,
-      "freelancerId": 2,
-      "giaDeXuat": "7000000",
-      "thoiGianThucHien": 25,
-      "noiDung": "I can build this with React and Next.js",
-      "trangThai": "ChoXacNhan",
-      "ngayTao": "2025-01-16T08:00:00.000Z",
-      "ngayCapNhat": "2025-01-16T08:00:00.000Z",
-      "freelancer": {
-        "freelancerId": 2,
-        "taiKhoanId": 3,
-        "hoTen": "Tran Van B",
-        "email": "tranvanb@email.com",
-        "kinhNghiem": 5,
-        "kyNang": "React, Node.js",
-        "kyNangs": [],
-        "xepHang": "4.5"
-      },
-      "yeuCau": {
-        "yeuCauId": 1,
-        "tieuDe": "Build a React website",
-        "nguoiThueId": 1
-      }
-    }
-  ]
-}
-```
-
-**Errors:**
-- `404` - Freelancer not found
-
----
-
-### GET /freelancers/:id/skills
-
-Get all skills of a freelancer.
-
-**Request:**
-- Path params: `:id` - freelancer ID (integer)
-
-**Response 200:**
-```json
-{
-  "message": "Freelancer skills retrieved successfully",
-  "freelancerId": 2,
-  "kyNangs": [
-    { "kyNangId": 1, "tenKyNang": "React" },
-    { "kyNangId": 2, "tenKyNang": "Node.js" }
-  ]
-}
-```
-
-**Errors:**
-- `404` - Freelancer not found
-
----
-
-
-### PUT /freelancers/:id/skills
-
-Replace all skills for a freelancer (set operation).
-
-**Request:**
-- Path params: `:id` - freelancer ID (integer)
-- Body:
-```json
-{
-  "kyNangIds": [1, 2, 5]
-}
-```
-
-**Response 200:**
-```json
-{
-  "message": "Freelancer skills updated successfully",
-  "freelancerId": 2,
-  "kyNangs": [
-    { "kyNangId": 1, "tenKyNang": "React" },
-    { "kyNangId": 2, "tenKyNang": "Node.js" },
-    { "kyNangId": 5, "tenKyNang": "PostgreSQL" }
-  ]
-}
-```
-
-**Errors:**
-- `404` - Freelancer not found
-
----
-
-### POST /freelancers/:id/skills/:kyNangId
-
-Add a single skill to a freelancer.
-
-**Request:**
-- Path params:
-  - `:id` - freelancer ID (integer)
-  - `:kyNangId` - skill ID to add (integer)
-
-**Response 200:**
-```json
-{
-  "message": "Skill added to freelancer successfully",
-  "freelancerId": 2,
-  "kyNangs": [
-    { "kyNangId": 1, "tenKyNang": "React" },
-    { "kyNangId": 2, "tenKyNang": "Node.js" },
-    { "kyNangId": 3, "tenKyNang": "TypeScript" }
-  ]
-}
-```
-
-**Errors:**
-- `404` - Freelancer or skill not found
-- `409` - Skill already assigned to this freelancer
-
----
-
-### DELETE /freelancers/:id/skills/:kyNangId
-
-Remove a single skill from a freelancer.
-
-**Request:**
-- Path params:
-  - `:id` - freelancer ID (integer)
-  - `:kyNangId` - skill ID to remove (integer)
-
-**Response 200:**
-```json
-{
-  "message": "Skill removed from freelancer successfully",
-  "freelancerId": 2,
-  "kyNangs": [
-    { "kyNangId": 1, "tenKyNang": "React" },
-    { "kyNangId": 2, "tenKyNang": "Node.js" }
-  ]
-}
-```
-
-**Errors:**
-- `404` - Freelancer or skill not found
-
----
-
-## 9. Contracts
+## 5. Contracts
 
 ### GET /contracts
 
 Get all contracts.
 
-**Request:**
-- No parameters required.
+**Response (200):**
 
-**Response 200:**
 ```json
 {
   "total": 1,
@@ -1650,142 +754,65 @@ Get all contracts.
     {
       "congViecId": 1,
       "yeuCauId": 1,
-      "freelancerId": 2,
+      "freelancerId": 13,
       "nguoiThueId": 1,
-      "giaThoa": "8000000",
+      "giaThoa": "32000000",
       "thoiGianThoa": 30,
       "trangThai": "DangThucHien",
-      "ngayBatDau": "2025-01-20T00:00:00.000Z",
+      "ngayBatDau": "2026-05-02T09:00:00.000Z",
       "ngayKetThuc": null,
-      "giamSatId": null,
-      "trangThaiGiamSat": "ChuaYeuCau",
-      "phiGiamSat": "0",
-      "ngayTao": "2025-01-18T10:30:00.000Z",
+      "giamSatId": 21,
+      "trangThaiGiamSat": "DangGiamSat",
+      "phiGiamSat": "450000",
+      "ngayTao": "2026-05-02T08:30:00.000Z",
       "yeuCau": {
         "yeuCauId": 1,
-        "tieuDe": "Build a React website",
-        "moTa": "Need a responsive website"
+        "tieuDe": "Xây dựng API NestJS",
+        "moTa": "Cần xây dựng hệ thống API RESTful quản lý đơn hàng và thanh toán."
       },
       "freelancer": {
-        "freelancerId": 2,
-        "taiKhoanId": 3,
-        "hoTen": "Tran Van B",
-        "email": "tranvanb@email.com"
+        "freelancerId": 13,
+        "taiKhoanId": 13,
+        "hoTen": "User 13",
+        "email": "dev1@freelancer.vn"
       },
       "nguoiThue": {
         "nguoiThueId": 1,
         "taiKhoanId": 1,
-        "hoTen": "Nguyen Van A",
-        "email": "nguyenvana@email.com"
+        "hoTen": "Nguyen Van An",
+        "email": "manhhuy2@gmail.com"
       },
-      "giamSat": null
+      "giamSat": {
+        "giamSatId": 21,
+        "taiKhoanId": 21,
+        "tenDonVi": "ISO Quality Control",
+        "email": "iso@giamsat.vn"
+      }
     }
   ]
 }
 ```
 
+**Identifier Note:** `freelancerId`, `nguoiThueId`, top-level `giamSatId`, and `giamSat.giamSatId` are all `TaiKhoanID` values. For backward-friendly frontend mapping, `giamSat.taiKhoanId` is also returned and equals `giamSat.giamSatId`.
+
 ---
 
 ### GET /contracts/:id
 
-Get a single contract by ID.
+Get a single contract.
 
-**Request:**
-- Path params: `:id` - contract ID (integer)
+**Response:** Same as single contract object wrapped in `{ "contract": {...} }`.
 
-**Response 200:**
-```json
-{
-  "contract": {
-    "congViecId": 1,
-    "yeuCauId": 1,
-    "freelancerId": 2,
-    "nguoiThueId": 1,
-    "giaThoa": "8000000",
-    "thoiGianThoa": 30,
-    "trangThai": "DangThucHien",
-    "ngayBatDau": "2025-01-20T00:00:00.000Z",
-    "ngayKetThuc": null,
-    "giamSatId": null,
-    "trangThaiGiamSat": "ChuaYeuCau",
-    "phiGiamSat": "0",
-    "ngayTao": "2025-01-18T10:30:00.000Z",
-    "yeuCau": {
-      "yeuCauId": 1,
-      "tieuDe": "Build a React website",
-      "moTa": "Need a responsive website"
-    },
-    "freelancer": {
-      "freelancerId": 2,
-      "taiKhoanId": 3,
-      "hoTen": "Tran Van B",
-      "email": "tranvanb@email.com"
-    },
-    "nguoiThue": {
-      "nguoiThueId": 1,
-      "taiKhoanId": 1,
-      "hoTen": "Nguyen Van A",
-      "email": "nguyenvana@email.com"
-    },
-    "giamSat": null
-  }
-}
-```
-
-**Errors:**
+**Error Codes:**
 - `404` - Contract not found
 
 ---
 
-
 ### GET /contracts/:id/detail
 
-Get detailed contract information (same as GET /contracts/:id but may include additional computed fields).
+Get contract with full details (same as GET /contracts/:id but may include more nested data).
 
-**Request:**
-- Path params: `:id` - contract ID (integer)
-
-**Response 200:**
-```json
-{
-  "contract": {
-    "congViecId": 1,
-    "yeuCauId": 1,
-    "freelancerId": 2,
-    "nguoiThueId": 1,
-    "giaThoa": "8000000",
-    "thoiGianThoa": 30,
-    "trangThai": "DangThucHien",
-    "ngayBatDau": "2025-01-20T00:00:00.000Z",
-    "ngayKetThuc": null,
-    "giamSatId": null,
-    "trangThaiGiamSat": "ChuaYeuCau",
-    "phiGiamSat": "0",
-    "ngayTao": "2025-01-18T10:30:00.000Z",
-    "yeuCau": {
-      "yeuCauId": 1,
-      "tieuDe": "Build a React website",
-      "moTa": "Need a responsive website"
-    },
-    "freelancer": {
-      "freelancerId": 2,
-      "taiKhoanId": 3,
-      "hoTen": "Tran Van B",
-      "email": "tranvanb@email.com"
-    },
-    "nguoiThue": {
-      "nguoiThueId": 1,
-      "taiKhoanId": 1,
-      "hoTen": "Nguyen Van A",
-      "email": "nguyenvana@email.com"
-    },
-    "giamSat": null
-  }
-}
-```
-
-**Errors:**
-- `404` - Contract not found
+**Response:** Same format as GET /contracts/:id. The nested `giamSat` object includes `giamSatId`, `taiKhoanId`, `tenDonVi`, and `email`.
 
 ---
 
@@ -1793,207 +820,50 @@ Get detailed contract information (same as GET /contracts/:id but may include ad
 
 Get all progress reports for a contract.
 
-**Request:**
-- Path params: `:id` - contract ID (integer)
-
-**Response 200:**
-```json
-{
-  "total": 2,
-  "progress": [
-    {
-      "tienDoId": 1,
-      "congViecId": 1,
-      "freelancerId": 2,
-      "tieuDe": "Completed homepage design",
-      "moTa": "Finished the homepage layout and responsive design",
-      "phanTram": 30,
-      "tepDinhKem": "https://example.com/files/design.pdf",
-      "xacNhanBoi": null,
-      "trangThaiXacNhan": "ChoXacNhan",
-      "ngayTao": "2025-01-25T10:00:00.000Z",
-      "congViec": {
-        "congViecId": 1,
-        "yeuCauId": 1,
-        "giaThoa": "8000000"
-      },
-      "freelancer": {
-        "freelancerId": 2,
-        "taiKhoanId": 3,
-        "hoTen": "Tran Van B",
-        "email": "tranvanb@email.com"
-      },
-      "donViGiamSat": null
-    }
-  ]
-}
-```
-
-**Errors:**
-- `404` - Contract not found
+**Response:** Same format as progress list.
 
 ---
-
 
 ### GET /contracts/:id/conversations
 
 Get all chat conversations for a contract.
 
-**Request:**
-- Path params: `:id` - contract ID (integer)
+When a contract has an accepted supervisor (`trangThaiGiamSat` is `DangGiamSat` or `HoanThanh`), that supervisor can access and send messages in the contract conversations through their `TaiKhoanID`.
 
-**Response 200:**
-```json
-{
-  "total": 1,
-  "conversations": [
-    {
-      "cuocHoiThoaiId": 1,
-      "congViecId": 1,
-      "thanhVien1": {
-        "taiKhoanId": 1,
-        "hoTen": "Nguyen Van A",
-        "email": "nguyenvana@email.com"
-      },
-      "thanhVien2": {
-        "taiKhoanId": 3,
-        "hoTen": "Tran Van B",
-        "email": "tranvanb@email.com"
-      },
-      "giamSatId": null,
-      "tinNhanCuoi": "Let me know when you finish the homepage",
-      "trangThai": "DangMo",
-      "ngayTao": "2025-01-20T10:30:00.000Z"
-    }
-  ]
-}
-```
-
-**Errors:**
-- `404` - Contract not found
+**Response:** Same format as conversation list.
 
 ---
 
 ### POST /contracts
 
-Create a new contract (after accepting a proposal).
+Direct contract creation is disabled. Use `POST /contracts/accept-proposal` to finalize a freelancer and create the corresponding contract atomically.
 
-**Request:**
-- Body:
-```json
-{
-  "yeuCauId": 1,
-  "freelancerId": 2,
-  "nguoiThueId": 1,
-  "giaThoa": 8000000,
-  "thoiGianThoa": 30
-}
-```
-
-**Response 201:**
-```json
-{
-  "message": "Contract created successfully",
-  "contract": {
-    "congViecId": 3,
-    "yeuCauId": 1,
-    "freelancerId": 2,
-    "nguoiThueId": 1,
-    "giaThoa": "8000000",
-    "thoiGianThoa": 30,
-    "trangThai": "DangThucHien",
-    "ngayBatDau": "2025-01-20T00:00:00.000Z",
-    "ngayKetThuc": null,
-    "giamSatId": null,
-    "trangThaiGiamSat": "ChuaYeuCau",
-    "phiGiamSat": "0",
-    "ngayTao": "2025-01-20T10:30:00.000Z",
-    "yeuCau": {
-      "yeuCauId": 1,
-      "tieuDe": "Build a React website",
-      "moTa": "Need a responsive website"
-    },
-    "freelancer": {
-      "freelancerId": 2,
-      "taiKhoanId": 3,
-      "hoTen": "Tran Van B",
-      "email": "tranvanb@email.com"
-    },
-    "nguoiThue": {
-      "nguoiThueId": 1,
-      "taiKhoanId": 1,
-      "hoTen": "Nguyen Van A",
-      "email": "nguyenvana@email.com"
-    },
-    "giamSat": null
-  }
-}
-```
-
-**Errors:**
-- `400` - Missing required fields
-- `404` - Job, freelancer, or employer not found
+**Error Codes:**
+- `400` - Contracts must be created by accepting a proposal
 
 ---
-
 
 ### PUT /contracts/:id/status
 
 Update contract status.
 
-**Request:**
-- Path params: `:id` - contract ID (integer)
-- Body:
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| trangThai | Yes | Status: `MoiTao`, `DangThucHien`, `HoanThanh`, `DaHuy`, `TranhChap` |
+
+**Response (200):**
+
 ```json
 {
-  "trangThai": "HoanThanh"
+  "message": "Cap nhat trang thai thanh cong",
+  "contract": { "...": "full contract object" }
 }
 ```
 
-> Valid values: `DangThucHien`, `HoanThanh`, `DaHuy`, `TamDung`
-
-**Response 200:**
-```json
-{
-  "message": "Contract status updated successfully",
-  "contract": {
-    "congViecId": 1,
-    "yeuCauId": 1,
-    "freelancerId": 2,
-    "nguoiThueId": 1,
-    "giaThoa": "8000000",
-    "thoiGianThoa": 30,
-    "trangThai": "HoanThanh",
-    "ngayBatDau": "2025-01-20T00:00:00.000Z",
-    "ngayKetThuc": "2025-02-15T00:00:00.000Z",
-    "giamSatId": null,
-    "trangThaiGiamSat": "ChuaYeuCau",
-    "phiGiamSat": "0",
-    "ngayTao": "2025-01-18T10:30:00.000Z",
-    "yeuCau": {
-      "yeuCauId": 1,
-      "tieuDe": "Build a React website",
-      "moTa": "Need a responsive website"
-    },
-    "freelancer": {
-      "freelancerId": 2,
-      "taiKhoanId": 3,
-      "hoTen": "Tran Van B",
-      "email": "tranvanb@email.com"
-    },
-    "nguoiThue": {
-      "nguoiThueId": 1,
-      "taiKhoanId": 1,
-      "hoTen": "Nguyen Van A",
-      "email": "nguyenvana@email.com"
-    },
-    "giamSat": null
-  }
-}
-```
-
-**Errors:**
-- `400` - Invalid status value
+**Error Codes:**
+- `400` - Invalid status
 - `404` - Contract not found
 
 ---
@@ -2002,330 +872,185 @@ Update contract status.
 
 Select a supervisor for a contract.
 
-**Request:**
-- Path params: `:id` - contract ID (integer)
-- Body:
-```json
-{
-  "giamSatId": 1,
-  "phiGiamSat": 500000
-}
-```
+**Request Body:**
 
-**Response 200:**
+| Field | Required | Description |
+|---|---|---|
+| giamSatId | Yes | Supervisor's **TaiKhoanID** |
+| phiGiamSat | Yes | Supervision fee amount |
+
+**Response (200):**
+
 ```json
 {
-  "message": "Supervisor request sent successfully",
+  "message": "Chon giam sat thanh cong",
   "yeuCauGiamSatId": 1,
-  "trangThai": "ChoChapNhan"
+  "trangThai": "ChoDuyet"
 }
 ```
 
-**Errors:**
-- `400` - Invalid data
-- `404` - Contract or supervisor not found
-- `409` - Contract already has a supervisor
+**Error Codes:**
+- `400` - Supervisor not found / Contract already has supervisor
+- `404` - Contract not found
 
 ---
 
-
 ### PUT /contracts/:id/supervisor/accept
 
-Supervisor accepts the supervision request for a contract.
+Supervisor accepts the supervision request.
 
-**Request:**
-- Path params: `:id` - contract ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "message": "Supervisor accepted successfully",
+  "message": "Chap nhan don vi giam sat thanh cong",
   "yeuCauGiamSatId": 1,
   "trangThai": "DaChapNhan"
 }
 ```
 
-**Errors:**
-- `404` - Contract not found or no pending supervisor request
-- `409` - Request already processed
-
 ---
 
 ### PUT /contracts/:id/supervisor/reject
 
-Supervisor rejects the supervision request for a contract.
+Supervisor rejects the supervision request.
 
-**Request:**
-- Path params: `:id` - contract ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "message": "Supervisor rejected successfully",
+  "message": "Giam sat da tu choi",
   "yeuCauGiamSatId": 1,
-  "trangThai": "DaTuChoi"
-}
-```
-
-**Errors:**
-- `404` - Contract not found or no pending supervisor request
-- `409` - Request already processed
-
----
-
-## 10. Supervisors
-
-### GET /supervisors
-
-Get all supervisors.
-
-**Request:**
-- No parameters required.
-
-**Response 200:**
-```json
-{
-  "total": 2,
-  "supervisors": [
-    {
-      "giamSatId": 1,
-      "taiKhoanId": 5,
-      "tenDonVi": "Quality Assurance Corp",
-      "moTa": "Professional project supervision",
-      "nangLuc": "IT project management",
-      "chungChi": "PMP, ISO 9001",
-      "phiGiamSat": "500000",
-      "xepHang": "4.8",
-      "tongCongViecGS": 15,
-      "trangThai": "DaDuyet",
-      "ngayDangKy": "2025-01-01T00:00:00.000Z",
-      "taiKhoan": {
-        "taiKhoanId": 5,
-        "hoTen": "Le Van C",
-        "email": "levanc@email.com",
-        "soDienThoai": "0912345678"
-      }
-    }
-  ]
+  "trangThai": "TuChoi"
 }
 ```
 
 ---
 
+## 6. Contract Flow
 
-### GET /supervisors/search
+This section describes the complete flow from finalizing a freelancer proposal to completing a contract with escrow payment.
 
-Search supervisors by keyword.
+### Flow Overview
 
-**Request:**
-- Query params: `keyword` - search term (optional)
-
-Example: `GET /supervisors/search?keyword=quality`
-
-**Response 200:**
-```json
-{
-  "total": 1,
-  "supervisors": [
-    {
-      "giamSatId": 1,
-      "taiKhoanId": 5,
-      "tenDonVi": "Quality Assurance Corp",
-      "moTa": "Professional project supervision",
-      "nangLuc": "IT project management",
-      "chungChi": "PMP, ISO 9001",
-      "phiGiamSat": "500000",
-      "xepHang": "4.8",
-      "tongCongViecGS": 15,
-      "trangThai": "DaDuyet",
-      "ngayDangKy": "2025-01-01T00:00:00.000Z",
-      "taiKhoan": {
-        "taiKhoanId": 5,
-        "hoTen": "Le Van C",
-        "email": "levanc@email.com",
-        "soDienThoai": "0912345678"
-      }
-    }
-  ]
-}
-```
+1. **Client accepts proposal** -> Hiring request becomes `DaChot`, contract created, escrow payment held
+2. **Work is done** -> Progress reports submitted
+3. **Confirm completion** -> Each party confirms (Freelancer -> Supervisor -> Client)
+4. **All confirmed** -> Escrow released (Freelancer gets 95%, System takes 5% fee)
 
 ---
 
-### GET /supervisors/:id
+### POST /contracts/accept-proposal
 
-Get a single supervisor by ID.
+Accept a proposal from a hiring request in `DangNhanHoSo` or `DaDong`, finalize the freelancer selection, and create a contract with escrow payment.
 
-**Request:**
-- Path params: `:id` - supervisor ID (integer)
+**What happens internally:**
+1. Creates a contract (CongViec) with status `DangThucHien`
+2. Creates an escrow payment (100% agreed price + supervisor fee)
+3. Creates the contract conversation between the client and selected freelancer
+4. Creates a pending supervision request when `giamSatId` is provided
+5. Updates the accepted proposal status to `DuocChon`
+6. Rejects all other proposals for the same job (`TuChoi`)
+7. Finalizes the hiring request (status -> `DaChot`)
 
-**Response 200:**
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| baoGiaId | Yes | Proposal ID to accept |
+| nguoiThueId | Yes | Client's **TaiKhoanID** (must own the job) |
+| giamSatId | Optional | Supervisor's **TaiKhoanID** (for example, `21`; not the profile `GiamSatID`) |
+| phiGiamSat | Optional | Supervisor fee (default: 0) |
+
+**Response (200):**
+
 ```json
 {
-  "supervisor": {
-    "giamSatId": 1,
-    "taiKhoanId": 5,
-    "tenDonVi": "Quality Assurance Corp",
-    "moTa": "Professional project supervision",
-    "nangLuc": "IT project management",
-    "chungChi": "PMP, ISO 9001",
+  "message": "Chap nhan bao gia thanh cong. Tien da duoc giu boi he thong (escrow).",
+  "congViecId": 1,
+  "escrow": {
+    "giaThoa": "7000000",
     "phiGiamSat": "500000",
-    "xepHang": "4.8",
-    "tongCongViecGS": 15,
-    "trangThai": "DaDuyet",
-    "ngayDangKy": "2025-01-01T00:00:00.000Z",
-    "taiKhoan": {
-      "taiKhoanId": 5,
-      "hoTen": "Le Van C",
-      "email": "levanc@email.com",
-      "soDienThoai": "0912345678"
-    }
+    "tongThanhToan": "7500000",
+    "thanhToanId": 1
   }
 }
 ```
 
-**Errors:**
-- `404` - Supervisor not found
+**Error Codes:**
+- `400` - Proposal already processed / User doesn't own the job / Request already finalized or cancelled / Invalid user
+- `404` - Proposal not found
 
 ---
 
+### PUT /contracts/:id/confirm-completion
 
-### POST /supervisors
+Confirm contract completion (called by each party separately).
 
-Register a new supervisor.
+**Confirmation Order:**
+1. Freelancer confirms first
+2. Supervisor confirms (if contract has supervisor)
+3. Client confirms last -> triggers payment release
 
-**Request:**
-- Body:
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| role | Yes | Who is confirming: `Freelancer`, `GiamSat`, or `NguoiThue` |
+| userId | Yes | **TaiKhoanID** of the person confirming |
+
+**Response (200) - Partial confirmation:**
+
 ```json
 {
-  "taiKhoanId": 5,
-  "tenDonVi": "Quality Assurance Corp",
-  "moTa": "Professional project supervision",
-  "nangLuc": "IT project management",
-  "chungChi": "PMP, ISO 9001",
-  "phiGiamSat": 500000
+  "message": "Freelancer da xac nhan hoan thanh.",
+  "congViecId": 1,
+  "freelancerXacNhan": true,
+  "giamSatXacNhan": false,
+  "nguoiThueXacNhan": false,
+  "released": false
 }
 ```
 
-> `moTa`, `nangLuc`, `chungChi` are optional.
+**Response (200) - All confirmed (payment released):**
 
-**Response 201:**
 ```json
 {
-  "message": "Supervisor created successfully",
-  "supervisor": {
-    "giamSatId": 3,
-    "taiKhoanId": 5,
-    "tenDonVi": "Quality Assurance Corp",
-    "moTa": "Professional project supervision",
-    "nangLuc": "IT project management",
-    "chungChi": "PMP, ISO 9001",
-    "phiGiamSat": "500000",
-    "xepHang": "0",
-    "tongCongViecGS": 0,
-    "trangThai": "ChoDuyet",
-    "ngayDangKy": "2025-01-15T10:30:00.000Z",
-    "taiKhoan": {
-      "taiKhoanId": 5,
-      "hoTen": "Le Van C",
-      "email": "levanc@email.com",
-      "soDienThoai": "0912345678"
-    }
+  "message": "Tat ca cac ben da xac nhan. Tien da duoc giai ngan.",
+  "congViecId": 1,
+  "freelancerXacNhan": true,
+  "giamSatXacNhan": true,
+  "nguoiThueXacNhan": true,
+  "released": true,
+  "disbursement": {
+    "freelancerNhan": "6650000",
+    "giamSatNhan": "500000",
+    "phiHeThong": "350000"
   }
 }
 ```
 
-**Errors:**
-- `400` - Missing required fields
-- `404` - Account not found
-- `409` - Account already registered as supervisor
+**Payment Release Logic:**
+- Freelancer receives: `giaThoa - (giaThoa * 5%)` = 95% of agreed price
+- Supervisor receives: `phiGiamSat` (full amount)
+- System fee: `giaThoa * 5%`
+- Contract status changes to `HoanThanh`
+- Hiring request remains `DaChot`; completion belongs to the contract lifecycle
+
+**Error Codes:**
+- `400` - Wrong role/userId / Already confirmed / Prerequisites not met / No escrow
+- `404` - Contract not found
 
 ---
 
-### PUT /supervisors/:id
-
-Update supervisor information.
-
-**Request:**
-- Path params: `:id` - supervisor ID (integer)
-- Body:
-```json
-{
-  "tenDonVi": "Quality Assurance Corp Updated",
-  "moTa": "Updated description",
-  "nangLuc": "IT project management, QA",
-  "chungChi": "PMP, ISO 9001, CMMI",
-  "phiGiamSat": 600000,
-  "trangThai": "DaDuyet"
-}
-```
-
-> All fields are optional.
-
-**Response 200:**
-```json
-{
-  "message": "Supervisor updated successfully",
-  "supervisor": {
-    "giamSatId": 1,
-    "taiKhoanId": 5,
-    "tenDonVi": "Quality Assurance Corp Updated",
-    "moTa": "Updated description",
-    "nangLuc": "IT project management, QA",
-    "chungChi": "PMP, ISO 9001, CMMI",
-    "phiGiamSat": "600000",
-    "xepHang": "4.8",
-    "tongCongViecGS": 15,
-    "trangThai": "DaDuyet",
-    "ngayDangKy": "2025-01-01T00:00:00.000Z",
-    "taiKhoan": {
-      "taiKhoanId": 5,
-      "hoTen": "Le Van C",
-      "email": "levanc@email.com",
-      "soDienThoai": "0912345678"
-    }
-  }
-}
-```
-
-**Errors:**
-- `400` - Invalid data
-- `404` - Supervisor not found
-
----
-
-
-### DELETE /supervisors/:id
-
-Delete a supervisor.
-
-**Request:**
-- Path params: `:id` - supervisor ID (integer)
-
-**Response 200:**
-```json
-{
-  "message": "Supervisor deleted successfully",
-  "supervisorId": 1
-}
-```
-
-**Errors:**
-- `404` - Supervisor not found
-- `409` - Supervisor has active contracts
-
----
-
-## 11. Progress
+## 7. Progress
 
 ### GET /progress/:id
 
-Get a single progress report by ID.
+Get a single progress report.
 
-**Request:**
-- Path params: `:id` - progress ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
   "progress": {
@@ -2333,20 +1058,20 @@ Get a single progress report by ID.
     "congViecId": 1,
     "freelancerId": 2,
     "tieuDe": "Completed homepage design",
-    "moTa": "Finished the homepage layout and responsive design",
+    "moTa": "Finished the responsive layout",
     "phanTram": 30,
-    "tepDinhKem": "https://example.com/files/design.pdf",
+    "tepDinhKem": "https://example.com/file.pdf",
     "xacNhanBoi": null,
-    "trangThaiXacNhan": "ChoXacNhan",
-    "ngayTao": "2025-01-25T10:00:00.000Z",
+    "trangThaiXacNhan": "ChuaXacNhan",
+    "ngayTao": "2025-01-25T00:00:00.000Z",
     "congViec": {
       "congViecId": 1,
       "yeuCauId": 1,
-      "giaThoa": "8000000"
+      "giaThoa": "7000000"
     },
     "freelancer": {
       "freelancerId": 2,
-      "taiKhoanId": 3,
+      "taiKhoanId": 2,
       "hoTen": "Tran Van B",
       "email": "tranvanb@email.com"
     },
@@ -2355,121 +1080,66 @@ Get a single progress report by ID.
 }
 ```
 
-**Errors:**
+**Error Codes:**
 - `404` - Progress report not found
 
 ---
 
 ### POST /progress
 
-Create a new progress report.
+Create a progress report.
 
-**Request:**
-- Body:
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| congViecId | Yes | Contract ID |
+| freelancerId | Yes | Freelancer's **TaiKhoanID** |
+| tieuDe | Yes | Progress title |
+| moTa | Optional | Description |
+| phanTram | Yes | Completion percentage (0-100) |
+| tepDinhKem | Optional | Attachment URL |
+
+**Response (201):**
+
 ```json
 {
-  "congViecId": 1,
-  "freelancerId": 2,
-  "tieuDe": "Completed homepage design",
-  "moTa": "Finished the homepage layout and responsive design",
-  "phanTram": 30,
-  "tepDinhKem": "https://example.com/files/design.pdf"
+  "message": "Tao tien do thanh cong",
+  "progress": { "...": "full progress object" }
 }
 ```
 
-> `moTa` and `tepDinhKem` are optional.
-
-**Response 201:**
-```json
-{
-  "message": "Progress created successfully",
-  "progress": {
-    "tienDoId": 3,
-    "congViecId": 1,
-    "freelancerId": 2,
-    "tieuDe": "Completed homepage design",
-    "moTa": "Finished the homepage layout and responsive design",
-    "phanTram": 30,
-    "tepDinhKem": "https://example.com/files/design.pdf",
-    "xacNhanBoi": null,
-    "trangThaiXacNhan": "ChoXacNhan",
-    "ngayTao": "2025-01-25T10:00:00.000Z",
-    "congViec": {
-      "congViecId": 1,
-      "yeuCauId": 1,
-      "giaThoa": "8000000"
-    },
-    "freelancer": {
-      "freelancerId": 2,
-      "taiKhoanId": 3,
-      "hoTen": "Tran Van B",
-      "email": "tranvanb@email.com"
-    },
-    "donViGiamSat": null
-  }
-}
-```
-
-**Errors:**
-- `400` - Missing required fields or invalid phanTram (must be 0-100)
-- `404` - Contract or freelancer not found
+**Error Codes:**
+- `400` - Invalid input / Contract not found / Freelancer mismatch
 
 ---
 
-
 ### PUT /progress/:id
 
-Update a progress report (can also be used to confirm/reject progress).
+Update a progress report.
 
-**Request:**
-- Path params: `:id` - progress ID (integer)
-- Body:
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| tieuDe | Optional | Title |
+| moTa | Optional | Description |
+| phanTram | Optional | Percentage (0-100) |
+| tepDinhKem | Optional | Attachment URL |
+| trangThaiXacNhan | Optional | Status: `ChuaXacNhan`, `DaXacNhan`, `TuChoi` |
+
+**Response (200):**
+
 ```json
 {
-  "tieuDe": "Updated title",
-  "moTa": "Updated description",
-  "phanTram": 50,
-  "tepDinhKem": "https://example.com/files/updated.pdf",
-  "trangThaiXacNhan": "DaXacNhan"
+  "message": "Cap nhat tien do thanh cong",
+  "progress": { "...": "full progress object" }
 }
 ```
 
-> All fields are optional.
-
-**Response 200:**
-```json
-{
-  "message": "Progress updated successfully",
-  "progress": {
-    "tienDoId": 1,
-    "congViecId": 1,
-    "freelancerId": 2,
-    "tieuDe": "Updated title",
-    "moTa": "Updated description",
-    "phanTram": 50,
-    "tepDinhKem": "https://example.com/files/updated.pdf",
-    "xacNhanBoi": 1,
-    "trangThaiXacNhan": "DaXacNhan",
-    "ngayTao": "2025-01-25T10:00:00.000Z",
-    "congViec": {
-      "congViecId": 1,
-      "yeuCauId": 1,
-      "giaThoa": "8000000"
-    },
-    "freelancer": {
-      "freelancerId": 2,
-      "taiKhoanId": 3,
-      "hoTen": "Tran Van B",
-      "email": "tranvanb@email.com"
-    },
-    "donViGiamSat": null
-  }
-}
-```
-
-**Errors:**
-- `400` - Invalid data
-- `404` - Progress report not found
+**Error Codes:**
+- `400` - No valid fields
+- `404` - Progress not found
 
 ---
 
@@ -2477,19 +1147,434 @@ Update a progress report (can also be used to confirm/reject progress).
 
 Delete a progress report.
 
-**Request:**
-- Path params: `:id` - progress ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "message": "Progress deleted successfully",
+  "message": "Xoa tien do thanh cong",
   "progressId": 1
 }
 ```
 
-**Errors:**
-- `404` - Progress report not found
+**Error Codes:**
+- `404` - Progress not found
+
+---
+
+## 8. Freelancers
+
+### GET /freelancers/:id/proposals
+
+Get all proposals submitted by a freelancer (by TaiKhoanID).
+
+**Response:** Same format as proposals list.
+
+---
+
+### GET /freelancers/:id/skills
+
+Get skills of a freelancer.
+
+**Response (200):**
+
+```json
+{
+  "message": "Lay danh sach ky nang thanh cong",
+  "freelancerId": 2,
+  "kyNangs": [
+    { "kyNangId": 1, "tenKyNang": "React" },
+    { "kyNangId": 2, "tenKyNang": "Node.js" }
+  ]
+}
+```
+
+---
+
+### PUT /freelancers/:id/skills
+
+Replace all skills for a freelancer (bulk set).
+
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| kyNangIds | Yes | Array of skill IDs |
+
+**Response:** Same format as GET /freelancers/:id/skills.
+
+---
+
+### POST /freelancers/:id/skills/:kyNangId
+
+Add a single skill to a freelancer.
+
+**Response:** Same format as skills response.
+
+---
+
+### DELETE /freelancers/:id/skills/:kyNangId
+
+Remove a single skill from a freelancer.
+
+**Response:** Same format as skills response.
+
+---
+
+## 9. Skills
+
+### GET /skills
+
+Get all skills.
+
+**Response (200):**
+
+```json
+{
+  "total": 10,
+  "skills": [
+    { "kyNangId": 1, "tenKyNang": "React", "moTa": "React.js framework" },
+    { "kyNangId": 2, "tenKyNang": "Node.js", "moTa": "Server-side JavaScript" }
+  ]
+}
+```
+
+---
+
+### GET /skills/:id
+
+Get a single skill.
+
+**Response (200):**
+
+```json
+{
+  "skill": { "kyNangId": 1, "tenKyNang": "React", "moTa": "React.js framework" }
+}
+```
+
+**Error Codes:**
+- `404` - Skill not found
+
+---
+
+### POST /skills
+
+Create a new skill.
+
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| tenKyNang | Yes | Skill name |
+| moTa | Optional | Description |
+
+**Response (201):**
+
+```json
+{
+  "message": "Tao ky nang thanh cong",
+  "skill": { "kyNangId": 3, "tenKyNang": "Docker", "moTa": "Containerization" }
+}
+```
+
+**Error Codes:**
+- `400` - Missing name / Skill already exists
+
+---
+
+### PUT /skills/:id
+
+Update a skill.
+
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| tenKyNang | Optional | Skill name |
+| moTa | Optional | Description |
+
+**Response (200):**
+
+```json
+{
+  "message": "Cap nhat ky nang thanh cong",
+  "skill": { "kyNangId": 1, "tenKyNang": "React.js", "moTa": "Updated description" }
+}
+```
+
+**Error Codes:**
+- `404` - Skill not found
+
+---
+
+### DELETE /skills/:id
+
+Delete a skill.
+
+**Response (200):**
+
+```json
+{
+  "message": "Xoa ky nang thanh cong",
+  "skillId": 1
+}
+```
+
+**Error Codes:**
+- `404` - Skill not found
+
+---
+
+## 10. Categories
+
+### GET /categories
+
+Get all service categories.
+
+`hinhAnh` stores a simple professional icon key for the frontend icon set (for example, Lucide icons), not an image file URL. Seed examples include `palette`, `server-cog`, `megaphone`, `smartphone`, and `shield-check`.
+
+**Response (200):**
+
+```json
+{
+  "total": 5,
+  "categories": [
+    { "loaiDichVuId": 1, "tenLoai": "Thiet ke UI/UX", "moTa": "Thiet ke giao dien web va mobile", "hinhAnh": "palette" },
+    { "loaiDichVuId": 2, "tenLoai": "Lap trinh backend", "moTa": "Phat trien API, he thong nghiep vu", "hinhAnh": "server-cog" }
+  ]
+}
+```
+
+---
+
+### GET /categories/:id
+
+Get a single category.
+
+**Response (200):**
+
+```json
+{
+  "category": { "loaiDichVuId": 1, "tenLoai": "Thiet ke UI/UX", "moTa": "Thiet ke giao dien web va mobile", "hinhAnh": "palette" }
+}
+```
+
+**Error Codes:**
+- `404` - Category not found
+
+---
+
+### POST /categories
+
+Create a new category.
+
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| tenLoai | Yes | Category name |
+| moTa | Optional | Description |
+| hinhAnh | Optional | Frontend icon key, e.g. `brain-circuit` |
+
+**Response (201):**
+
+```json
+{
+  "message": "Tao loai dich vu thanh cong",
+  "category": { "loaiDichVuId": 6, "tenLoai": "AI/ML", "moTa": "Machine learning services", "hinhAnh": "brain-circuit" }
+}
+```
+
+**Error Codes:**
+- `400` - Missing name / Already exists
+
+---
+
+### PUT /categories/:id
+
+Update a category.
+
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| tenLoai | Optional | Category name |
+| moTa | Optional | Description |
+| hinhAnh | Optional | Frontend icon key, e.g. `panels-top-left` |
+
+**Response (200):**
+
+```json
+{
+  "message": "Cap nhat loai dich vu thanh cong",
+  "category": { "loaiDichVuId": 1, "tenLoai": "Full-Stack Web", "moTa": "Updated", "hinhAnh": "code-xml" }
+}
+```
+
+**Error Codes:**
+- `404` - Category not found
+
+---
+
+### DELETE /categories/:id
+
+Delete a category.
+
+**Response (200):**
+
+```json
+{
+  "message": "Xoa loai dich vu thanh cong",
+  "categoryId": 1
+}
+```
+
+**Error Codes:**
+- `404` - Category not found
+
+---
+
+## 11. Supervisors
+
+### GET /supervisors
+
+Get all supervisors.
+
+**Response (200):**
+
+```json
+{
+  "total": 2,
+  "supervisors": [
+    {
+      "giamSatId": 1,
+      "taiKhoanId": 5,
+      "tenDonVi": "QA Solutions",
+      "moTa": "Professional QA services",
+      "nangLuc": "Software testing, Code review",
+      "chungChi": "ISTQB Certified",
+      "phiGiamSat": "500000",
+      "xepHang": "4.5",
+      "tongCongViecGS": 10,
+      "trangThai": "HoatDong",
+      "ngayDangKy": "2025-01-01T00:00:00.000Z",
+      "taiKhoan": {
+        "taiKhoanId": 5,
+        "hoTen": "Le Van E",
+        "email": "levane@email.com",
+        "soDienThoai": "0905555555"
+      }
+    }
+  ]
+}
+```
+
+---
+
+### GET /supervisors/search?keyword=QA
+
+Search supervisors by keyword.
+
+**Query Parameters:**
+
+| Param | Required | Description |
+|---|---|---|
+| keyword | Optional | Search in name/description |
+
+**Response:** Same format as GET /supervisors.
+
+---
+
+### GET /supervisors/:id
+
+Get a single supervisor.
+
+**Response (200):**
+
+```json
+{
+  "supervisor": { "...": "same as supervisor object above" }
+}
+```
+
+**Error Codes:**
+- `404` - Supervisor not found
+
+---
+
+### POST /supervisors
+
+Create/register a supervisor profile.
+
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| taiKhoanId | Yes | **TaiKhoanID** of the user |
+| tenDonVi | Yes | Organization/unit name |
+| moTa | Optional | Description |
+| nangLuc | Optional | Capabilities |
+| chungChi | Optional | Certifications |
+| phiGiamSat | Yes | Supervision fee |
+
+**Response (201):**
+
+```json
+{
+  "message": "Tao don vi giam sat thanh cong",
+  "supervisor": { "...": "full supervisor object" }
+}
+```
+
+**Error Codes:**
+- `400` - User not found / Already registered
+
+---
+
+### PUT /supervisors/:id
+
+Update supervisor profile.
+
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| tenDonVi | Optional | Organization name |
+| moTa | Optional | Description |
+| nangLuc | Optional | Capabilities |
+| chungChi | Optional | Certifications |
+| phiGiamSat | Optional | Fee |
+| trangThai | Optional | Status: `HoatDong`, `TamNghi`, `BiKhoa`, `ChoDuyet` |
+
+**Response (200):**
+
+```json
+{
+  "message": "Cap nhat don vi giam sat thanh cong",
+  "supervisor": { "...": "full supervisor object" }
+}
+```
+
+**Error Codes:**
+- `404` - Supervisor not found
+
+---
+
+### DELETE /supervisors/:id
+
+Delete a supervisor profile.
+
+**Response (200):**
+
+```json
+{
+  "message": "Xoa don vi giam sat thanh cong",
+  "supervisorId": 1
+}
+```
+
+**Error Codes:**
+- `404` - Supervisor not found
 
 ---
 
@@ -2499,83 +1584,64 @@ Delete a progress report.
 
 Create a new conversation.
 
-**Request:**
-- Body:
+A contract conversation stores the client and freelancer as its two primary members. An accepted supervisor is linked through the associated contract and is returned in `giamSat`; a separate conversation does not need to be created for supervision.
+
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| thanhVien1Id | Yes | First member's **TaiKhoanID** |
+| thanhVien2Id | Yes | Second member's **TaiKhoanID** |
+| congViecId | Optional | Associated contract ID |
+
+**Response (201):**
+
 ```json
 {
-  "congViecId": 1,
-  "thanhVien1Id": 1,
-  "thanhVien2Id": 3,
-  "giamSatId": 5
-}
-```
-
-> `congViecId` and `giamSatId` are optional.
-
-**Response 201:**
-```json
-{
-  "message": "Conversation created successfully",
-  "conversation": {
-    "cuocHoiThoaiId": 5,
-    "congViecId": 1,
-    "thanhVien1": {
-      "taiKhoanId": 1,
-      "hoTen": "Nguyen Van A",
-      "email": "nguyenvana@email.com"
-    },
-    "thanhVien2": {
-      "taiKhoanId": 3,
-      "hoTen": "Tran Van B",
-      "email": "tranvanb@email.com"
-    },
-    "giamSatId": 5,
-    "tinNhanCuoi": null,
-    "trangThai": "DangMo",
-    "ngayTao": "2025-01-20T10:30:00.000Z"
-  }
-}
-```
-
-**Errors:**
-- `400` - Missing required fields
-- `404` - User(s) not found
-
----
-
-
-### GET /chat/:id
-
-Get a single conversation by ID.
-
-**Request:**
-- Path params: `:id` - conversation ID (integer)
-
-**Response 200:**
-```json
-{
+  "message": "Tao cuoc hoi thoai thanh cong",
   "conversation": {
     "cuocHoiThoaiId": 1,
     "congViecId": 1,
     "thanhVien1": {
       "taiKhoanId": 1,
-      "hoTen": "Nguyen Van A",
-      "email": "nguyenvana@email.com"
+      "hoTen": "Nguyen Van An",
+      "email": "manhhuy2@gmail.com"
     },
     "thanhVien2": {
-      "taiKhoanId": 3,
-      "hoTen": "Tran Van B",
-      "email": "tranvanb@email.com"
+      "taiKhoanId": 13,
+      "hoTen": "Freelancer",
+      "email": "dev1@freelancer.vn"
     },
-    "giamSatId": null,
-    "tinNhanCuoi": "Hello, I am interested in your project",
+    "giamSat": {
+      "taiKhoanId": 21,
+      "hoTen": "User 21",
+      "email": "iso@giamsat.vn"
+    },
+    "tinNhanCuoi": "2026-05-20T10:10:00.000Z",
     "trangThai": "DangMo",
-    "ngayTao": "2025-01-18T10:30:00.000Z"
+    "ngayTao": "2026-05-02T10:00:00.000Z"
   }
 }
 ```
 
-**Errors:**
+**Error Codes:**
+- `400` - Users not found / Same user / Conversation already exists
+
+---
+
+### GET /chat/:id
+
+Get a conversation by ID.
+
+**Response (200):**
+
+```json
+{
+  "conversation": { "...": "same as conversation object above" }
+}
+```
+
+**Error Codes:**
 - `404` - Conversation not found
 
 ---
@@ -2584,37 +1650,14 @@ Get a single conversation by ID.
 
 Close a conversation.
 
-**Request:**
-- Path params: `:id` - conversation ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "message": "Conversation closed successfully",
-  "conversation": {
-    "cuocHoiThoaiId": 1,
-    "congViecId": 1,
-    "thanhVien1": {
-      "taiKhoanId": 1,
-      "hoTen": "Nguyen Van A",
-      "email": "nguyenvana@email.com"
-    },
-    "thanhVien2": {
-      "taiKhoanId": 3,
-      "hoTen": "Tran Van B",
-      "email": "tranvanb@email.com"
-    },
-    "giamSatId": null,
-    "tinNhanCuoi": "Goodbye!",
-    "trangThai": "DaDong",
-    "ngayTao": "2025-01-18T10:30:00.000Z"
-  }
+  "message": "Dong cuoc hoi thoai thanh cong",
+  "conversation": { "...": "conversation with trangThai: DaDong" }
 }
 ```
-
-**Errors:**
-- `404` - Conversation not found
-- `409` - Conversation already closed
 
 ---
 
@@ -2622,544 +1665,555 @@ Close a conversation.
 
 Get all messages in a conversation.
 
-**Request:**
-- Path params: `:id` - conversation ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "total": 3,
+  "total": 6,
   "messages": [
     {
       "tinNhanId": 1,
       "cuocHoiThoaiId": 1,
       "nguoiGui": {
         "taiKhoanId": 1,
-        "hoTen": "Nguyen Van A",
-        "email": "nguyenvana@email.com"
+        "hoTen": "Nguyen Van An",
+        "email": "manhhuy2@gmail.com"
       },
-      "noiDung": "Hello, I am interested in your project",
+      "noiDung": "Minh gui lai yeu cau API va deadline sprint dau.",
       "loaiTin": "VanBan",
       "daDoc": true,
-      "ngayTao": "2025-01-18T10:30:00.000Z"
-    },
-    {
-      "tinNhanId": 2,
-      "cuocHoiThoaiId": 1,
-      "nguoiGui": {
-        "taiKhoanId": 3,
-        "hoTen": "Tran Van B",
-        "email": "tranvanb@email.com"
-      },
-      "noiDung": "Great! Let me share my portfolio",
-      "loaiTin": "VanBan",
-      "daDoc": false,
-      "ngayTao": "2025-01-18T10:35:00.000Z"
+      "ngayTao": "2026-05-02T10:01:00.000Z"
     }
   ]
 }
 ```
 
-**Errors:**
-- `404` - Conversation not found
-
 ---
-
 
 ### POST /chat/:id/messages
 
 Send a message in a conversation.
 
-**Request:**
-- Path params: `:id` - conversation ID (integer)
-- Body:
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| nguoiGuiId | Yes | Sender's **TaiKhoanID** |
+| noiDung | Yes | Message content |
+| loaiTin | Optional | Message type: `VanBan`, `File`, `HinhAnh` (default: `VanBan`) |
+
+**Note:** `cuocHoiThoaiId` is taken from the URL parameter.
+
+**Response (201):**
+
 ```json
 {
-  "cuocHoiThoaiId": 1,
-  "nguoiGuiId": 1,
-  "noiDung": "Can you start working on the homepage first?",
-  "loaiTin": "VanBan"
-}
-```
-
-> `loaiTin` is optional, defaults to `VanBan`. Valid values: `VanBan`, `HinhAnh`, `TepTin`.
-
-**Response 201:**
-```json
-{
-  "message": "Message sent successfully",
+  "message": "Gui tin nhan thanh cong",
   "data": {
-    "tinNhanId": 5,
+    "tinNhanId": 6,
     "cuocHoiThoaiId": 1,
     "nguoiGui": {
-      "taiKhoanId": 1,
-      "hoTen": "Nguyen Van A",
-      "email": "nguyenvana@email.com"
+      "taiKhoanId": 21,
+      "hoTen": "User 21",
+      "email": "iso@giamsat.vn"
     },
-    "noiDung": "Can you start working on the homepage first?",
+    "noiDung": "Toi da xac nhan moc API va se theo doi sprint tiep theo.",
     "loaiTin": "VanBan",
     "daDoc": false,
-    "ngayTao": "2025-01-19T08:00:00.000Z"
+    "ngayTao": "2026-05-20T10:10:00.000Z"
   }
 }
 ```
 
-**Errors:**
-- `400` - Missing required fields
-- `404` - Conversation or sender not found
-- `409` - Conversation is closed
+**Error Codes:**
+- `400` - Empty content / Sender is not a primary member or accepted supervisor of the contract conversation
+- `404` - Conversation not found
 
 ---
 
 ### PUT /chat/:id/read/:userId
 
-Mark all messages in a conversation as read for a specific user.
+Mark all messages as read for a user in a conversation.
 
-**Request:**
-- Path params:
-  - `:id` - conversation ID (integer)
-  - `:userId` - user account ID (integer)
+Primary members and the accepted supervisor of the associated contract may mark messages as read.
 
-**Response 200:**
+**Response (200):**
+
 ```json
 {
-  "message": "Messages marked as read",
-  "count": 5
+  "message": "Da doc tin nhan",
+  "count": 3
 }
 ```
-
-**Errors:**
-- `404` - Conversation not found
 
 ---
 
-## 13. Payments
+## 13. WebSocket Chat Gateway
 
-### POST /payments/deposit
+The chat system also supports real-time messaging via WebSocket using Socket.IO.
 
-Create a deposit payment for a contract (escrow).
+### Connection
 
-**Request:**
-- Body:
+**Namespace:** `/chat`
+
+**Connection URL:** `ws://localhost:8080/chat?userId=<TaiKhoanID>`
+
+```javascript
+import { io } from 'socket.io-client';
+
+const socket = io('http://localhost:8080/chat', {
+  query: { userId: '1' }  // Your TaiKhoanID
+});
+```
+
+### Client Events (Emit)
+
+#### `joinConversation`
+
+Join a conversation room to receive real-time messages.
+
+```javascript
+socket.emit('joinConversation', { cuocHoiThoaiId: 1 });
+```
+
+#### `leaveConversation`
+
+Leave a conversation room.
+
+```javascript
+socket.emit('leaveConversation', { cuocHoiThoaiId: 1 });
+```
+
+#### `sendMessage`
+
+Send a message via WebSocket (saves to DB and broadcasts).
+
+```javascript
+socket.emit('sendMessage', {
+  cuocHoiThoaiId: 1,
+  nguoiGuiId: 1,
+  noiDung: 'Hello from WebSocket!',
+  loaiTin: 'VanBan'  // Optional, default: 'VanBan'
+});
+```
+
+#### `markAsRead`
+
+Mark messages as read in a conversation.
+
+```javascript
+socket.emit('markAsRead', {
+  cuocHoiThoaiId: 1,
+  userId: 1
+});
+```
+
+#### `typing`
+
+Send typing indicator.
+
+```javascript
+socket.emit('typing', {
+  cuocHoiThoaiId: 1,
+  userId: 1,
+  isTyping: true
+});
+```
+
+### Server Events (Listen)
+
+#### `newMessage`
+
+Received when a new message is sent in a joined conversation room.
+
+```javascript
+socket.on('newMessage', (data) => {
+  // data = MessageDto object
+  console.log(data);
+  // {
+  //   tinNhanId: 7,
+  //   cuocHoiThoaiId: 1,
+  //   nguoiGui: { taiKhoanId: 2, hoTen: "Tran Van B", email: "..." },
+  //   noiDung: "Hi there!",
+  //   loaiTin: "VanBan",
+  //   daDoc: false,
+  //   ngayTao: "2025-01-20T10:10:00.000Z"
+  // }
+});
+```
+
+#### `messageNotification`
+
+Received when you get a message but are NOT in the conversation room (for unread badges).
+
+```javascript
+socket.on('messageNotification', (data) => {
+  // data = { cuocHoiThoaiId: 1, message: MessageDto }
+});
+```
+
+#### `messagesRead`
+
+Received when someone reads messages in a conversation you're in.
+
+```javascript
+socket.on('messagesRead', (data) => {
+  // data = { cuocHoiThoaiId: 1, userId: 2, count: 3 }
+});
+```
+
+#### `userTyping`
+
+Received when another user is typing in a conversation.
+
+```javascript
+socket.on('userTyping', (data) => {
+  // data = { cuocHoiThoaiId: 1, userId: 2, isTyping: true }
+});
+```
+
+#### `error`
+
+Received when a WebSocket operation fails.
+
+```javascript
+socket.on('error', (data) => {
+  // data = { message: "Failed to send message" }
+});
+```
+
+---
+
+## 14. Recommendations
+
+### GET /recommendations/freelancers/:yeuCauId
+
+Get recommended freelancers for a specific job (based on skill matching).
+
+**Response (200):**
+
 ```json
 {
-  "contractId": 1,
-  "amount": 8000000,
-  "paymentMethod": "ChuyenKhoan",
-  "note": "Deposit for React website project"
+  "yeuCauId": 1,
+  "recommendations": [
+    {
+      "taiKhoanId": 2,
+      "hoTen": "Tran Van B",
+      "email": "tranvanb@email.com",
+      "kinhNghiem": 5,
+      "xepHang": "4.8",
+      "matchingSkills": [
+        { "kyNangId": 1, "tenKyNang": "React" }
+      ],
+      "matchScore": 0.85
+    }
+  ]
 }
 ```
 
-> `note` is optional. Valid `paymentMethod`: `ViDienTu`, `ChuyenKhoan`, `TheTinDung`.
+**Error Codes:**
+- `404` - Job not found
 
-**Response 201:**
+---
+
+### GET /recommendations/supervisors
+
+Get recommended supervisors (active, sorted by rating).
+
+**Response (200):**
+
 ```json
 {
-  "message": "Deposit created successfully",
+  "recommendations": [
+    {
+      "giamSatId": 1,
+      "taiKhoanId": 5,
+      "tenDonVi": "QA Solutions",
+      "phiGiamSat": "500000",
+      "xepHang": "4.5",
+      "tongCongViecGS": 10,
+      "trangThai": "HoatDong"
+    }
+  ]
+}
+```
+
+---
+
+## 15. Payments
+
+### POST /payments/deposit
+
+Create an escrow deposit payment for a contract.
+
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| contractId | Yes | Contract ID (CongViecID) |
+| amount | Yes | Deposit amount |
+| paymentMethod | Yes | Method: `ChuyenKhoan`, `ThanhToanQuaMang`, `Vi`, `TienMat` |
+| note | Optional | Payment note |
+
+**Response (201):**
+
+```json
+{
+  "message": "Dat coc thanh cong",
   "payment": {
     "thanhToanId": 1,
     "congViecId": 1,
     "nguoiThueId": 1,
-    "soTien": "8000000",
+    "soTien": "7000000",
     "loaiTT": "DatCoc",
-    "phuongThuc": "ChuyenKhoan",
-    "trangThai": "ChoXuLy",
-    "giamSatId": null,
-    "phiGiamSatTT": "0",
-    "ghiChu": "Deposit for React website project",
-    "ngayTao": "2025-01-20T10:30:00.000Z"
+    "phuongThuc": "Vi",
+    "trangThai": "ThanhCong",
+    "ghiChu": "Escrow deposit",
+    "ngayTao": "2025-01-20T00:00:00.000Z"
   }
 }
 ```
 
-**Errors:**
-- `400` - Missing required fields or invalid amount
+**Error Codes:**
+- `400` - Invalid amount / Contract not found
 - `404` - Contract not found
 
 ---
-
 
 ### GET /payments/:id
 
 Get a single payment by ID.
 
-**Request:**
-- Path params: `:id` - payment ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "payment": {
-    "thanhToanId": 1,
-    "congViecId": 1,
-    "nguoiThueId": 1,
-    "soTien": "8000000",
-    "loaiTT": "DatCoc",
-    "phuongThuc": "ChuyenKhoan",
-    "trangThai": "ThanhCong",
-    "giamSatId": null,
-    "phiGiamSatTT": "0",
-    "ghiChu": "Deposit for React website project",
-    "ngayTao": "2025-01-20T10:30:00.000Z"
-  }
+  "payment": { "...": "same as payment object above" }
 }
 ```
 
-**Errors:**
+**Error Codes:**
 - `404` - Payment not found
 
 ---
 
 ### GET /contracts/:id/payments
 
-Get all payments for a specific contract.
+Get all payments for a contract.
 
-**Request:**
-- Path params: `:id` - contract ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "total": 2,
+  "total": 3,
   "payments": [
-    {
-      "thanhToanId": 1,
-      "congViecId": 1,
-      "nguoiThueId": 1,
-      "soTien": "8000000",
-      "loaiTT": "DatCoc",
-      "phuongThuc": "ChuyenKhoan",
-      "trangThai": "ThanhCong",
-      "giamSatId": null,
-      "phiGiamSatTT": "0",
-      "ghiChu": "Deposit for React website project",
-      "ngayTao": "2025-01-20T10:30:00.000Z"
-    },
-    {
-      "thanhToanId": 2,
-      "congViecId": 1,
-      "nguoiThueId": 1,
-      "soTien": "8000000",
-      "loaiTT": "ThanhToan",
-      "phuongThuc": "ChuyenKhoan",
-      "trangThai": "ThanhCong",
-      "giamSatId": null,
-      "phiGiamSatTT": "0",
-      "ghiChu": "Final payment released",
-      "ngayTao": "2025-02-15T10:30:00.000Z"
-    }
+    { "...": "payment objects" }
   ]
 }
 ```
-
-**Errors:**
-- `404` - Contract not found
 
 ---
 
 ### PUT /payments/:id/release
 
-Release a payment to the freelancer (from escrow).
+Release an escrow payment (admin/system action).
 
-**Request:**
-- Path params: `:id` - payment ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "message": "Payment released successfully",
-  "payment": {
-    "thanhToanId": 1,
-    "congViecId": 1,
-    "nguoiThueId": 1,
-    "soTien": "8000000",
-    "loaiTT": "ThanhToan",
-    "phuongThuc": "ChuyenKhoan",
-    "trangThai": "ThanhCong",
-    "giamSatId": null,
-    "phiGiamSatTT": "0",
-    "ghiChu": "Payment released to freelancer",
-    "ngayTao": "2025-02-15T10:30:00.000Z"
-  }
+  "message": "Giai ngan thanh cong",
+  "payment": { "...": "payment with trangThai: ThanhCong" }
 }
 ```
 
-**Errors:**
+**Error Codes:**
+- `400` - Payment not in releasable state
 - `404` - Payment not found
-- `409` - Payment already released or refunded
 
 ---
-
 
 ### PUT /payments/:id/refund
 
-Refund a payment back to the employer.
+Refund a payment.
 
-**Request:**
-- Path params: `:id` - payment ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "message": "Payment refunded successfully",
-  "payment": {
-    "thanhToanId": 1,
-    "congViecId": 1,
-    "nguoiThueId": 1,
-    "soTien": "8000000",
-    "loaiTT": "HoanTien",
-    "phuongThuc": "ChuyenKhoan",
-    "trangThai": "DaHoan",
-    "giamSatId": null,
-    "phiGiamSatTT": "0",
-    "ghiChu": "Refund due to dispute resolution",
-    "ngayTao": "2025-02-15T10:30:00.000Z"
-  }
+  "message": "Hoan tien thanh cong",
+  "payment": { "...": "payment with trangThai: DaHoan" }
 }
 ```
 
-**Errors:**
+**Error Codes:**
+- `400` - Payment not refundable
 - `404` - Payment not found
-- `409` - Payment already refunded or released
 
 ---
 
-## 14. Disputes
+## 16. Disputes
 
 ### POST /disputes
 
-Create a new dispute for a contract.
+Create a dispute for a contract.
 
-**Request:**
-- Body:
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| congViecId | Yes | Contract ID |
+| nguoiGuiId | Yes | Reporter's **TaiKhoanID** |
+| lyDo | Yes | Reason for dispute |
+| moTa | Optional | Detailed description |
+| yeuCauHoanTien | Yes | Requested refund amount |
+
+**Response (201):**
+
 ```json
 {
-  "congViecId": 1,
-  "nguoiGuiId": 1,
-  "lyDo": "Work not delivered on time",
-  "moTa": "The freelancer missed the deadline by 2 weeks without communication",
-  "yeuCauHoanTien": 5000000
-}
-```
-
-> `moTa` is optional.
-
-**Response 201:**
-```json
-{
-  "message": "Dispute created successfully",
+  "message": "Tao tranh chap thanh cong",
   "dispute": {
     "tranhChapId": 1,
     "congViecId": 1,
     "nguoiGuiId": 1,
     "giamSatId": null,
     "lyDo": "Work not delivered on time",
-    "moTa": "The freelancer missed the deadline by 2 weeks without communication",
-    "trangThai": "DangMo",
-    "yeuCauHoanTien": "5000000",
-    "ngayMo": "2025-02-10T10:30:00.000Z",
+    "moTa": "Freelancer missed the deadline by 2 weeks",
+    "trangThai": "MoiMo",
+    "yeuCauHoanTien": "3000000",
+    "ngayMo": "2025-02-15T00:00:00.000Z",
     "ngayDong": null
   }
 }
 ```
 
-**Errors:**
-- `400` - Missing required fields
+**Error Codes:**
+- `400` - Contract not found / Already has open dispute
 - `404` - Contract not found
-- `409` - Active dispute already exists for this contract
 
 ---
 
 ### GET /disputes/:id
 
-Get a single dispute by ID.
+Get a single dispute.
 
-**Request:**
-- Path params: `:id` - dispute ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "dispute": {
-    "tranhChapId": 1,
-    "congViecId": 1,
-    "nguoiGuiId": 1,
-    "giamSatId": 5,
-    "lyDo": "Work not delivered on time",
-    "moTa": "The freelancer missed the deadline by 2 weeks",
-    "trangThai": "DangXuLy",
-    "yeuCauHoanTien": "5000000",
-    "ngayMo": "2025-02-10T10:30:00.000Z",
-    "ngayDong": null
-  }
+  "dispute": { "...": "same as dispute object" }
 }
 ```
 
-**Errors:**
+**Error Codes:**
 - `404` - Dispute not found
 
 ---
 
-
 ### GET /contracts/:id/disputes
 
-Get all disputes for a specific contract.
+Get all disputes for a contract.
 
-**Request:**
-- Path params: `:id` - contract ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
   "total": 1,
-  "disputes": [
-    {
-      "tranhChapId": 1,
-      "congViecId": 1,
-      "nguoiGuiId": 1,
-      "giamSatId": 5,
-      "lyDo": "Work not delivered on time",
-      "moTa": "The freelancer missed the deadline by 2 weeks",
-      "trangThai": "DangXuLy",
-      "yeuCauHoanTien": "5000000",
-      "ngayMo": "2025-02-10T10:30:00.000Z",
-      "ngayDong": null
-    }
-  ]
+  "disputes": [ { "...": "dispute objects" } ]
 }
 ```
-
-**Errors:**
-- `404` - Contract not found
 
 ---
 
 ### PUT /disputes/:id/review
 
-Assign a supervisor to review a dispute.
+Assign a supervisor to review the dispute.
 
-**Request:**
-- Path params: `:id` - dispute ID (integer)
-- Body:
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| giamSatId | Yes | Supervisor's **TaiKhoanID** |
+
+**Response (200):**
+
 ```json
 {
-  "giamSatId": 5
+  "message": "Giam sat da nhan xem xet tranh chap",
+  "dispute": { "...": "dispute with giamSatId set, trangThai: DangXuLy" }
 }
 ```
 
-**Response 200:**
-```json
-{
-  "message": "Dispute assigned for review",
-  "dispute": {
-    "tranhChapId": 1,
-    "congViecId": 1,
-    "nguoiGuiId": 1,
-    "giamSatId": 5,
-    "lyDo": "Work not delivered on time",
-    "moTa": "The freelancer missed the deadline by 2 weeks",
-    "trangThai": "DangXuLy",
-    "yeuCauHoanTien": "5000000",
-    "ngayMo": "2025-02-10T10:30:00.000Z",
-    "ngayDong": null
-  }
-}
-```
-
-**Errors:**
-- `404` - Dispute or supervisor not found
-- `409` - Dispute already assigned or closed
+**Error Codes:**
+- `400` - Supervisor not found / Dispute not in reviewable state
+- `404` - Dispute not found
 
 ---
 
 ### PUT /disputes/:id/resolve
 
-Resolve a dispute with a final decision.
+Resolve a dispute (by supervisor).
 
-**Request:**
-- Path params: `:id` - dispute ID (integer)
-- Body:
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| giamSatId | Yes | Supervisor's **TaiKhoanID** (must be assigned reviewer) |
+| ketQua | Yes | Result: `TiepTuc`, `HoanTienNguoiThue`, `HuyHopDong`, `PhanChia` |
+| lyDo | Yes | Resolution reason |
+| soTienHoan | Yes | Refund amount |
+| benChiuPhi | Yes | Who pays fees: `NguoiThue`, `Freelancer`, `ChiaSe`, `HeThong` |
+
+**Response (200):**
+
 ```json
 {
-  "giamSatId": 5,
-  "ketQua": "HoanMotPhan",
-  "lyDo": "Freelancer completed 60% of work, partial refund granted",
-  "soTienHoan": 3000000,
-  "benChiuPhi": "ChiaDeu"
+  "message": "Giai quyet tranh chap thanh cong",
+  "dispute": { "...": "dispute with trangThai: DaKetLuan, ngayDong set" }
 }
 ```
 
-> Valid `ketQua`: `HoanTien`, `KhongHoanTien`, `HoanMotPhan`.
-> Valid `benChiuPhi`: `NguoiThue`, `Freelancer`, `ChiaDeu`.
-
-**Response 200:**
-```json
-{
-  "message": "Dispute resolved successfully",
-  "dispute": {
-    "tranhChapId": 1,
-    "congViecId": 1,
-    "nguoiGuiId": 1,
-    "giamSatId": 5,
-    "lyDo": "Work not delivered on time",
-    "moTa": "The freelancer missed the deadline by 2 weeks",
-    "trangThai": "DaDong",
-    "yeuCauHoanTien": "5000000",
-    "ngayMo": "2025-02-10T10:30:00.000Z",
-    "ngayDong": "2025-02-15T14:00:00.000Z"
-  }
-}
-```
-
-**Errors:**
-- `400` - Missing required fields
+**Error Codes:**
+- `400` - Not the assigned supervisor / Invalid state
 - `404` - Dispute not found
-- `409` - Dispute already resolved
 
 ---
 
-
-## 15. Evidences
+## 17. Evidences
 
 ### POST /disputes/:id/evidences
 
 Submit evidence for a dispute.
 
-**Request:**
-- Path params: `:id` - dispute ID (integer)
-- Body:
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| nguoiNopId | Yes | Submitter's **TaiKhoanID** |
+| loaiBangChung | Yes | Type: `TinNhan`, `File`, `HinhAnh`, `GhiChu`, `KhacP` |
+| noiDung | Optional | Text content/description |
+| duongDanFile | Optional | File URL |
+
+**Response (201):**
+
 ```json
 {
-  "nguoiNopId": 1,
-  "giamSatId": 5,
-  "loaiBangChung": "TaiLieu",
-  "noiDung": "Contract agreement showing deadline was January 31",
-  "duongDanFile": "https://example.com/files/contract.pdf"
-}
-```
-
-> `giamSatId`, `noiDung`, `duongDanFile` are optional.
-> Valid `loaiBangChung`: `HinhAnh`, `Video`, `TaiLieu`, `VanBan`.
-
-**Response 201:**
-```json
-{
-  "message": "Evidence submitted successfully",
+  "message": "Nop bang chung thanh cong",
   "evidence": {
     "bangChungId": 1,
     "tranhChapId": 1,
     "nguoiNopId": 1,
-    "giamSatId": 5,
-    "loaiBangChung": "TaiLieu",
-    "noiDung": "Contract agreement showing deadline was January 31",
-    "duongDanFile": "https://example.com/files/contract.pdf",
-    "ngayNop": "2025-02-11T08:00:00.000Z"
+    "loaiBangChung": "HinhAnh",
+    "noiDung": "Screenshot of conversation",
+    "duongDanFile": "https://example.com/evidence.png",
+    "ngayNop": "2025-02-16T00:00:00.000Z"
   }
 }
 ```
 
-**Errors:**
-- `400` - Missing required fields
+**Error Codes:**
+- `400` - Dispute not open / User not involved
 - `404` - Dispute not found
 
 ---
@@ -3168,40 +2222,14 @@ Submit evidence for a dispute.
 
 Get all evidences for a dispute.
 
-**Request:**
-- Path params: `:id` - dispute ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
   "total": 2,
-  "evidences": [
-    {
-      "bangChungId": 1,
-      "tranhChapId": 1,
-      "nguoiNopId": 1,
-      "giamSatId": 5,
-      "loaiBangChung": "TaiLieu",
-      "noiDung": "Contract agreement showing deadline was January 31",
-      "duongDanFile": "https://example.com/files/contract.pdf",
-      "ngayNop": "2025-02-11T08:00:00.000Z"
-    },
-    {
-      "bangChungId": 2,
-      "tranhChapId": 1,
-      "nguoiNopId": 3,
-      "giamSatId": null,
-      "loaiBangChung": "HinhAnh",
-      "noiDung": "Screenshot of chat showing extension request",
-      "duongDanFile": "https://example.com/files/screenshot.png",
-      "ngayNop": "2025-02-12T09:00:00.000Z"
-    }
-  ]
+  "evidences": [ { "...": "evidence objects" } ]
 }
 ```
-
-**Errors:**
-- `404` - Dispute not found
 
 ---
 
@@ -3209,189 +2237,115 @@ Get all evidences for a dispute.
 
 Delete an evidence submission.
 
-**Request:**
-- Path params: `:id` - evidence ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "message": "Evidence deleted successfully",
+  "message": "Xoa bang chung thanh cong",
   "evidence": null
 }
 ```
 
-**Errors:**
+**Error Codes:**
 - `404` - Evidence not found
 
 ---
 
-
-## 16. Reviews
+## 18. Reviews
 
 ### POST /reviews
 
-Create a new review for a completed contract.
+Create a review for a completed contract.
 
-**Request:**
-- Body:
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| congViecId | Yes | Contract ID (must be completed) |
+| nguoiDanhGiaId | Yes | Reviewer's **TaiKhoanID** |
+| nguoiDuocDGId | Yes | Reviewed person's **TaiKhoanID** |
+| diemSo | Yes | Rating score (1-5) |
+| binhLuan | Optional | Review comment |
+| loaiDanhGia | Yes | Type: `NguoiThue_DanhGia_Freelancer`, `Freelancer_DanhGia_NguoiThue`, `NguoiThue_DanhGia_GiamSat`, `Freelancer_DanhGia_GiamSat`, `GiamSat_DanhGia_Freelancer`, `GiamSat_DanhGia_NguoiThue` |
+
+**Response (201):**
+
 ```json
 {
-  "congViecId": 1,
-  "nguoiDanhGiaId": 1,
-  "nguoiDuocDGId": 3,
-  "diemSo": 5,
-  "binhLuan": "Excellent work, delivered on time with great quality",
-  "loaiDanhGia": "NguoiThue_DanhGia_Freelancer",
-  "giamSatId": 5
-}
-```
-
-> `binhLuan` and `giamSatId` are optional.
-> Valid `loaiDanhGia`: `NguoiThue_DanhGia_Freelancer`, `Freelancer_DanhGia_NguoiThue`.
-> `diemSo` range: 1-5.
-
-**Response 201:**
-```json
-{
-  "message": "Review created successfully",
+  "message": "Tao danh gia thanh cong",
   "review": {
     "danhGiaId": 1,
     "congViecId": 1,
     "nguoiDanhGiaId": 1,
-    "nguoiDuocDGId": 3,
+    "nguoiDuocDGId": 2,
     "diemSo": 5,
-    "binhLuan": "Excellent work, delivered on time with great quality",
+    "binhLuan": "Excellent work, delivered on time!",
     "loaiDanhGia": "NguoiThue_DanhGia_Freelancer",
-    "giamSatId": 5,
-    "ngayTao": "2025-02-20T10:30:00.000Z"
+    "ngayTao": "2025-02-20T00:00:00.000Z"
   }
 }
 ```
 
-**Errors:**
-- `400` - Missing required fields or invalid diemSo
-- `404` - Contract, reviewer, or reviewee not found
-- `409` - Review already exists for this contract by this user
+**Error Codes:**
+- `400` - Contract not completed / Already reviewed / Invalid score
+- `404` - Contract not found
 
 ---
 
 ### GET /reviews/:id
 
-Get a single review by ID.
+Get a single review.
 
-**Request:**
-- Path params: `:id` - review ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "review": {
-    "danhGiaId": 1,
-    "congViecId": 1,
-    "nguoiDanhGiaId": 1,
-    "nguoiDuocDGId": 3,
-    "diemSo": 5,
-    "binhLuan": "Excellent work, delivered on time with great quality",
-    "loaiDanhGia": "NguoiThue_DanhGia_Freelancer",
-    "giamSatId": 5,
-    "ngayTao": "2025-02-20T10:30:00.000Z"
-  }
+  "review": { "...": "same as review object" }
 }
 ```
 
-**Errors:**
+**Error Codes:**
 - `404` - Review not found
 
 ---
 
 ### GET /users/:id/reviews
 
-Get all reviews for a specific user (received reviews).
+Get all reviews for a user (received reviews).
 
-**Request:**
-- Path params: `:id` - user account ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "total": 2,
-  "reviews": [
-    {
-      "danhGiaId": 1,
-      "congViecId": 1,
-      "nguoiDanhGiaId": 1,
-      "nguoiDuocDGId": 3,
-      "diemSo": 5,
-      "binhLuan": "Excellent work",
-      "loaiDanhGia": "NguoiThue_DanhGia_Freelancer",
-      "giamSatId": null,
-      "ngayTao": "2025-02-20T10:30:00.000Z"
-    }
-  ]
+  "total": 5,
+  "reviews": [ { "...": "review objects" } ]
 }
 ```
 
-**Errors:**
-- `404` - User not found
-
 ---
-
 
 ### GET /contracts/:id/reviews
 
-Get all reviews for a specific contract.
+Get all reviews for a contract.
 
-**Request:**
-- Path params: `:id` - contract ID (integer)
-
-**Response 200:**
-```json
-{
-  "total": 2,
-  "reviews": [
-    {
-      "danhGiaId": 1,
-      "congViecId": 1,
-      "nguoiDanhGiaId": 1,
-      "nguoiDuocDGId": 3,
-      "diemSo": 5,
-      "binhLuan": "Excellent work, delivered on time",
-      "loaiDanhGia": "NguoiThue_DanhGia_Freelancer",
-      "giamSatId": null,
-      "ngayTao": "2025-02-20T10:30:00.000Z"
-    },
-    {
-      "danhGiaId": 2,
-      "congViecId": 1,
-      "nguoiDanhGiaId": 3,
-      "nguoiDuocDGId": 1,
-      "diemSo": 4,
-      "binhLuan": "Good communication, clear requirements",
-      "loaiDanhGia": "Freelancer_DanhGia_NguoiThue",
-      "giamSatId": null,
-      "ngayTao": "2025-02-20T11:00:00.000Z"
-    }
-  ]
-}
-```
-
-**Errors:**
-- `404` - Contract not found
+**Response:** Same format as review list.
 
 ---
 
-## 17. Notifications
+## 19. Notifications
 
-### GET /notifications
+### GET /notifications?userId=1
 
 Get all notifications for a user.
 
-**Request:**
-- Query params: `userId` - user account ID (integer, required)
+**Query Parameters:**
 
-Example: `GET /notifications?userId=1`
+| Param | Required | Description |
+|---|---|---|
+| userId | Yes | User's **TaiKhoanID** |
 
-**Response 200:**
+**Response (200):**
+
 ```json
 {
   "total": 3,
@@ -3400,21 +2354,10 @@ Example: `GET /notifications?userId=1`
       "thongBaoId": 1,
       "taiKhoanId": 1,
       "tieuDe": "New proposal received",
-      "noiDung": "You have a new proposal for your job posting",
-      "loaiThongBao": "CongViec",
+      "noiDung": "You have a new proposal for your job",
+      "loaiThongBao": "BaoGia",
       "daDoc": false,
-      "giamSatId": null,
-      "ngayTao": "2025-01-16T08:00:00.000Z"
-    },
-    {
-      "thongBaoId": 2,
-      "taiKhoanId": 1,
-      "tieuDe": "Payment received",
-      "noiDung": "Your deposit of 8,000,000 VND has been confirmed",
-      "loaiThongBao": "ThanhToan",
-      "daDoc": true,
-      "giamSatId": null,
-      "ngayTao": "2025-01-20T10:30:00.000Z"
+      "ngayTao": "2025-01-16T00:00:00.000Z"
     }
   ]
 }
@@ -3426,27 +2369,16 @@ Example: `GET /notifications?userId=1`
 
 Mark a notification as read.
 
-**Request:**
-- Path params: `:id` - notification ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "message": "Notification marked as read",
-  "notification": {
-    "thongBaoId": 1,
-    "taiKhoanId": 1,
-    "tieuDe": "New proposal received",
-    "noiDung": "You have a new proposal for your job posting",
-    "loaiThongBao": "CongViec",
-    "daDoc": true,
-    "giamSatId": null,
-    "ngayTao": "2025-01-16T08:00:00.000Z"
-  }
+  "message": "Da doc thong bao",
+  "notification": { "...": "notification with daDoc: true" }
 }
 ```
 
-**Errors:**
+**Error Codes:**
 - `404` - Notification not found
 
 ---
@@ -3455,103 +2387,69 @@ Mark a notification as read.
 
 Delete a notification.
 
-**Request:**
-- Path params: `:id` - notification ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "message": "Notification deleted successfully"
+  "message": "Xoa thong bao thanh cong"
 }
 ```
 
-**Errors:**
+**Error Codes:**
 - `404` - Notification not found
 
 ---
 
-
-## 18. Reports
+## 20. Reports
 
 ### POST /reports
 
-Create a new user report (report a user for misconduct).
+Create a user report (report another user for misconduct).
 
-**Request:**
-- Body:
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| nguoiBaoCaoId | Yes | Reporter's **TaiKhoanID** |
+| nguoiBiCaoId | Yes | Reported user's **TaiKhoanID** |
+| lyDo | Yes | Reason for report |
+| moTa | Optional | Detailed description |
+
+**Response (201):**
+
 ```json
 {
-  "nguoiBaoCaoId": 1,
-  "nguoiBiCaoId": 3,
-  "lyDo": "Spam messages",
-  "moTa": "This user keeps sending unsolicited promotional messages"
-}
-```
-
-> `moTa` is optional.
-
-**Response 201:**
-```json
-{
-  "message": "Report created successfully",
+  "message": "Tao bao cao thanh cong",
   "report": {
     "baoCaoId": 1,
     "nguoiBaoCaoId": 1,
     "nguoiBiCaoId": 3,
     "lyDo": "Spam messages",
-    "moTa": "This user keeps sending unsolicited promotional messages",
+    "moTa": "User keeps sending unsolicited messages",
     "trangThai": "ChoXuLy",
     "ketQua": null,
     "adminXuLyId": null,
-    "ngayTao": "2025-02-01T10:30:00.000Z",
+    "ngayTao": "2025-02-01T00:00:00.000Z",
     "ngayXuLy": null
   }
 }
 ```
 
-**Errors:**
-- `400` - Missing required fields
-- `404` - Reporter or reported user not found
+**Error Codes:**
+- `400` - Cannot report yourself / Users not found
 
 ---
 
 ### GET /reports
 
-Get all reports (admin view).
+Get all reports (admin endpoint).
 
-**Request:**
-- No parameters required.
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "total": 2,
-  "reports": [
-    {
-      "baoCaoId": 1,
-      "nguoiBaoCaoId": 1,
-      "nguoiBiCaoId": 3,
-      "lyDo": "Spam messages",
-      "moTa": "This user keeps sending unsolicited promotional messages",
-      "trangThai": "ChoXuLy",
-      "ketQua": null,
-      "adminXuLyId": null,
-      "ngayTao": "2025-02-01T10:30:00.000Z",
-      "ngayXuLy": null
-    },
-    {
-      "baoCaoId": 2,
-      "nguoiBaoCaoId": 5,
-      "nguoiBiCaoId": 7,
-      "lyDo": "Fake profile",
-      "moTa": null,
-      "trangThai": "DaXuLy",
-      "ketQua": "User account suspended",
-      "adminXuLyId": 10,
-      "ngayTao": "2025-01-28T08:00:00.000Z",
-      "ngayXuLy": "2025-01-30T14:00:00.000Z"
-    }
-  ]
+  "total": 5,
+  "reports": [ { "...": "report objects" } ]
 }
 ```
 
@@ -3561,56 +2459,37 @@ Get all reports (admin view).
 
 Resolve a report (admin action).
 
-**Request:**
-- Path params: `:id` - report ID (integer)
-- Body:
+**Request Body:**
+
+| Field | Required | Description |
+|---|---|---|
+| adminId | Yes | Admin's **TaiKhoanID** |
+| trangThai | Yes | Status: `DangXuLy`, `DaXuLy`, `HuyBo` |
+| ketQua | Yes | Resolution result description |
+
+**Response (200):**
+
 ```json
 {
-  "adminId": 10,
-  "trangThai": "DaXuLy",
-  "ketQua": "User has been warned and messages deleted"
+  "message": "Xu ly bao cao thanh cong",
+  "report": { "...": "report with trangThai updated, adminXuLyId set, ngayXuLy set" }
 }
 ```
 
-> Valid `trangThai`: `ChoXuLy`, `DaXuLy`, `TuChoi`.
-
-**Response 200:**
-```json
-{
-  "message": "Report resolved successfully",
-  "report": {
-    "baoCaoId": 1,
-    "nguoiBaoCaoId": 1,
-    "nguoiBiCaoId": 3,
-    "lyDo": "Spam messages",
-    "moTa": "This user keeps sending unsolicited promotional messages",
-    "trangThai": "DaXuLy",
-    "ketQua": "User has been warned and messages deleted",
-    "adminXuLyId": 10,
-    "ngayTao": "2025-02-01T10:30:00.000Z",
-    "ngayXuLy": "2025-02-03T09:00:00.000Z"
-  }
-}
-```
-
-**Errors:**
-- `400` - Missing required fields
+**Error Codes:**
+- `400` - Invalid status / Admin not found
 - `404` - Report not found
-- `409` - Report already resolved
 
 ---
 
-
-## 19. Admin
+## 21. Admin
 
 ### GET /admin/users
 
-Get all users for admin management.
+Get all users (admin view with management info).
 
-**Request:**
-- No parameters required.
+**Response (200):**
 
-**Response 200:**
 ```json
 {
   "total": 10,
@@ -3620,18 +2499,9 @@ Get all users for admin management.
       "tenDangNhap": "nguyenvana",
       "email": "nguyenvana@email.com",
       "hoTen": "Nguyen Van A",
-      "vaiTro": "Freelancer",
-      "trangThai": "HoatDong",
-      "ngayTao": "2025-01-15T10:30:00.000Z"
-    },
-    {
-      "taiKhoanId": 2,
-      "tenDangNhap": "tranvanb",
-      "email": "tranvanb@email.com",
-      "hoTen": "Tran Van B",
       "vaiTro": "NguoiThue",
       "trangThai": "HoatDong",
-      "ngayTao": "2025-01-10T08:00:00.000Z"
+      "ngayTao": "2025-01-01T00:00:00.000Z"
     }
   ]
 }
@@ -3641,32 +2511,27 @@ Get all users for admin management.
 
 ### PUT /admin/users/:id/ban
 
-Ban (lock) a user account.
+Ban a user account.
 
-**Request:**
-- Path params: `:id` - user account ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "message": "User banned successfully"
+  "message": "Da khoa tai khoan"
 }
 ```
 
-**Errors:**
+**Error Codes:**
 - `404` - User not found
-- `409` - User already banned
 
 ---
 
 ### GET /admin/supervisors
 
-Get all supervisors for admin management.
+Get all supervisors (admin view).
 
-**Request:**
-- No parameters required.
+**Response (200):**
 
-**Response 200:**
 ```json
 {
   "total": 3,
@@ -3674,22 +2539,12 @@ Get all supervisors for admin management.
     {
       "giamSatId": 1,
       "taiKhoanId": 5,
-      "tenDonVi": "Quality Assurance Corp",
+      "tenDonVi": "QA Solutions",
       "phiGiamSat": "500000",
-      "trangThai": "DaDuyet",
-      "ngayDangKy": "2025-01-01T00:00:00.000Z",
-      "hoTen": "Le Van C",
-      "email": "levanc@email.com"
-    },
-    {
-      "giamSatId": 2,
-      "taiKhoanId": 8,
-      "tenDonVi": "Project Monitor Ltd",
-      "phiGiamSat": "400000",
       "trangThai": "ChoDuyet",
-      "ngayDangKy": "2025-01-20T00:00:00.000Z",
-      "hoTen": "Pham Van D",
-      "email": "phamvand@email.com"
+      "ngayDangKy": "2025-01-01T00:00:00.000Z",
+      "hoTen": "Le Van E",
+      "email": "levane@email.com"
     }
   ]
 }
@@ -3701,30 +2556,25 @@ Get all supervisors for admin management.
 
 Approve a supervisor registration.
 
-**Request:**
-- Path params: `:id` - supervisor ID (integer)
+**Response (200):**
 
-**Response 200:**
 ```json
 {
-  "message": "Supervisor approved successfully"
+  "message": "Da duyet don vi giam sat"
 }
 ```
 
-**Errors:**
+**Error Codes:**
 - `404` - Supervisor not found
-- `409` - Supervisor already approved
 
 ---
 
 ### GET /admin/statistics
 
-Get platform statistics overview.
+Get platform statistics.
 
-**Request:**
-- No parameters required.
+**Response (200):**
 
-**Response 200:**
 ```json
 {
   "statistics": {
@@ -3739,294 +2589,159 @@ Get platform statistics overview.
 
 ---
 
+## Enum Reference
 
-## Endpoint Summary
+### User Roles (VaiTroTaiKhoan)
+- `NguoiThue` - Client/Employer
+- `Freelancer` - Freelancer
+- `DonViGiamSat` - Supervisor
+- `Admin` - Administrator
+- `KhachVangLai` - Guest
 
-| # | Method | Path | Module | Description |
-|---|--------|------|--------|-------------|
-| 1 | GET | /health | Health | Health check |
-| 2 | POST | /auth/register | Auth | Register new account |
-| 3 | POST | /auth/login | Auth | Login |
-| 4 | GET | /users | Users | Get all users |
-| 5 | GET | /users/search | Users | Search users |
-| 6 | GET | /users/:id | Users | Get user by ID |
-| 7 | GET | /users/:id/profile | Users | Get user profile |
-| 8 | GET | /users/:id/jobs | Users | Get user's jobs |
-| 9 | GET | /users/:id/contracts | Users | Get user's contracts |
-| 10 | GET | /users/:id/conversations | Users | Get user's conversations |
-| 11 | PUT | /users/:id | Users | Update user |
-| 12 | DELETE | /users/:id | Users | Delete user |
-| 13 | GET | /categories | Categories | Get all categories |
-| 14 | GET | /categories/:id | Categories | Get category by ID |
-| 15 | POST | /categories | Categories | Create category |
-| 16 | PUT | /categories/:id | Categories | Update category |
-| 17 | DELETE | /categories/:id | Categories | Delete category |
-| 18 | GET | /skills | Skills | Get all skills |
-| 19 | GET | /skills/:id | Skills | Get skill by ID |
-| 20 | POST | /skills | Skills | Create skill |
-| 21 | PUT | /skills/:id | Skills | Update skill |
-| 22 | DELETE | /skills/:id | Skills | Delete skill |
-| 23 | GET | /jobs | Jobs | Get all jobs |
-| 24 | GET | /jobs/search | Jobs | Search jobs |
-| 25 | GET | /jobs/:id | Jobs | Get job by ID |
-| 26 | GET | /jobs/:id/proposals | Jobs | Get job proposals |
-| 27 | GET | /jobs/:id/skills | Jobs | Get job skills |
-| 28 | POST | /jobs | Jobs | Create job |
-| 29 | PUT | /jobs/:id | Jobs | Update job |
-| 30 | PUT | /jobs/:id/skills | Jobs | Set job skills |
-| 31 | POST | /jobs/:id/skills/:kyNangId | Jobs | Add skill to job |
-| 32 | DELETE | /jobs/:id/skills/:kyNangId | Jobs | Remove skill from job |
-| 33 | DELETE | /jobs/:id | Jobs | Delete job |
-| 34 | GET | /proposals/:id | Proposals | Get proposal by ID |
-| 35 | POST | /proposals | Proposals | Create proposal |
-| 36 | PUT | /proposals/:id | Proposals | Update proposal |
-| 37 | DELETE | /proposals/:id | Proposals | Delete proposal |
-| 38 | GET | /freelancers/:id/proposals | Freelancers | Get freelancer proposals |
-| 39 | GET | /freelancers/:id/skills | Freelancers | Get freelancer skills |
-| 40 | PUT | /freelancers/:id/skills | Freelancers | Set freelancer skills |
-| 41 | POST | /freelancers/:id/skills/:kyNangId | Freelancers | Add skill to freelancer |
-| 42 | DELETE | /freelancers/:id/skills/:kyNangId | Freelancers | Remove skill from freelancer |
-| 43 | GET | /contracts | Contracts | Get all contracts |
-| 44 | GET | /contracts/:id | Contracts | Get contract by ID |
-| 45 | GET | /contracts/:id/detail | Contracts | Get contract detail |
-| 46 | GET | /contracts/:id/progress | Contracts | Get contract progress |
-| 47 | GET | /contracts/:id/conversations | Contracts | Get contract conversations |
-| 48 | POST | /contracts | Contracts | Create contract |
-| 49 | PUT | /contracts/:id/status | Contracts | Update contract status |
-| 50 | POST | /contracts/:id/supervisor | Contracts | Select supervisor |
-| 51 | PUT | /contracts/:id/supervisor/accept | Contracts | Accept supervisor |
-| 52 | PUT | /contracts/:id/supervisor/reject | Contracts | Reject supervisor |
-| 53 | GET | /supervisors | Supervisors | Get all supervisors |
-| 54 | GET | /supervisors/search | Supervisors | Search supervisors |
-| 55 | GET | /supervisors/:id | Supervisors | Get supervisor by ID |
-| 56 | POST | /supervisors | Supervisors | Create supervisor |
-| 57 | PUT | /supervisors/:id | Supervisors | Update supervisor |
-| 58 | DELETE | /supervisors/:id | Supervisors | Delete supervisor |
-| 59 | GET | /progress/:id | Progress | Get progress by ID |
-| 60 | POST | /progress | Progress | Create progress |
-| 61 | PUT | /progress/:id | Progress | Update progress |
-| 62 | DELETE | /progress/:id | Progress | Delete progress |
-| 63 | POST | /chat | Chat | Create conversation |
-| 64 | GET | /chat/:id | Chat | Get conversation by ID |
-| 65 | PUT | /chat/:id/close | Chat | Close conversation |
-| 66 | GET | /chat/:id/messages | Chat | Get messages |
-| 67 | POST | /chat/:id/messages | Chat | Send message |
-| 68 | PUT | /chat/:id/read/:userId | Chat | Mark messages as read |
-| 69 | POST | /payments/deposit | Payments | Create deposit |
-| 70 | GET | /payments/:id | Payments | Get payment by ID |
-| 71 | GET | /contracts/:id/payments | Payments | Get contract payments |
-| 72 | PUT | /payments/:id/release | Payments | Release payment |
-| 73 | PUT | /payments/:id/refund | Payments | Refund payment |
-| 74 | POST | /disputes | Disputes | Create dispute |
-| 75 | GET | /disputes/:id | Disputes | Get dispute by ID |
-| 76 | GET | /contracts/:id/disputes | Disputes | Get contract disputes |
-| 77 | PUT | /disputes/:id/review | Disputes | Assign reviewer |
-| 78 | PUT | /disputes/:id/resolve | Disputes | Resolve dispute |
-| 79 | POST | /disputes/:id/evidences | Evidences | Submit evidence |
-| 80 | GET | /disputes/:id/evidences | Evidences | Get dispute evidences |
-| 81 | DELETE | /evidences/:id | Evidences | Delete evidence |
-| 82 | POST | /reviews | Reviews | Create review |
-| 83 | GET | /reviews/:id | Reviews | Get review by ID |
-| 84 | GET | /users/:id/reviews | Reviews | Get user reviews |
-| 85 | GET | /contracts/:id/reviews | Reviews | Get contract reviews |
-| 86 | GET | /notifications | Notifications | Get user notifications |
-| 87 | PUT | /notifications/:id/read | Notifications | Mark as read |
-| 88 | DELETE | /notifications/:id | Notifications | Delete notification |
-| 89 | POST | /reports | Reports | Create report |
-| 90 | GET | /reports | Reports | Get all reports |
-| 91 | PUT | /reports/:id/resolve | Reports | Resolve report |
-| 92 | GET | /admin/users | Admin | Get all users (admin) |
-| 93 | PUT | /admin/users/:id/ban | Admin | Ban user |
-| 94 | GET | /admin/supervisors | Admin | Get supervisors (admin) |
-| 95 | PUT | /admin/supervisors/:id/approve | Admin | Approve supervisor |
-| 96 | GET | /admin/statistics | Admin | Get statistics |
+### Account Status (TrangThaiTaiKhoan)
+- `HoatDong` - Active
+- `BiKhoa` - Locked
+- `ChoDuyet` - Pending approval
+- `DaBi` - Deleted/disabled
 
----
+### Job Status (TrangThaiYeuCau)
+- `DangNhanHoSo` - Accepting freelancer proposals
+- `DaDong` - Closed to new proposals; received proposals may still be selected
+- `DaChot` - Freelancer selected and contract created
+- `DaHuy` - Cancelled
 
+### Proposal Status (TrangThaiBaoGia)
+- `DaGui` - Submitted
+- `DuocChon` - Accepted/Selected
+- `TuChoi` - Rejected
+- `HetHan` - Expired
 
----
+### Contract Status (TrangThaiCongViec)
+- `MoiTao` - Newly created
+- `DangThucHien` - In progress
+- `HoanThanh` - Completed
+- `DaHuy` - Cancelled
+- `TranhChap` - In dispute
 
-## 20. WebSocket - Realtime Chat
+### Supervisor Status (TrangThaiGiamSatCongViec)
+- `KhongCo` - No supervisor
+- `ChoDuyet` - Pending approval
+- `DangGiamSat` - Supervising
+- `HoanThanh` - Supervision completed
+- `TuChoi` - Rejected
 
-The chat system supports realtime messaging via Socket.IO alongside the REST API.
+### Supervisor Request Status (TrangThaiYeuCauGiamSat)
+- `ChoDuyet` - Pending approval
+- `DaChapNhan` - Accepted
+- `TuChoi` - Rejected
+- `HoanThanh` - Completed
 
-### Connection
+### Payment Type (LoaiThanhToan)
+- `DatCoc` - Escrow deposit
+- `ThanhToanCuoi` - Final payment (to freelancer)
+- `PhiGiamSat` - Supervisor fee
+- `PhiHeThong` - System fee
+- `HoanTien` - Refund
 
-```
-URL: http://localhost:3000/chat
-Query: { userId: "1" }
-```
+### Payment Method (PhuongThucThanhToan)
+- `ChuyenKhoan` - Bank transfer
+- `ThanhToanQuaMang` - Online payment
+- `Vi` - Wallet
+- `TienMat` - Cash
 
-**Frontend example:**
-```js
-import { io } from 'socket.io-client';
+### Payment Status (TrangThaiThanhToan)
+- `ChoXuLy` - Pending
+- `ThanhCong` - Successful
+- `ThatBai` - Failed
+- `DaHoan` - Refunded
 
-const socket = io('http://localhost:3000/chat', {
-  query: { userId: '1' }
-});
-```
+### Dispute Status (TrangThaiTranhChap)
+- `MoiMo` - Newly opened
+- `DangXuLy` - In progress
+- `DaKetLuan` - Concluded
+- `DaDong` - Closed
 
----
+### Dispute Result (KetQuaTranhChap)
+- `TiepTuc` - Continue the contract
+- `HoanTienNguoiThue` - Refund the client
+- `HuyHopDong` - Cancel the contract
+- `PhanChia` - Split settlement
 
-### Client -> Server Events
+### Dispute Fee Bearer (BenChiuPhiKetLuan)
+- `NguoiThue` - Client pays the fees
+- `Freelancer` - Freelancer pays the fees
+- `ChiaSe` - Fees are shared
+- `HeThong` - Platform pays the fees
 
-#### joinConversation
+### Evidence Type (LoaiBangChung)
+- `TinNhan` - Message
+- `File` - File
+- `HinhAnh` - Image
+- `GhiChu` - Note
+- `KhacP` - Other
 
-Join a conversation room to receive realtime messages.
+### Review Type (LoaiDanhGia)
+- `NguoiThue_DanhGia_Freelancer` - Client reviews Freelancer
+- `Freelancer_DanhGia_NguoiThue` - Freelancer reviews Client
+- `NguoiThue_DanhGia_GiamSat` - Client reviews Supervisor
+- `Freelancer_DanhGia_GiamSat` - Freelancer reviews Supervisor
+- `GiamSat_DanhGia_Freelancer` - Supervisor reviews Freelancer
+- `GiamSat_DanhGia_NguoiThue` - Supervisor reviews Client
 
-```json
-{ "cuocHoiThoaiId": 1 }
-```
+### Message Type (LoaiTinNhan)
+- `VanBan` - Text
+- `File` - File
+- `HinhAnh` - Image
 
-Call this when user opens a conversation.
+### Gender (GioiTinh)
+- `Nam` - Male
+- `Nu` - Female
+- `Khac` - Other
+
+### Supervisor Organization Status (TrangThaiDonViGiamSat)
+- `HoatDong` - Active
+- `TamNghi` - Paused
+- `BiKhoa` - Locked
+- `ChoDuyet` - Pending approval
+
+### Notification Type (LoaiThongBao)
+- `HeThong` - System notification
+- `YeuCau` - Hiring request notification
+- `BaoGia` - Proposal notification
+- `CongViec` - Contract notification
+- `TranhChap` - Dispute notification
+- `GiamSat` - Supervisor notification
+- `ThanhToan` - Payment notification
+- `DanhGia` - Review notification
+
+### Report Status (TrangThaiBaoCao)
+- `ChoXuLy` - Pending
+- `DangXuLy` - In progress
+- `DaXuLy` - Processed
+- `HuyBo` - Cancelled
+
+### Progress Confirmation Status (TrangThaiXacNhanTienDo)
+- `ChuaXacNhan` - Not confirmed
+- `DaXacNhan` - Confirmed
+- `TuChoi` - Rejected
 
 ---
 
-#### leaveConversation
+## Common Error Response Format
 
-Leave a conversation room.
-
-```json
-{ "cuocHoiThoaiId": 1 }
-```
-
-Call this when user navigates away from a conversation.
-
----
-
-#### sendMessage
-
-Send a message via WebSocket (saves to DB + broadcasts to room).
+All error responses follow this format:
 
 ```json
 {
-  "cuocHoiThoaiId": 1,
-  "nguoiGuiId": 1,
-  "noiDung": "Hello!",
-  "loaiTin": "VanBan"
+  "statusCode": 400,
+  "message": "Error description",
+  "error": "Bad Request"
 }
 ```
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| cuocHoiThoaiId | Yes | Conversation ID |
-| nguoiGuiId | Yes | Sender user ID (must be a member) |
-| noiDung | Yes | Message content |
-| loaiTin | No | VanBan (default) / File / HinhAnh |
-
-On success, server emits `newMessage` to the room.
-On error, server emits `error` to the sender.
-
----
-
-#### markAsRead
-
-Mark all messages (not sent by userId) as read.
-
-```json
-{ "cuocHoiThoaiId": 1, "userId": 1 }
-```
-
-Server emits `messagesRead` to the room.
-
----
-
-#### typing
-
-Typing indicator.
-
-```json
-{ "cuocHoiThoaiId": 1, "userId": 1, "isTyping": true }
-```
-
-Server broadcasts `userTyping` to other members in the room.
-
----
-
-### Server -> Client Events
-
-#### newMessage
-
-Emitted to all clients in the conversation room when a new message is sent.
-
-```json
-{
-  "tinNhanId": 4,
-  "cuocHoiThoaiId": 1,
-  "nguoiGui": {
-    "taiKhoanId": 1,
-    "hoTen": "Nguyen Van An",
-    "email": "manhhuy2@gmail.com"
-  },
-  "noiDung": "Hello!",
-  "loaiTin": "VanBan",
-  "daDoc": false,
-  "ngayTao": "2026-04-24T09:00:00.000Z"
-}
-```
-
----
-
-#### messageNotification
-
-Emitted to the other member when they are NOT in the conversation room (for unread badge/notification).
-
-```json
-{
-  "cuocHoiThoaiId": 1,
-  "message": { ... same as newMessage ... }
-}
-```
-
----
-
-#### messagesRead
-
-Emitted to the room when someone marks messages as read.
-
-```json
-{
-  "cuocHoiThoaiId": 1,
-  "userId": 1,
-  "count": 5
-}
-```
-
----
-
-#### userTyping
-
-Emitted to other members in the room when someone is typing.
-
-```json
-{
-  "cuocHoiThoaiId": 1,
-  "userId": 1,
-  "isTyping": true
-}
-```
-
----
-
-#### error
-
-Emitted to the sender when an operation fails.
-
-```json
-{ "message": "Cuoc hoi thoai khong ton tai" }
-```
-
----
-
-### Usage Flow
-
-1. **Connect** when user logs in: `io('/chat', { query: { userId } })`
-2. **Join room** when opening a conversation: emit `joinConversation`
-3. **Send messages** via `sendMessage` event (realtime) or `POST /chat/:id/messages` (REST)
-4. **Receive messages** by listening to `newMessage` event
-5. **Mark as read** when user views messages: emit `markAsRead`
-6. **Show typing** indicator: emit `typing` with `isTyping: true/false`
-7. **Leave room** when switching conversations: emit `leaveConversation`
-8. **Listen to `messageNotification`** for unread badges on conversation list
-
-> Note: REST endpoints (`GET /chat/:id/messages`, `POST /chat`) still work for loading history, creating conversations, etc. WebSocket is only for realtime updates.
+Common HTTP status codes:
+- `400` - Bad Request (validation errors, business logic errors)
+- `401` - Unauthorized (not authenticated)
+- `403` - Forbidden (insufficient permissions)
+- `404` - Not Found (resource doesn't exist)
+- `500` - Internal Server Error

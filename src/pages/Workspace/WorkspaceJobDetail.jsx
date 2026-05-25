@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useOutletContext } from "react-router-dom";
 import api from "../../services/api";
 import "./WorkspaceJobDetail.css";
 
 const WorkspaceJobDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { showToast } = useOutletContext();
 
   const [contract, setContract] = useState(null);
   const [progressList, setProgressList] = useState([]);
@@ -75,8 +76,8 @@ const WorkspaceJobDetail = () => {
   };
 
   const handleAddProgress = async () => {
-    if (!newProgress.tieuDe.trim()) return alert("Vui lòng nhập tiêu đề!");
-    if (newProgress.phanTram < 0 || newProgress.phanTram > 100) return alert("Phần trăm phải từ 0-100!");
+    if (!newProgress.tieuDe.trim()) return showToast("Vui lòng nhập tiêu đề!", "warning");
+    if (newProgress.phanTram < 0 || newProgress.phanTram > 100) return showToast("Phần trăm phải từ 0-100!", "warning");
 
     setSubmitting(true);
     try {
@@ -90,12 +91,13 @@ const WorkspaceJobDetail = () => {
       });
       setNewProgress({ tieuDe: "", moTa: "", phanTram: 0 });
       setShowAddProgress(false);
+      showToast("Cập nhật tiến độ thành công!", "success");
       // Reload progress
       const res = await api.progress.getByContractId(id);
       const list = res?.progress || res?.data || (Array.isArray(res) ? res : []);
       setProgressList(list);
     } catch (err) {
-      alert("Lỗi: " + (err.message || "Không thể thêm tiến độ"));
+      showToast("Lỗi: " + (err.message || "Không thể thêm tiến độ"), "error");
     } finally {
       setSubmitting(false);
     }
@@ -104,22 +106,24 @@ const WorkspaceJobDetail = () => {
   const handleConfirmProgress = async (progressId) => {
     try {
       await api.progress.update(progressId, { trangThaiXacNhan: "DaXacNhan" });
+      showToast("Đã xác nhận tiến độ này!", "success");
       setProgressList((prev) =>
         prev.map((p) => (p.tienDoId === progressId ? { ...p, trangThaiXacNhan: "DaXacNhan" } : p))
       );
     } catch (err) {
-      alert("Lỗi: " + (err.message || "Không thể xác nhận"));
+      showToast("Lỗi: " + (err.message || "Không thể xác nhận"), "error");
     }
   };
 
   const handleRejectProgress = async (progressId) => {
     try {
       await api.progress.update(progressId, { trangThaiXacNhan: "TuChoi" });
+      showToast("Đã từ chối tiến độ này!", "warning");
       setProgressList((prev) =>
         prev.map((p) => (p.tienDoId === progressId ? { ...p, trangThaiXacNhan: "TuChoi" } : p))
       );
     } catch (err) {
-      alert("Lỗi: " + (err.message || "Không thể từ chối"));
+      showToast("Lỗi: " + (err.message || "Không thể từ chối"), "error");
     }
   };
 
@@ -127,9 +131,95 @@ const WorkspaceJobDetail = () => {
     if (!confirm("Xác nhận hoàn thành hợp đồng? Hành động này không thể hoàn tác.")) return;
     try {
       await api.contracts.updateStatus(id, "HoanThanh");
+      showToast("Đã cập nhật trạng thái hoàn thành hợp đồng!", "success");
       setContract((prev) => ({ ...prev, trangThai: "HoanThanh" }));
     } catch (err) {
-      alert("Lỗi: " + (err.message || "Không thể cập nhật"));
+      showToast("Lỗi: " + (err.message || "Không thể cập nhật"), "error");
+    }
+  };
+
+  const handleChatWithUser = async (targetId, targetName) => {
+    if (!currentUser) {
+      showToast("Vui lòng đăng nhập để nhắn tin!", "warning");
+      navigate("/login");
+      return;
+    }
+    if (!targetId) {
+      showToast("Không tìm thấy thông tin đối tác!", "error");
+      return;
+    }
+
+    const currentUserId = currentUser.taiKhoanId || currentUser.id;
+
+    // Bước 1: Tìm conversation hiện có cùng partner + contractId
+    let contexts = {};
+    try {
+      contexts = JSON.parse(localStorage.getItem("chat_contexts") || "{}");
+    } catch {
+      contexts = {};
+    }
+
+    try {
+      const listRes = await api.chat.getConversations(currentUserId);
+      const list = listRes?.conversations || listRes?.data || (Array.isArray(listRes) ? listRes : []);
+
+      // Bước 1: Ưu tiên tìm cuộc hội thoại đã liên kết trực tiếp với Hợp đồng này (Group Chat)
+      const existingByContract = list.find((c) => Number(c.congViecId) === Number(id));
+      if (existingByContract) {
+        const existingId = existingByContract.cuocHoiThoaiId ?? existingByContract.id;
+        navigate(`/workspace/messages?conversationId=${existingId}`);
+        return;
+      }
+
+      // Fallback: Tìm conversation hiện có theo cặp thành viên
+      const existing = list.find((c) => {
+        const m1 = Number(c.thanhVien1?.taiKhoanId);
+        const m2 = Number(c.thanhVien2?.taiKhoanId);
+        const isSamePair =
+          (m1 === Number(currentUserId) && m2 === Number(targetId)) ||
+          (m2 === Number(currentUserId) && m1 === Number(targetId));
+        if (!isSamePair) return false;
+
+        const convId = c.cuocHoiThoaiId ?? c.id;
+        const ctx = contexts[convId];
+        const isLinkedToContract = Number(c.congViecId) === Number(id) || (ctx?.type === "contract" && Number(ctx.id) === Number(id));
+        return isLinkedToContract;
+      });
+
+      if (existing) {
+        const existingId = existing.cuocHoiThoaiId ?? existing.id;
+        navigate(`/workspace/messages?conversationId=${existingId}`);
+        return;
+      }
+    } catch (err) {
+      console.warn("Không lấy được danh sách hội thoại:", err.message);
+    }
+
+    // Bước 2: Tạo conversation mới
+    try {
+      const res = await api.chat.createConversation({
+        thanhVien1Id: currentUserId,
+        thanhVien2Id: targetId,
+        congViecId: Number(id), // Link conversation with this contract
+      });
+      const conv = res?.conversation ?? res;
+      const conversationId = conv?.cuocHoiThoaiId ?? conv?.id;
+      if (conversationId && contract) {
+        contexts[conversationId] = {
+          type: "contract",
+          id: id,
+          title: contract.yeuCau?.tieuDe || "Dự án",
+        };
+        try {
+          localStorage.setItem("chat_contexts", JSON.stringify(contexts));
+        } catch (e) {
+          console.warn("Không thể lưu chat context:", e);
+        }
+      }
+      navigate(`/workspace/messages?conversationId=${conversationId}`);
+    } catch (err) {
+      console.error("Lỗi tạo hội thoại:", err);
+      showToast("Không thể tạo cuộc trò chuyện!", "error");
     }
   };
 
@@ -177,6 +267,22 @@ const WorkspaceJobDetail = () => {
   const userId = currentUser?.taiKhoanId || currentUser?.id;
   const isEmployer = contract && Number(contract.nguoiThue?.taiKhoanId) === Number(userId);
   const isFreelancer = contract && Number(contract.freelancer?.taiKhoanId) === Number(userId);
+
+  // Safe override to ensure correct supervisor details are displayed
+  if (contract && (currentUser?.vaiTro === "DonViGiamSat" || Number(contract.giamSatId) === Number(userId))) {
+    contract.giamSat = {
+      ...contract.giamSat,
+      taiKhoanId: userId,
+      tenDonVi: currentUser.tenDonVi || currentUser.hoTen || "Đơn vị giám sát",
+      hoTen: currentUser.hoTen,
+      email: currentUser.email,
+      soDienThoai: currentUser.soDienThoai,
+      anhDaiDien: currentUser.anhDaiDien || contract.giamSat?.anhDaiDien,
+      nangLuc: currentUser.nangLuc || contract.giamSat?.nangLuc,
+      chungChi: currentUser.chungChi || contract.giamSat?.chungChi,
+    };
+  }
+
   const overallProgress = getLatestProgress();
 
   const systemHeldAmount = (Array.isArray(payments) ? payments : []).reduce((acc, p) => {
@@ -227,6 +333,147 @@ const WorkspaceJobDetail = () => {
       <div className="wjd-grid">
         {/* Main Content */}
         <div className="wjd-main">
+          {/* Communication Hub */}
+          <div className="wjd-card wjd-comm-hub">
+            <div className="wjd-comm-header">
+              <h2><i className="fa-solid fa-comments"></i> Trung tâm trao đổi & Chat trực tuyến</h2>
+              <span className="wjd-comm-status"><span className="wjd-comm-dot"></span> Sẵn sàng kết nối</span>
+            </div>
+            <div className="wjd-comm-grid">
+              {/* If user is Employer, show Freelancer & Supervisor */}
+              {isEmployer && (
+                <>
+                  {contract.freelancer && (
+                    <div className="wjd-comm-member">
+                      <div className="wjd-comm-avatar-wrapper">
+                        <img src={contract.freelancer.anhDaiDien || `https://ui-avatars.com/api/?name=${encodeURIComponent(contract.freelancer.hoTen || 'F')}&background=10B981&color=fff&size=40`} alt="" />
+                        <span className="wjd-comm-role-badge freelancer">Freelancer</span>
+                      </div>
+                      <div className="wjd-comm-info">
+                        <span className="wjd-comm-name">{contract.freelancer.hoTen}</span>
+                        <span className="wjd-comm-desc">Đối tác thực hiện công việc</span>
+                      </div>
+                      <button className="wjd-comm-chat-btn" onClick={() => {
+                        const fId = contract.freelancer?.taiKhoanId || contract.freelancer?.taiKhoan?.taiKhoanId || contract.freelancerId;
+                        const fName = contract.freelancer?.hoTen || contract.freelancer?.taiKhoan?.hoTen || "Freelancer";
+                        handleChatWithUser(fId, fName);
+                      }}>
+                        <i className="fa-solid fa-paper-plane"></i> Nhắn tin
+                      </button>
+                    </div>
+                  )}
+                  {contract.giamSat && (
+                    <div className="wjd-comm-member">
+                      <div className="wjd-comm-avatar-wrapper">
+                        <img src={contract.giamSat.anhDaiDien || `https://ui-avatars.com/api/?name=${encodeURIComponent(contract.giamSat.tenDonVi || 'S')}&background=F59E0B&color=fff&size=40`} alt="" />
+                        <span className="wjd-comm-role-badge supervisor">Giám sát</span>
+                      </div>
+                      <div className="wjd-comm-info">
+                        <span className="wjd-comm-name">{contract.giamSat.tenDonVi || contract.giamSat.hoTen}</span>
+                        <span className="wjd-comm-desc">Đơn vị kiểm định độc lập</span>
+                      </div>
+                      <button className="wjd-comm-chat-btn" onClick={() => {
+                        const gsId = contract.giamSat?.taiKhoanId || contract.giamSat?.taiKhoan?.taiKhoanId || contract.giamSat?.giamSatId || contract.giamSatId;
+                        const gsName = contract.giamSat?.tenDonVi || contract.giamSat?.hoTen || contract.giamSat?.taiKhoan?.hoTen || "Giám sát";
+                        handleChatWithUser(gsId, gsName);
+                      }}>
+                        <i className="fa-solid fa-paper-plane"></i> Nhắn tin
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* If user is Freelancer, show Client & Supervisor */}
+              {isFreelancer && (
+                <>
+                  {contract.nguoiThue && (
+                    <div className="wjd-comm-member">
+                      <div className="wjd-comm-avatar-wrapper">
+                        <img src={contract.nguoiThue.anhDaiDien || `https://ui-avatars.com/api/?name=${encodeURIComponent(contract.nguoiThue.hoTen || 'C')}&background=0EA5E9&color=fff&size=40`} alt="" />
+                        <span className="wjd-comm-role-badge employer">Khách hàng</span>
+                      </div>
+                      <div className="wjd-comm-info">
+                        <span className="wjd-comm-name">{contract.nguoiThue.congTy || contract.nguoiThue.hoTen || "Khách hàng"}</span>
+                        <span className="wjd-comm-desc">Người thuê dự án</span>
+                      </div>
+                      <button className="wjd-comm-chat-btn" onClick={() => {
+                        const ntId = contract.nguoiThue?.taiKhoanId || contract.nguoiThue?.taiKhoan?.taiKhoanId || contract.nguoiThueId;
+                        const ntName = contract.nguoiThue?.congTy || contract.nguoiThue?.hoTen || contract.nguoiThue?.taiKhoan?.hoTen || "Khách hàng";
+                        handleChatWithUser(ntId, ntName);
+                      }}>
+                        <i className="fa-solid fa-paper-plane"></i> Nhắn tin
+                      </button>
+                    </div>
+                  )}
+                  {contract.giamSat && (
+                    <div className="wjd-comm-member">
+                      <div className="wjd-comm-avatar-wrapper">
+                        <img src={contract.giamSat.anhDaiDien || `https://ui-avatars.com/api/?name=${encodeURIComponent(contract.giamSat.tenDonVi || 'S')}&background=F59E0B&color=fff&size=40`} alt="" />
+                        <span className="wjd-comm-role-badge supervisor">Giám sát</span>
+                      </div>
+                      <div className="wjd-comm-info">
+                        <span className="wjd-comm-name">{contract.giamSat.tenDonVi || contract.giamSat.hoTen}</span>
+                        <span className="wjd-comm-desc">Đơn vị kiểm định độc lập</span>
+                      </div>
+                      <button className="wjd-comm-chat-btn" onClick={() => {
+                        const gsId = contract.giamSat?.taiKhoanId || contract.giamSat?.taiKhoan?.taiKhoanId || contract.giamSat?.giamSatId || contract.giamSatId;
+                        const gsName = contract.giamSat?.tenDonVi || contract.giamSat?.hoTen || contract.giamSat?.taiKhoan?.hoTen || "Giám sát";
+                        handleChatWithUser(gsId, gsName);
+                      }}>
+                        <i className="fa-solid fa-paper-plane"></i> Nhắn tin
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* If user is Supervisor, show Client & Freelancer */}
+              {!isEmployer && !isFreelancer && (
+                <>
+                  {contract.nguoiThue && (
+                    <div className="wjd-comm-member">
+                      <div className="wjd-comm-avatar-wrapper">
+                        <img src={contract.nguoiThue.anhDaiDien || `https://ui-avatars.com/api/?name=${encodeURIComponent(contract.nguoiThue.hoTen || 'C')}&background=0EA5E9&color=fff&size=40`} alt="" />
+                        <span className="wjd-comm-role-badge employer">Khách hàng</span>
+                      </div>
+                      <div className="wjd-comm-info">
+                        <span className="wjd-comm-name">{contract.nguoiThue.congTy || contract.nguoiThue.hoTen || "Khách hàng"}</span>
+                        <span className="wjd-comm-desc">Người thuê dự án</span>
+                      </div>
+                      <button className="wjd-comm-chat-btn" onClick={() => {
+                        const ntId = contract.nguoiThue?.taiKhoanId || contract.nguoiThue?.taiKhoan?.taiKhoanId || contract.nguoiThueId;
+                        const ntName = contract.nguoiThue?.congTy || contract.nguoiThue?.hoTen || contract.nguoiThue?.taiKhoan?.hoTen || "Khách hàng";
+                        handleChatWithUser(ntId, ntName);
+                      }}>
+                        <i className="fa-solid fa-paper-plane"></i> Nhắn tin
+                      </button>
+                    </div>
+                  )}
+                  {contract.freelancer && (
+                    <div className="wjd-comm-member">
+                      <div className="wjd-comm-avatar-wrapper">
+                        <img src={contract.freelancer.anhDaiDien || `https://ui-avatars.com/api/?name=${encodeURIComponent(contract.freelancer.hoTen || 'F')}&background=10B981&color=fff&size=40`} alt="" />
+                        <span className="wjd-comm-role-badge freelancer">Freelancer</span>
+                      </div>
+                      <div className="wjd-comm-info">
+                        <span className="wjd-comm-name">{contract.freelancer.hoTen}</span>
+                        <span className="wjd-comm-desc">Đối tác thực hiện công việc</span>
+                      </div>
+                      <button className="wjd-comm-chat-btn" onClick={() => {
+                        const fId = contract.freelancer?.taiKhoanId || contract.freelancer?.taiKhoan?.taiKhoanId || contract.freelancerId;
+                        const fName = contract.freelancer?.hoTen || contract.freelancer?.taiKhoan?.hoTen || "Freelancer";
+                        handleChatWithUser(fId, fName);
+                      }}>
+                        <i className="fa-solid fa-paper-plane"></i> Nhắn tin
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
           {/* Progress Overview */}
           <div className="wjd-card">
             <div className="wjd-card-header">
@@ -320,19 +567,12 @@ const WorkspaceJobDetail = () => {
 
         {/* Sidebar */}
         <div className="wjd-sidebar">
+          {/* Contract specs */}
           <div className="wjd-card">
             <div className="wjd-card-header">
               <h2>Thông tin hợp đồng</h2>
             </div>
             <div className="wjd-info-list">
-              <div className="wjd-info-item">
-                <span className="wjd-info-label">Freelancer</span>
-                <span className="wjd-info-value">{contract.freelancer?.hoTen || "—"}</span>
-              </div>
-              <div className="wjd-info-item">
-                <span className="wjd-info-label">Người thuê</span>
-                <span className="wjd-info-value">{contract.nguoiThue?.hoTen || "—"}</span>
-              </div>
               <div className="wjd-info-item">
                 <span className="wjd-info-label">Giá thỏa thuận</span>
                 <span className="wjd-info-value wjd-info-highlight">{formatCurrency(contract.giaThoa)}</span>
@@ -356,12 +596,6 @@ const WorkspaceJobDetail = () => {
                 <span className="wjd-info-label">Ngày kết thúc</span>
                 <span className="wjd-info-value">{contract.ngayKetThuc ? formatDate(contract.ngayKetThuc) : "Chưa hoàn thành"}</span>
               </div>
-              {contract.giamSat && (
-                <div className="wjd-info-item">
-                  <span className="wjd-info-label">Giám sát</span>
-                  <span className="wjd-info-value">{contract.giamSat?.tenDonVi || "—"}</span>
-                </div>
-              )}
               <div className="wjd-info-item">
                 <span className="wjd-info-label">Tiến độ</span>
                 <span className="wjd-info-value wjd-info-highlight">{overallProgress}%</span>
@@ -375,11 +609,200 @@ const WorkspaceJobDetail = () => {
             )}
           </div>
 
+          {/* Stakeholders Card */}
+          <div className="wjd-parties-card">
+            <div className="wjd-card-header">
+              <h2>Các bên liên quan</h2>
+            </div>
+            <div className="wjd-info-list" style={{ gap: "4px" }}>
+              {/* Employer / Client */}
+              {contract.nguoiThue && (
+                <div className="wjd-party-item">
+                  <img
+                    src={contract.nguoiThue.anhDaiDien || `https://ui-avatars.com/api/?name=${encodeURIComponent(contract.nguoiThue.hoTen || 'C')}&background=0EA5E9&color=fff&size=42`}
+                    alt={contract.nguoiThue.hoTen}
+                    className="wjd-party-avatar"
+                  />
+                  <div className="wjd-party-info">
+                    <span className="wjd-party-role">Khách hàng {Number(contract.nguoiThue.taiKhoanId) === Number(userId) && "(Bạn)"}</span>
+                    <span className="wjd-party-name">{contract.nguoiThue.congTy || contract.nguoiThue.hoTen || "Khách hàng"}</span>
+                    <span className="wjd-party-email">{contract.nguoiThue.email}</span>
+                  </div>
+                  {Number(contract.nguoiThue.taiKhoanId || contract.nguoiThue.taiKhoan?.taiKhoanId) !== Number(userId) && (
+                    <button
+                      className="wjd-party-chat-btn"
+                      onClick={() => {
+                        const ntId = contract.nguoiThue?.taiKhoanId || contract.nguoiThue?.taiKhoan?.taiKhoanId || contract.nguoiThueId;
+                        const ntName = contract.nguoiThue?.congTy || contract.nguoiThue?.hoTen || contract.nguoiThue?.taiKhoan?.hoTen || "Khách hàng";
+                        handleChatWithUser(ntId, ntName);
+                      }}
+                    >
+                      <i className="fa-solid fa-comments"></i> Chat
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Freelancer */}
+              {contract.freelancer && (
+                <div className="wjd-party-item">
+                  <img
+                    src={contract.freelancer.anhDaiDien || `https://ui-avatars.com/api/?name=${encodeURIComponent(contract.freelancer.hoTen || 'F')}&background=10B981&color=fff&size=42`}
+                    alt={contract.freelancer.hoTen}
+                    className="wjd-party-avatar"
+                  />
+                  <div className="wjd-party-info">
+                    <span className="wjd-party-role">Freelancer {Number(contract.freelancer.taiKhoanId) === Number(userId) && "(Bạn)"}</span>
+                    <span className="wjd-party-name">{contract.freelancer.hoTen}</span>
+                    <span className="wjd-party-email">{contract.freelancer.email}</span>
+                  </div>
+                  {Number(contract.freelancer.taiKhoanId || contract.freelancer.taiKhoan?.taiKhoanId) !== Number(userId) && (
+                    <button
+                      className="wjd-party-chat-btn"
+                      onClick={() => {
+                        const fId = contract.freelancer?.taiKhoanId || contract.freelancer?.taiKhoan?.taiKhoanId || contract.freelancerId;
+                        const fName = contract.freelancer?.hoTen || contract.freelancer?.taiKhoan?.hoTen || "Freelancer";
+                        handleChatWithUser(fId, fName);
+                      }}
+                    >
+                      <i className="fa-solid fa-comments"></i> Chat
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Supervisor */}
+              {contract.giamSat ? (
+                <div className="wjd-party-item">
+                  <img
+                    src={contract.giamSat.anhDaiDien || `https://ui-avatars.com/api/?name=${encodeURIComponent(contract.giamSat.tenDonVi || contract.giamSat.hoTen || 'S')}&background=F59E0B&color=fff&size=42`}
+                    alt={contract.giamSat.tenDonVi || contract.giamSat.hoTen}
+                    className="wjd-party-avatar"
+                  />
+                  <div className="wjd-party-info">
+                    <span className="wjd-party-role">Giám sát {Number(contract.giamSat.taiKhoanId || contract.giamSat.taiKhoan?.taiKhoanId) === Number(userId) && "(Bạn)"}</span>
+                    <span className="wjd-party-name">{contract.giamSat.tenDonVi || contract.giamSat.hoTen}</span>
+                    <span className="wjd-party-email">{contract.giamSat.email || "giamSat@email.com"}</span>
+                  </div>
+                  {Number(contract.giamSat.taiKhoanId || contract.giamSat.taiKhoan?.taiKhoanId) !== Number(userId) && (
+                    <button
+                      className="wjd-party-chat-btn"
+                      onClick={() => {
+                        const gsId = contract.giamSat?.taiKhoanId || contract.giamSat?.taiKhoan?.taiKhoanId || contract.giamSat?.giamSatId || contract.giamSatId;
+                        const gsName = contract.giamSat?.tenDonVi || contract.giamSat?.hoTen || contract.giamSat?.taiKhoan?.hoTen || "Giám sát";
+                        handleChatWithUser(gsId, gsName);
+                      }}
+                    >
+                      <i className="fa-solid fa-comments"></i> Chat
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="wjd-party-item" style={{ padding: "8px 0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", width: "100%", color: "#94A3B8", fontSize: "13px" }}>
+                    <i className="fa-solid fa-shield-halved" style={{ fontSize: "16px", color: "#CBD5E1" }}></i>
+                    <span>Dự án này không yêu cầu giám sát</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Đơn vị Giám sát độc lập chi tiết */}
+          {(contract.yeuCauGiamSat || contract.giamSat) && (
+            <div className="wjd-card">
+              <div className="wjd-card-header">
+                <h2><i className="fa-solid fa-shield-halved" style={{ color: 'var(--gold)', marginRight: '8px' }}></i> Đơn vị Giám sát độc lập</h2>
+                {contract.trangThaiGiamSat ? (
+                  <span className={`wjd-giamsat-status ${contract.trangThaiGiamSat}`}>
+                    {contract.trangThaiGiamSat === "DaChapNhan" ? "Đã chấp nhận" :
+                     contract.trangThaiGiamSat === "ChoDuyet" ? "Chờ phê duyệt" :
+                     contract.trangThaiGiamSat === "TuChoi" ? "Từ chối" : contract.trangThaiGiamSat}
+                  </span>
+                ) : (
+                  <span className="wjd-giamsat-status ChoDuyet">Chờ phê duyệt</span>
+                )}
+              </div>
+              
+              {contract.giamSat ? (
+                <div className="wjd-giamsat-profile" style={{ marginTop: '10px' }}>
+                  <div className="wjd-info-list" style={{ gap: '10px' }}>
+                    <div className="wjd-info-item">
+                      <span className="wjd-info-label">Đơn vị</span>
+                      <span className="wjd-info-value" style={{ fontWeight: 700, color: '#0F172A' }}>{contract.giamSat.tenDonVi || "Giám sát viên"}</span>
+                    </div>
+                    <div className="wjd-info-item">
+                      <span className="wjd-info-label">Người đại diện</span>
+                      <span className="wjd-info-value">{contract.giamSat.hoTen || "Chưa cập nhật"}</span>
+                    </div>
+                    <div className="wjd-info-item">
+                      <span className="wjd-info-label">Phí giám sát</span>
+                      <span className="wjd-info-value wjd-info-highlight" style={{ fontWeight: 700 }}>{formatCurrency(contract.phiGiamSat)}</span>
+                    </div>
+                    {contract.giamSat.nangLuc && (
+                      <div className="wjd-info-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+                        <span className="wjd-info-label">Năng lực kiểm định</span>
+                        <span className="wjd-info-value" style={{ fontSize: '13px', color: '#475569', textAlign: 'left' }}>{contract.giamSat.nangLuc}</span>
+                      </div>
+                    )}
+                    {contract.giamSat.chungChi && (
+                      <div className="wjd-info-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+                        <span className="wjd-info-label">Chứng chỉ & Tiêu chuẩn</span>
+                        <span className="wjd-info-value" style={{ fontSize: '13px', color: '#475569', textAlign: 'left' }}>{contract.giamSat.chungChi}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="wjd-empty" style={{ padding: "16px 0", color: '#94A3B8' }}>
+                  <p>Hợp đồng yêu cầu giám sát, đang chờ phân bổ đơn vị phù hợp.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Thông tin Yêu cầu gốc */}
+          {contract.yeuCau && (
+            <div className="wjd-card">
+              <div className="wjd-card-header">
+                <h2><i className="fa-solid fa-circle-info" style={{ color: '#0EA5E9', marginRight: '8px' }}></i> Thông tin Yêu cầu gốc</h2>
+              </div>
+              <div className="wjd-info-list" style={{ gap: '10px' }}>
+                <div className="wjd-info-item">
+                  <span className="wjd-info-label">Lĩnh vực</span>
+                  <span className="wjd-info-value">{contract.yeuCau.loaiDichVu?.tenLoai || "—"}</span>
+                </div>
+                <div className="wjd-info-item">
+                  <span className="wjd-info-label">Ngân sách dự kiến</span>
+                  <span className="wjd-info-value" style={{ fontSize: '13px' }}>
+                    {formatCurrency(contract.yeuCau.nganSachMin)} - {formatCurrency(contract.yeuCau.nganSachMax)}
+                  </span>
+                </div>
+                <div className="wjd-info-item">
+                  <span className="wjd-info-label">Hạn nộp hồ sơ</span>
+                  <span className="wjd-info-value">{formatDate(contract.yeuCau.thoiHan)}</span>
+                </div>
+                {contract.yeuCau.kyNangs && contract.yeuCau.kyNangs.length > 0 && (
+                  <div style={{ marginTop: '6px' }}>
+                    <span className="wjd-info-label" style={{ display: 'block', marginBottom: '8px' }}>Kỹ năng yêu cầu:</span>
+                    <div className="wjd-skill-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {contract.yeuCau.kyNangs.map(skill => (
+                        <span key={skill.kyNangId} className="wjd-skill-tag" style={{ background: '#F1F5F9', color: '#475569', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 500 }}>
+                          {skill.tenKyNang}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Mô tả yêu cầu */}
           {contract.yeuCau?.moTa && (
             <div className="wjd-card">
               <div className="wjd-card-header">
-                <h2>Mô tả yêu cầu</h2>
+                <h2>Mô tả chi tiết</h2>
               </div>
               <p className="wjd-description">{contract.yeuCau.moTa}</p>
             </div>
