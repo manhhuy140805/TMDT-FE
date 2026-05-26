@@ -21,42 +21,6 @@ const WorkspaceMyQuotes = () => {
   const [quoteToDelete, setQuoteToDelete] = useState(null);
   const [error, setError] = useState(null);
 
-  // ============ Lifecycle ============
-  useEffect(() => {
-    if (!currentUser) return;
-    if (!isFreelancerRole(currentUser.vaiTro)) {
-      setLoading(false);
-      return;
-    }
-
-    const loadQuotes = async () => {
-      let fId = currentUser.freelancerId;
-
-      // Nếu chưa có freelancerId → gọi profile API để lấy
-      if (!fId) {
-        try {
-          const profileRes = await api.users.getProfile(currentUser.taiKhoanId);
-          fId = profileRes?.profile?.freelancer?.freelancerId;
-          if (fId) {
-            // Cập nhật localStorage để lần sau không cần gọi lại
-            const updated = { ...currentUser, freelancerId: fId };
-            localStorage.setItem("user", JSON.stringify(updated));
-          }
-        } catch (err) {
-          console.warn("Không lấy được freelancerId từ profile:", err.message);
-        }
-      }
-
-      // Fallback cuối cùng: dùng taiKhoanId
-      if (!fId) fId = currentUser.taiKhoanId;
-
-      fetchMyQuotes(fId);
-    };
-
-    loadQuotes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser]);
-
   const fetchMyQuotes = async (freelancerId) => {
     setLoading(true);
     setError(null);
@@ -105,6 +69,42 @@ const WorkspaceMyQuotes = () => {
       setLoading(false);
     }
   };
+
+  // ============ Lifecycle ============
+  useEffect(() => {
+    if (!currentUser) return;
+    if (!isFreelancerRole(currentUser.vaiTro)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLoading(false);
+      return;
+    }
+
+    const loadQuotes = async () => {
+      let fId = currentUser.freelancerId;
+
+      // Nếu chưa có freelancerId → gọi profile API để lấy
+      if (!fId) {
+        try {
+          const profileRes = await api.users.getProfile(currentUser.taiKhoanId);
+          fId = profileRes?.profile?.freelancer?.freelancerId;
+          if (fId) {
+            // Cập nhật localStorage để lần sau không cần gọi lại
+            const updated = { ...currentUser, freelancerId: fId };
+            localStorage.setItem("user", JSON.stringify(updated));
+          }
+        } catch (err) {
+          console.warn("Không lấy được freelancerId từ profile:", err.message);
+        }
+      }
+
+      // Fallback cuối cùng: dùng taiKhoanId
+      if (!fId) fId = currentUser.taiKhoanId;
+
+      fetchMyQuotes(fId);
+    };
+
+    loadQuotes();
+  }, [currentUser]);
 
   // ============ Helpers ============
   const getFilteredQuotes = () => {

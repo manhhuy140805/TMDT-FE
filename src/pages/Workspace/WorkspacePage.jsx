@@ -6,29 +6,12 @@ import "./WorkspacePage.css";
 const WorkspacePage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [user, setUser] = useState(null);
-  const [activeMenu, setActiveMenu] = useState("projects");
-  const [projects, setProjects] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [tabCounts, setTabCounts] = useState({ hiring: 0, progress: 0 });
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0,
-    totalPages: 0,
-  });
-
-  const activeTab = searchParams.get("tab") || "hiring";
-
-  useEffect(() => {
-    // Lấy thông tin user từ localStorage
+  const [user] = useState(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
         if (parsedUser) {
-          // Normalize role and name details
           let role = "FREELANCER";
           const r = parsedUser.role || parsedUser.vaiTro || "";
           const norm = r.toUpperCase().replace(/_/g, "");
@@ -37,30 +20,37 @@ const WorkspacePage = () => {
           } else if (norm === "ADMIN") {
             role = "ADMIN";
           }
-
-          const normalizedUser = {
+          return {
             ...parsedUser,
             id: parsedUser.taiKhoanId || parsedUser.id,
             name: parsedUser.hoTen || parsedUser.name,
             role: role,
           };
-          setUser(normalizedUser);
         }
       } catch (error) {
         console.error("Error parsing user data:", error);
       }
     }
-  }, []);
+    return null;
+  });
 
-  useEffect(() => {
-    if (user) {
-      fetchTabCounts();
-      fetchProjects();
-      fetchStats();
-    }
-  }, [user, activeTab]);
+  const [activeMenu, setActiveMenu] = useState("projects");
+  const [projects, setProjects] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [tabCounts, setTabCounts] = useState({ hiring: 0, progress: 0 });
+  const [, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+  });
 
-  const fetchTabCounts = async () => {
+  const activeTab = searchParams.get("tab") || "hiring";
+
+
+
+  async function fetchTabCounts() {
     if (!user) return;
     const userId = user.taiKhoanId || user.id;
     try {
@@ -88,7 +78,7 @@ const WorkspacePage = () => {
     }
   };
 
-  const fetchProjects = async () => {
+  async function fetchProjects() {
     if (!user) return;
     const userId = user.taiKhoanId || user.id;
     try {
@@ -255,7 +245,7 @@ const WorkspacePage = () => {
     }
   };
 
-  const fetchStats = async () => {
+  async function fetchStats() {
     if (!user) return;
     const userId = user.taiKhoanId || user.id;
     try {
@@ -285,6 +275,16 @@ const WorkspacePage = () => {
       console.error("Error fetching stats:", error);
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchTabCounts();
+      fetchProjects();
+      fetchStats();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, activeTab]);
 
   const handleMenuClick = (menu) => {
     setActiveMenu(menu);

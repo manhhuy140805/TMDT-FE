@@ -13,7 +13,36 @@ const WorkspaceJobs = () => {
     return true;
   });
 
-  const getStatusBadge = (status) => {
+  const getNormalizedStatus = (rr) => {
+    if (!rr) return "";
+    const statusVal = rr.trangThai || rr.status || "";
+    return statusVal.toString().toUpperCase().replace(/_/g, "");
+  };
+
+  const getStatusBadge = (contract) => {
+    const status = contract?.trangThai;
+    const rr = contract?.refundRequest;
+    const isPendingRefund = rr && 
+      (getNormalizedStatus(rr) === "CHOFREELANCERDUYET" || 
+       getNormalizedStatus(rr) === "PENDING" || 
+       getNormalizedStatus(rr) === "CHODUYET");
+
+    if (status === "DangThucHien" && isPendingRefund) {
+      return (
+        <span style={{ 
+          background: "#FFFBEB", 
+          color: "#D97706", 
+          padding: "4px 8px", 
+          borderRadius: "4px", 
+          fontSize: "12px", 
+          fontWeight: 600,
+          border: "1px solid #FCD34D"
+        }}>
+          Đang yêu cầu hoàn tiền
+        </span>
+      );
+    }
+
     if (status === "DangThucHien") return <span style={{ background: "#DBEAFE", color: "#1D4ED8", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: 600 }}>Đang làm</span>;
     if (status === "HoanThanh") return <span style={{ background: "#D1FAE5", color: "#047857", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: 600 }}>Hoàn thành</span>;
     if (status === "TamDung") return <span style={{ background: "#FEF3C7", color: "#D97706", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: 600 }}>Tạm dừng</span>;

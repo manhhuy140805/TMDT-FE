@@ -212,6 +212,7 @@
 
 /* Buttons */
 .wjd-btn-primary {
+  box-sizing: border-box;
   padding: 8px 16px;
   background: #0EA5E9;
   color: white;
@@ -223,11 +224,11 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: 0.2s;
 }
 .wjd-btn-primary:hover { background: #0284C7; }
 .wjd-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 .wjd-btn-confirm {
+  box-sizing: border-box;
   padding: 6px 12px;
   background: #10B981;
   color: white;
@@ -238,6 +239,7 @@
   cursor: pointer;
 }
 .wjd-btn-reject {
+  box-sizing: border-box;
   padding: 6px 12px;
   background: #EF4444;
   color: white;
@@ -248,6 +250,7 @@
   cursor: pointer;
 }
 .wjd-btn-complete {
+  box-sizing: border-box;
   width: 100%;
   padding: 12px;
   background: #10B981;
@@ -262,7 +265,6 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: 0.2s;
 }
 .wjd-btn-complete:hover { background: #059669; }
 .wjd-btn-complete:disabled,
@@ -273,11 +275,15 @@
   cursor: not-allowed;
 }
 .wjd-completion-actions {
+  box-sizing: border-box;
   margin-top: 20px;
   padding: 16px;
   background: #F8FAFC;
   border: 1px solid #E2E8F0;
   border-radius: 12px;
+}
+.wjd-completion-actions * {
+  box-sizing: border-box;
 }
 .wjd-completion-title {
   font-size: 14px;
@@ -295,6 +301,7 @@
 }
 .wjd-btn-revision,
 .wjd-btn-refund {
+  box-sizing: border-box;
   width: 100%;
   margin-top: 10px;
   padding: 11px;
@@ -308,13 +315,13 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: 0.2s;
 }
 .wjd-btn-revision { color: #D97706; }
 .wjd-btn-revision:hover { background: #FFFBEB; border-color: #F59E0B; }
 .wjd-btn-refund { color: #DC2626; }
 .wjd-btn-refund:hover { background: #FEF2F2; border-color: #EF4444; }
 .wjd-btn-refund-submit {
+  box-sizing: border-box;
   padding: 10px 20px;
   background: #DC2626;
   color: white;
@@ -333,6 +340,7 @@
   line-height: 1.5;
 }
 .wjd-btn-cancel {
+  box-sizing: border-box;
   padding: 10px 20px;
   background: #F1F5F9;
   color: #475569;
@@ -613,7 +621,6 @@
   background: #0EA5E9;
   border-color: #0EA5E9;
   color: white;
-  box-shadow: 0 4px 10px rgba(14, 165, 233, 0.15);
 }
 
 .wjd-party-chat-btn i {
@@ -686,9 +693,7 @@
 }
 
 .wjd-comm-member:hover {
-  transform: translateY(-2px);
   border-color: #0ea5e9;
-  box-shadow: 0 8px 20px -6px rgba(14, 165, 233, 0.15);
 }
 
 .wjd-comm-avatar-wrapper {
@@ -777,8 +782,6 @@
 
 .wjd-comm-chat-btn:hover {
   background: #0284c7;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(14, 165, 233, 0.25);
 }
 
 .wjd-comm-chat-btn i {
@@ -820,5 +823,171 @@
   }
   100% {
     box-shadow: 0 0 0 0 rgba(14, 165, 233, 0);
+  }
+}
+
+/* ── Custom Professional Confirmation Popups & Premium Modal Overrides ── */
+.wjd-modal-overlay {
+  background: rgba(15, 23, 42, 0.3) !important; /* Soft dark slate overlay */
+  backdrop-filter: blur(8px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(140%) !important;
+  animation: wjd-fade-in 0.2s ease-out forwards !important;
+}
+
+.wjd-modal {
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.15), 0 0 1px rgba(15, 23, 42, 0.1) !important;
+  animation: wjd-scale-up 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+}
+
+/* Custom Confirmation Modal (Premium SaaS Style) */
+.wjd-confirm-modal {
+  max-width: 400px !important;
+  overflow: hidden;
+  padding: 0;
+  text-align: center;
+  border-radius: 20px !important;
+}
+
+.wjd-confirm-body {
+  padding: 32px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.wjd-confirm-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+}
+
+/* Success theme */
+.wjd-confirm-icon.success {
+  background: #E8F5E9;
+  color: #2E7D32;
+  box-shadow: 0 0 0 4px #C8E6C9;
+}
+.wjd-confirm-btn-action.success {
+  background: #2E7D32 !important;
+  color: white !important;
+}
+.wjd-confirm-btn-action.success:hover {
+  background: #1B5E20 !important;
+}
+
+/* Warning theme */
+.wjd-confirm-icon.warning {
+  background: #FFF3E0;
+  color: #EF6C00;
+  box-shadow: 0 0 0 4px #FFE0B2;
+}
+.wjd-confirm-btn-action.warning {
+  background: #EF6C00 !important;
+  color: white !important;
+}
+.wjd-confirm-btn-action.warning:hover {
+  background: #E65100 !important;
+}
+
+/* Danger theme */
+.wjd-confirm-icon.danger {
+  background: #FFEBEE;
+  color: #C62828;
+  box-shadow: 0 0 0 4px #FFCDD2;
+}
+.wjd-confirm-btn-action.danger {
+  background: #C62828 !important;
+  color: white !important;
+}
+.wjd-confirm-btn-action.danger:hover {
+  background: #B71C1C !important;
+}
+
+/* Info theme */
+.wjd-confirm-icon.info {
+  background: #E3F2FD;
+  color: #1565C0;
+  box-shadow: 0 0 0 4px #BBDEFB;
+}
+.wjd-confirm-btn-action.info {
+  background: #1565C0 !important;
+  color: white !important;
+}
+.wjd-confirm-btn-action.info:hover {
+  background: #0D47A1 !important;
+}
+
+.wjd-confirm-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.3px;
+}
+
+.wjd-confirm-message {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.wjd-confirm-footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 16px 24px 24px;
+  background: #FAFBFD;
+  border-top: 1px solid #F1F5F9;
+}
+
+.wjd-confirm-btn-cancel {
+  padding: 11px 16px;
+  background: white;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.wjd-confirm-btn-cancel:hover {
+  background: #F8FAFC;
+  border-color: #CBD5E1;
+  color: #0F172A;
+}
+
+.wjd-confirm-btn-action {
+  padding: 11px 16px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+@keyframes wjd-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes wjd-scale-up {
+  from {
+    transform: scale(0.94) translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
   }
 }

@@ -11,7 +11,7 @@ import "./WorkspaceJobDetail.css";
 const WorkspaceJobDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { showToast } = useOutletContext();
+  const { showToast, refreshWorkspaceData } = useOutletContext();
 
   const [contract, setContract] = useState(null);
   const [progressList, setProgressList] = useState([]);
@@ -31,6 +31,30 @@ const WorkspaceJobDetail = () => {
   const [showRefundRequest, setShowRefundRequest] = useState(false);
   const [refundReason, setRefundReason] = useState("");
   const [decisionSubmitting, setDecisionSubmitting] = useState(false);
+  const [refundRequest, setRefundRequest] = useState(null);
+
+  // Custom Confirmation Modal state
+  const [confirmModal, setConfirmModal] = useState({
+    show: false,
+    title: "",
+    message: "",
+    type: "info", // success, warning, danger, info
+    confirmText: "Xác nhận",
+    cancelText: "Hủy",
+    onConfirm: null,
+  });
+
+  const showConfirm = (title, message, type = "info", onConfirm, confirmText = "Xác nhận", cancelText = "Hủy") => {
+    setConfirmModal({
+      show: true,
+      title,
+      message,
+      type,
+      confirmText,
+      cancelText,
+      onConfirm,
+    });
+  };
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -55,15 +79,17 @@ const WorkspaceJobDetail = () => {
     setLoading(true);
     setError(null);
     try {
-      const [contractRes, progressRes, paymentsRes] = await Promise.allSettled([
+      const [contractRes, progressRes, paymentsRes, refundRes] = await Promise.allSettled([
         api.contracts.getDetail(id),
         api.progress.getByContractId(id),
         api.payments.getByContractId(id),
+        api.refundRequests.getByContractId(id),
       ]);
 
       console.log("[WorkspaceJobDetail] contractRes:", contractRes);
       console.log("[WorkspaceJobDetail] progressRes:", progressRes);
       console.log("[WorkspaceJobDetail] paymentsRes:", paymentsRes);
+      console.log("[WorkspaceJobDetail] refundRes:", refundRes);
 
       // Contract
       if (contractRes.status === "fulfilled") {
@@ -95,6 +121,30 @@ const WorkspaceJobDetail = () => {
           (Array.isArray(paymentsRes.value) ? paymentsRes.value : []);
         console.log("[WorkspaceJobDetail] payments:", list);
         setPayments(list);
+      }
+
+      // Refund Requests
+      if (refundRes.status === "fulfilled") {
+        const resVal = refundRes.value;
+        console.log("[WorkspaceJobDetail] raw refund request response:", resVal);
+        
+        // Hỗ trợ cả danh sách dạng số nhiều refundRequests lẫn số ít refundRequest
+        const rr = resVal?.refundRequest ?? 
+                   resVal?.refundRequests ?? 
+                   resVal?.data?.refundRequest ?? 
+                   resVal?.data?.refundRequests ?? 
+                   resVal?.data ?? 
+                   resVal;
+                   
+        const finalRR = Array.isArray(rr) ? rr[rr.length - 1] : rr;
+        if (finalRR && (finalRR.trangThai || finalRR.status || finalRR.refundRequestId || finalRR.id)) {
+          console.log("[WorkspaceJobDetail] refundRequest loaded successfully:", finalRR);
+          setRefundRequest(finalRR);
+        } else {
+          setRefundRequest(null);
+        }
+      } else {
+        setRefundRequest(null);
       }
     } catch (err) {
       setError(err.message || "Có lỗi xảy ra");
@@ -135,8 +185,16 @@ const WorkspaceJobDetail = () => {
   };
 
   const handleConfirmProgress = async (progressId) => {
+    const supervisorAccountId = currentUser?.taiKhoanId || currentUser?.id;
+    if (!supervisorAccountId) {
+      showToast("Không xác định được tài khoản giám sát!", "error");
+      return;
+    }
     try {
-      await api.progress.update(progressId, { trangThaiXacNhan: "DaXacNhan" });
+      await api.progress.update(progressId, {
+        trangThaiXacNhan: "DaXacNhan",
+        xacNhanBoi: Number(supervisorAccountId),
+      });
       showToast("Đã xác nhận tiến độ này!", "success");
       setProgressList((prev) =>
         prev.map((p) =>
@@ -151,8 +209,16 @@ const WorkspaceJobDetail = () => {
   };
 
   const handleRejectProgress = async (progressId) => {
+    const supervisorAccountId = currentUser?.taiKhoanId || currentUser?.id;
+    if (!supervisorAccountId) {
+      showToast("Không xác định được tài khoản giám sát!", "error");
+      return;
+    }
     try {
-      await api.progress.update(progressId, { trangThaiXacNhan: "TuChoi" });
+      await api.progress.update(progressId, {
+        trangThaiXacNhan: "TuChoi",
+        xacNhanBoi: Number(supervisorAccountId),
+      });
       showToast("Đã từ chối tiến độ này!", "warning");
       setProgressList((prev) =>
         prev.map((p) =>
@@ -164,26 +230,33 @@ const WorkspaceJobDetail = () => {
     }
   };
 
-  const handleCompleteContract = async () => {
-    if (
-      !confirm(
-        "Xác nhận hoàn thành hợp đồng? Hành động này không thể hoàn tác.",
-      )
-    )
-      return;
-    setDecisionSubmitting(true);
-    try {
-      await api.contracts.updateStatus(id, "HoanThanh");
-      showToast("Đã cập nhật trạng thái hoàn thành hợp đồng!", "success");
-      setContract((prev) => ({ ...prev, trangThai: "HoanThanh" }));
-    } catch (err) {
-      showToast("Lỗi: " + (err.message || "Không thể cập nhật"), "error");
-    } finally {
-      setDecisionSubmitting(false);
-    }
+  const handleCompleteContract = () => {
+    showConfirm(
+      "Xác nhận hoàn thành",
+      "Xác nhận hoàn thành hợp đồng? Hành động này không thể hoàn tác và số tiền thanh toán sẽ được giải ngân cho freelancer.",
+      "success",
+      async () => {
+        setDecisionSubmitting(true);
+        try {
+          await api.contracts.updateStatus(id, "HoanThanh");
+          showToast("Đã cập nhật trạng thái hoàn thành hợp đồng!", "success");
+          setContract((prev) => ({ ...prev, trangThai: "HoanThanh" }));
+        } catch (err) {
+          showToast("Lỗi: " + (err.message || "Không thể cập nhật"), "error");
+        } finally {
+          setDecisionSubmitting(false);
+        }
+      }
+    );
   };
 
-  const handleRequestRevision = async () => {
+  const handleRequestRevision = () => {
+    const activeUserId = currentUser?.taiKhoanId || currentUser?.id;
+    if (!activeUserId) {
+      showToast("Không xác định được tài khoản!", "error");
+      return;
+    }
+
     const submittedCompletion = progressList.find(
       (item) =>
         Number(item.phanTram) >= 100 && item.trangThaiXacNhan !== "TuChoi",
@@ -194,26 +267,32 @@ const WorkspaceJobDetail = () => {
       return;
     }
 
-    if (!confirm("Yêu cầu freelancer làm lại kết quả đã bàn giao?")) return;
-
-    setDecisionSubmitting(true);
-    try {
-      await api.progress.update(submittedCompletion.tienDoId, {
-        trangThaiXacNhan: "TuChoi",
-      });
-      setProgressList((prev) =>
-        prev.map((item) =>
-          item.tienDoId === submittedCompletion.tienDoId
-            ? { ...item, trangThaiXacNhan: "TuChoi" }
-            : item,
-        ),
-      );
-      showToast("Đã gửi yêu cầu làm lại cho freelancer.", "warning");
-    } catch (err) {
-      showToast("Lỗi: " + (err.message || "Không thể yêu cầu làm lại"), "error");
-    } finally {
-      setDecisionSubmitting(false);
-    }
+    showConfirm(
+      "Yêu cầu làm lại",
+      "Yêu cầu freelancer làm lại kết quả đã bàn giao? Tiến độ hoàn thành sẽ được chuyển về trạng thái từ chối.",
+      "warning",
+      async () => {
+        setDecisionSubmitting(true);
+        try {
+          await api.progress.update(submittedCompletion.tienDoId, {
+            trangThaiXacNhan: "TuChoi",
+            xacNhanBoi: Number(activeUserId),
+          });
+          setProgressList((prev) =>
+            prev.map((item) =>
+              item.tienDoId === submittedCompletion.tienDoId
+                ? { ...item, trangThaiXacNhan: "TuChoi" }
+                : item,
+            ),
+          );
+          showToast("Đã gửi yêu cầu làm lại cho freelancer.", "warning");
+        } catch (err) {
+          showToast("Lỗi: " + (err.message || "Không thể yêu cầu làm lại"), "error");
+        } finally {
+          setDecisionSubmitting(false);
+        }
+      }
+    );
   };
 
   const handleRequestRefund = async () => {
@@ -222,21 +301,29 @@ const WorkspaceJobDetail = () => {
       return;
     }
 
+    const activeUserId = currentUser?.taiKhoanId || currentUser?.id;
+    if (!activeUserId) {
+      showToast("Không xác định được tài khoản!", "error");
+      return;
+    }
+
     setDecisionSubmitting(true);
     try {
-      await api.disputes.create({
+      const res = await api.refundRequests.create({
         congViecId: Number(id),
-        tieuDe: "Yêu cầu hoàn tiền khi nghiệm thu công việc",
+        nguoiThueId: Number(activeUserId),
         lyDo: refundReason.trim(),
-        moTa: refundReason.trim(),
-        loaiTranhChap: "HoanTien",
-        yeuCauHoanTien: Math.max(systemHeldAmount, 0),
+        moTa: refundReason.trim()
       });
-      await api.contracts.updateStatus(id, "TranhChap");
-      setContract((prev) => ({ ...prev, trangThai: "TranhChap" }));
+      const rr = res?.refundRequest ?? res?.data ?? res;
+      if (rr && (rr.trangThai || rr.status)) {
+        console.log("[WorkspaceJobDetail] refundRequest created successfully:", rr);
+        setRefundRequest(rr);
+      }
       setShowRefundRequest(false);
       setRefundReason("");
-      showToast("Đã gửi yêu cầu hoàn tiền để hệ thống xử lý.", "success");
+      showToast("Đã gửi yêu cầu hoàn tiền. Đang chờ freelancer phản hồi.", "success");
+      fetchData(); // Backup reload
     } catch (err) {
       showToast(
         "Lỗi: " + (err.message || "Không thể gửi yêu cầu hoàn tiền"),
@@ -245,6 +332,60 @@ const WorkspaceJobDetail = () => {
     } finally {
       setDecisionSubmitting(false);
     }
+  };
+
+  const handleAcceptRefund = async () => {
+    const activeUserId = currentUser?.taiKhoanId || currentUser?.id;
+    if (!activeUserId) return showToast("Không xác định được tài khoản!", "error");
+    if (!refundRequest) return showToast("Không tìm thấy yêu cầu hoàn tiền!", "error");
+
+    showConfirm(
+      "Đồng ý hoàn tiền",
+      "Bạn có chắc chắn đồng ý hoàn tiền? Hợp đồng sẽ bị hủy và tiền ký quỹ sẽ được hoàn trả/phân chia theo quy tắc hệ thống.",
+      "warning",
+      async () => {
+        setDecisionSubmitting(true);
+        try {
+          const reqId = refundRequest.refundRequestId || refundRequest.id;
+          await api.refundRequests.accept(reqId, Number(activeUserId));
+          setContract((prev) => prev ? { ...prev, trangThai: "DaHuy" } : prev);
+          setRefundRequest((prev) => prev ? { ...prev, trangThai: "DaChapNhan" } : prev);
+          showToast("Đã đồng ý hoàn tiền và hủy hợp đồng thành công!", "success");
+          await Promise.all([fetchData(), refreshWorkspaceData?.()]);
+        } catch (err) {
+          showToast("Lỗi: " + (err.message || "Không thể đồng ý hoàn tiền"), "error");
+        } finally {
+          setDecisionSubmitting(false);
+        }
+      }
+    );
+  };
+
+  const handleRejectRefund = async () => {
+    const activeUserId = currentUser?.taiKhoanId || currentUser?.id;
+    if (!activeUserId) return showToast("Không xác định được tài khoản!", "error");
+    if (!refundRequest) return showToast("Không tìm thấy yêu cầu hoàn tiền!", "error");
+
+    showConfirm(
+      "Từ chối hoàn tiền",
+      "Bạn từ chối hoàn tiền? Hợp đồng sẽ tự động chuyển sang trạng thái Tranh Chấp và Đơn vị giám sát sẽ tiến hành phân xử.",
+      "danger",
+      async () => {
+        setDecisionSubmitting(true);
+        try {
+          const reqId = refundRequest.refundRequestId || refundRequest.id;
+          await api.refundRequests.reject(reqId, Number(activeUserId));
+          setContract((prev) => prev ? { ...prev, trangThai: "TranhChap" } : prev);
+          setRefundRequest((prev) => prev ? { ...prev, trangThai: "TuChoi" } : prev);
+          showToast("Đã từ chối hoàn tiền. Hệ thống đã chuyển hợp đồng sang Tranh chấp.", "warning");
+          await Promise.all([fetchData(), refreshWorkspaceData?.()]);
+        } catch (err) {
+          showToast("Lỗi: " + (err.message || "Không thể từ chối hoàn tiền"), "error");
+        } finally {
+          setDecisionSubmitting(false);
+        }
+      }
+    );
   };
 
   const handleChatWithUser = async (targetId, targetName) => {
@@ -368,6 +509,24 @@ const WorkspaceJobDetail = () => {
   };
 
   const getStatusBadge = (status) => {
+    if (status === "DangThucHien" && refundRequest && refundRequest.trangThai === "ChoFreelancerDuyet") {
+      return (
+        <span
+          style={{
+            background: "#FFFBEB",
+            color: "#D97706",
+            padding: "4px 12px",
+            borderRadius: "6px",
+            fontSize: "13px",
+            fontWeight: 600,
+            border: "1px solid #FCD34D",
+          }}
+        >
+          Đang yêu cầu hoàn tiền
+        </span>
+      );
+    }
+
     const map = {
       DangThucHien: {
         bg: "#DBEAFE",
@@ -398,7 +557,7 @@ const WorkspaceJobDetail = () => {
 
   const getProgressStatusBadge = (status) => {
     const map = {
-      ChoXacNhan: { bg: "#FEF3C7", color: "#D97706", label: "Chờ xác nhận" },
+      ChuaXacNhan: { bg: "#FEF3C7", color: "#D97706", label: "Chờ xác nhận" },
       DaXacNhan: { bg: "#D1FAE5", color: "#047857", label: "Đã xác nhận" },
       TuChoi: { bg: "#FEE2E2", color: "#DC2626", label: "Từ chối" },
     };
@@ -425,9 +584,24 @@ const WorkspaceJobDetail = () => {
 
   const userId = currentUser?.taiKhoanId || currentUser?.id;
   const isEmployer =
-    contract && Number(contract.nguoiThue?.taiKhoanId) === Number(userId);
+    contract && (Number(contract.nguoiThue?.taiKhoanId) === Number(userId) || Number(contract.nguoiThueId) === Number(userId));
   const isFreelancer =
-    contract && Number(contract.freelancer?.taiKhoanId) === Number(userId);
+    contract && (Number(contract.freelancer?.taiKhoanId) === Number(userId) || Number(contract.freelancerId) === Number(userId));
+  const isSupervisor =
+    contract &&
+    currentUser?.vaiTro === "DonViGiamSat" &&
+    (Number(contract.giamSatId) === Number(userId) || Number(contract.giamSat?.taiKhoanId) === Number(userId));
+
+  const getNormalizedStatus = (rr) => {
+    if (!rr) return "";
+    const statusVal = rr.trangThai || rr.status || "";
+    return statusVal.toString().toUpperCase().replace(/_/g, "");
+  };
+
+  const isPendingRefund = refundRequest && 
+    (getNormalizedStatus(refundRequest) === "CHOFREELANCERDUYET" || 
+     getNormalizedStatus(refundRequest) === "PENDING" || 
+     getNormalizedStatus(refundRequest) === "CHODUYET");
 
   // Safe override to ensure correct supervisor details are displayed
   if (
@@ -811,7 +985,7 @@ const WorkspaceJobDetail = () => {
 
             <div className="wjd-card-actions">
               <h3>Lịch sử cập nhật tiến độ</h3>
-              {isFreelancer && contract.trangThai === "DangThucHien" && (
+              {isFreelancer && contract.trangThai === "DangThucHien" && (!refundRequest || refundRequest.trangThai !== "ChoFreelancerDuyet") && (
                 <button
                   className="wjd-btn-primary"
                   onClick={() => setShowAddProgress(true)}
@@ -859,7 +1033,7 @@ const WorkspaceJobDetail = () => {
                           <i className="fa-solid fa-paperclip"></i> Tệp đính kèm
                         </a>
                       )}
-                      {isEmployer && item.trangThaiXacNhan === "ChoXacNhan" && (
+                      {isSupervisor && item.trangThaiXacNhan === "ChuaXacNhan" && (
                         <div className="wjd-timeline-actions">
                           <button
                             className="wjd-btn-confirm"
@@ -988,39 +1162,148 @@ const WorkspaceJobDetail = () => {
               </div>
             </div>
 
-            {isEmployer &&
-              contract.trangThai === "DangThucHien" &&
-              overallProgress >= 100 && (
-                <div className="wjd-completion-actions">
-                  <div className="wjd-completion-title">Nghiệm thu công việc</div>
-                  <p>
-                    Freelancer đã báo hoàn thành. Vui lòng chọn kết quả xử lý.
-                  </p>
-                  <button
-                    className="wjd-btn-complete"
-                    onClick={handleCompleteContract}
-                    disabled={decisionSubmitting}
-                  >
-                    <i className="fa-solid fa-check-circle"></i> Xác nhận hoàn
-                    thành
-                  </button>
-                  <button
-                    className="wjd-btn-revision"
-                    onClick={handleRequestRevision}
-                    disabled={decisionSubmitting}
-                  >
-                    <i className="fa-solid fa-rotate-left"></i> Yêu cầu làm lại
-                  </button>
-                  <button
-                    className="wjd-btn-refund"
-                    onClick={() => setShowRefundRequest(true)}
-                    disabled={decisionSubmitting}
-                  >
-                    <i className="fa-solid fa-money-bill-transfer"></i> Yêu cầu
-                    hoàn tiền
-                  </button>
-                </div>
-              )}
+            {contract.trangThai === "DangThucHien" && (
+              <div className="wjd-completion-actions">
+                <div className="wjd-completion-title">Nghiệm thu & Quyết định</div>
+                
+                {/* 1. Nếu đang có yêu cầu hoàn tiền chờ duyệt */}
+                {isPendingRefund ? (
+                  <div style={{ marginTop: "12px", width: "100%", boxSizing: "border-box" }}>
+                    {isEmployer ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%", boxSizing: "border-box" }}>
+                        <p style={{ fontSize: "13px", color: "#64748B", margin: "0 0 4px 0", lineHeight: "1.4" }}>
+                          Yêu cầu hoàn tiền của bạn đã được gửi đi và đang đợi đối tác phản hồi.
+                        </p>
+                        <button
+                          className="wjd-btn-refund"
+                          disabled={true}
+                          style={{ 
+                            width: "100%", 
+                            background: "#FEF3C7", 
+                            color: "#D97706", 
+                            borderColor: "#FCD34D",
+                            cursor: "not-allowed",
+                            opacity: 0.9,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "8px",
+                            boxSizing: "border-box",
+                            margin: 0
+                          }}
+                        >
+                          <i className="fa-solid fa-spinner fa-spin"></i> Đang yêu cầu hoàn tiền
+                        </button>
+                        <div style={{ marginTop: "4px", padding: "8px 12px", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: "8px", fontSize: "12.5px", color: "#475569", lineHeight: "1.4", boxSizing: "border-box" }}>
+                          <strong>Lý do:</strong> "{refundRequest.lyDo}"
+                        </div>
+                      </div>
+                    ) : isFreelancer ? (
+                      <div style={{ padding: "12px", background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: "8px", color: "#92400E", fontSize: "13px", boxSizing: "border-box" }}>
+                        <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: "6px", color: "#F59E0B" }}></i>
+                        <strong>Yêu cầu hoàn tiền từ Khách hàng</strong>
+                        <p style={{ margin: "6px 0", fontSize: "12.5px", color: "#4B5563", lineHeight: "1.4" }}>
+                          Khách hàng đã gửi yêu cầu chấm dứt hợp đồng sớm và hoàn lại tiền ký quỹ.
+                        </p>
+                        <blockquote style={{ margin: "0 0 12px 0", padding: "6px 10px", background: "#FEF3C7", borderRadius: "4px", fontSize: "12px", borderLeft: "3px solid #F59E0B", color: "#451A03" }}>
+                          "{refundRequest.lyDo}"
+                        </blockquote>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%", boxSizing: "border-box" }}>
+                          <button
+                            className="wjd-btn-complete"
+                            onClick={handleAcceptRefund}
+                            disabled={decisionSubmitting}
+                            style={{ 
+                              width: "100%", 
+                              background: "#10B981", 
+                              borderColor: "#10B981",
+                              boxSizing: "border-box",
+                              margin: 0
+                            }}
+                          >
+                            <i className="fa-solid fa-check"></i> Đồng ý hoàn tiền
+                          </button>
+                          <button
+                            className="wjd-btn-complete"
+                            onClick={handleRejectRefund}
+                            disabled={decisionSubmitting}
+                            style={{ 
+                              width: "100%", 
+                              background: "#EF4444", 
+                              borderColor: "#EF4444",
+                              color: "#fff",
+                              boxSizing: "border-box",
+                              margin: 0
+                            }}
+                          >
+                            <i className="fa-solid fa-times"></i> Từ chối
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ padding: "12px", background: "#F1F5F9", borderRadius: "8px", color: "#475569", fontSize: "13px", boxSizing: "border-box" }}>
+                        <i className="fa-solid fa-circle-info" style={{ marginRight: "6px" }}></i>
+                        Đang có yêu cầu hoàn tiền chờ Freelancer phản hồi.
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* 2. Nếu không có yêu cầu hoàn tiền nào đang chờ duyệt thì hiển thị controls bình thường cho Employer */
+                  <>
+                    {isEmployer ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%", marginTop: "10px", boxSizing: "border-box" }}>
+                        <p style={{ fontSize: "13px", color: "#64748B", margin: "0 0 4px 0", lineHeight: "1.4" }}>
+                          {overallProgress >= 100 
+                            ? "Freelancer đã báo hoàn thành. Vui lòng kiểm tra kỹ kết quả trước khi đưa ra quyết định." 
+                            : "Hợp đồng đang được thực hiện. Bạn có thể yêu cầu hoàn tiền nếu có tranh chấp phát sinh."}
+                        </p>
+                        
+                        <button
+                          className="wjd-btn-refund"
+                          onClick={() => setShowRefundRequest(true)}
+                          disabled={decisionSubmitting}
+                          style={{ width: "100%", boxSizing: "border-box", margin: 0 }}
+                        >
+                          <i className="fa-solid fa-money-bill-transfer"></i> Yêu cầu hoàn tiền
+                        </button>
+
+                        {overallProgress >= 100 && (
+                          <>
+                            <button
+                              className="wjd-btn-complete"
+                              onClick={handleCompleteContract}
+                              disabled={decisionSubmitting}
+                              style={{ width: "100%", boxSizing: "border-box", margin: 0 }}
+                            >
+                              <i className="fa-solid fa-check-circle"></i> Xác nhận hoàn thành
+                            </button>
+                            <button
+                              className="wjd-btn-revision"
+                              onClick={handleRequestRevision}
+                              disabled={decisionSubmitting}
+                              style={{ 
+                                width: "100%", 
+                                background: "#FEF3C7", 
+                                color: "#D97706", 
+                                border: "1px solid #FCD34D", 
+                                boxSizing: "border-box",
+                                margin: 0 
+                              }}
+                            >
+                              <i className="fa-solid fa-rotate-left"></i> Yêu cầu làm lại
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <p style={{ fontSize: "13px", color: "#64748B", margin: "10px 0 0 0", lineHeight: "1.4" }}>
+                        Hợp đồng đang được thực hiện. Đang đợi freelancer nộp báo cáo các mốc tiến độ tiếp theo.
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Stakeholders Card */}
@@ -1216,8 +1499,8 @@ const WorkspaceJobDetail = () => {
                   <span
                     className={`wjd-giamsat-status ${contract.trangThaiGiamSat}`}
                   >
-                    {contract.trangThaiGiamSat === "DaChapNhan"
-                      ? "Đã chấp nhận"
+                    {contract.trangThaiGiamSat === "DaChapNhan" || contract.trangThaiGiamSat === "DangGiamSat"
+                      ? "Đang giám sát"
                       : contract.trangThaiGiamSat === "ChoDuyet"
                         ? "Chờ phê duyệt"
                         : contract.trangThaiGiamSat === "TuChoi"
@@ -1555,6 +1838,56 @@ const WorkspaceJobDetail = () => {
                   <i className="fa-solid fa-paper-plane"></i>
                 )}{" "}
                 Gửi yêu cầu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmModal.show && (
+        <div
+          className="wjd-modal-overlay"
+          onClick={() => setConfirmModal((prev) => ({ ...prev, show: false }))}
+        >
+          <div
+            className="wjd-modal wjd-confirm-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="wjd-confirm-body">
+              <div className={`wjd-confirm-icon ${confirmModal.type}`}>
+                {confirmModal.type === "success" && (
+                  <i className="fa-solid fa-circle-check"></i>
+                )}
+                {confirmModal.type === "warning" && (
+                  <i className="fa-solid fa-triangle-exclamation"></i>
+                )}
+                {confirmModal.type === "danger" && (
+                  <i className="fa-solid fa-circle-exclamation"></i>
+                )}
+                {confirmModal.type === "info" && (
+                  <i className="fa-solid fa-circle-info"></i>
+                )}
+              </div>
+              <h3 className="wjd-confirm-title">{confirmModal.title}</h3>
+              <p className="wjd-confirm-message">{confirmModal.message}</p>
+            </div>
+            <div className="wjd-confirm-footer">
+              <button
+                className="wjd-confirm-btn-cancel"
+                onClick={() =>
+                  setConfirmModal((prev) => ({ ...prev, show: false }))
+                }
+              >
+                {confirmModal.cancelText}
+              </button>
+              <button
+                className={`wjd-confirm-btn-action ${confirmModal.type}`}
+                onClick={() => {
+                  if (confirmModal.onConfirm) confirmModal.onConfirm();
+                  setConfirmModal((prev) => ({ ...prev, show: false }));
+                }}
+              >
+                {confirmModal.confirmText}
               </button>
             </div>
           </div>

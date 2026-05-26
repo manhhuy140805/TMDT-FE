@@ -21,6 +21,7 @@ import paymentService from "./paymentService";
 import reviewService from "./reviewService";
 import reportService from "./reportService";
 import adminService from "./adminService";
+import refundRequestService from "./refundRequestService";
 
 const api = {
   auth: authService,
@@ -44,6 +45,7 @@ const api = {
   reviews: reviewService,
   reports: reportService,
   admin: adminService,
+  refundRequests: refundRequestService,
 };
 
 export default api;

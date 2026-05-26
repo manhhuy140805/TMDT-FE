@@ -3,27 +3,26 @@ import { api } from "../utils/api";
 /**
  * Dispute Service
  * POST   /disputes
- * GET    /disputes?skip=&take=&trangThai=
  * GET    /disputes/:id
- * PUT    /disputes/:id/status
+ * GET    /contracts/:id/disputes
+ * PUT    /disputes/:id/review
+ * PUT    /disputes/:id/resolve
  *
  * Trạng thái: MoiMo | DangXuLy | DaKetLuan | DaDong
  */
 const disputeService = {
-  getAll: (params = {}) => {
-    const query = new URLSearchParams(params).toString();
-    return api.get(query ? `/disputes?${query}` : "/disputes");
-  },
-  // params: { skip, take, trangThai }
-
   getById: (id) => api.get(`/disputes/${id}`),
 
-  create: (data) => api.post("/disputes", data),
-  // data: { congViecId, tieuDe, moTa, loaiTranhChap? }
+  getByContractId: (contractId) => api.get(`/contracts/${contractId}/disputes`),
 
-  updateStatus: (id, trangThai) =>
-    api.put(`/disputes/${id}/status`, { trangThai }),
-  // trangThai: MoiMo | DangXuLy | DaKetLuan | DaDong
+  create: (data) => api.post("/disputes", data),
+  // data: { congViecId, nguoiGuiId, lyDo, moTa?, yeuCauHoanTien? }
+
+  review: (id, giamSatId) =>
+    api.put(`/disputes/${id}/review`, { giamSatId }),
+
+  resolve: (id, data) => api.put(`/disputes/${id}/resolve`, data),
+  // data: { giamSatId, ketQua, lyDo, soTienHoan, benChiuPhi }
 };
 
 export default disputeService;

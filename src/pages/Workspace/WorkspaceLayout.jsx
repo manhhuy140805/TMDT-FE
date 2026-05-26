@@ -45,8 +45,9 @@ const WorkspaceLayout = () => {
     }
   }, [navigate]);
 
-  const fetchWorkspaceData = async (user) => {
-    setLoading(true);
+  const fetchWorkspaceData = async (user, options = {}) => {
+    const { silent = false } = options;
+    if (!silent) setLoading(true);
     const userId = user.taiKhoanId || user.id;
 
     // Chạy song song và xử lý lỗi độc lập, 1 endpoint fail không vỡ các phần khác.
@@ -68,6 +69,35 @@ const WorkspaceLayout = () => {
         .filter((c) => c.trangThai === "HoanThanh")
         .reduce((sum, c) => sum + (Number(c.giaThoa) || 0), 0);
       setStats({ activeJobs, completedJobs, totalEarnings, avgRating: 4.8 });
+
+      // Enrich active contracts with refund request details
+      const activeContracts = all.filter(c => c.trangThai === "DangThucHien");
+      if (activeContracts.length > 0) {
+        Promise.allSettled(
+          activeContracts.map(c => api.refundRequests.getByContractId(c.congViecId))
+        ).then((refundResults) => {
+          const enriched = all.map((c, index) => {
+            if (c.trangThai === "DangThucHien") {
+              const activeIndex = activeContracts.findIndex(ac => ac.congViecId === c.congViecId);
+              if (activeIndex !== -1 && refundResults[activeIndex]?.status === "fulfilled") {
+                const resVal = refundResults[activeIndex].value;
+                const rr = resVal?.refundRequest ?? 
+                           resVal?.refundRequests ?? 
+                           resVal?.data?.refundRequest ?? 
+                           resVal?.data?.refundRequests ?? 
+                           resVal?.data ?? 
+                           resVal;
+                const finalRR = Array.isArray(rr) ? rr[rr.length - 1] : rr;
+                if (finalRR && (finalRR.trangThai || finalRR.status || finalRR.refundRequestId || finalRR.id)) {
+                  return { ...c, refundRequest: finalRR };
+                }
+              }
+            }
+            return c;
+          });
+          setJobs(enriched);
+        });
+      }
     } else {
       console.warn("[workspace] contracts failed:", contractsRes.reason?.message);
     }
@@ -90,7 +120,7 @@ const WorkspaceLayout = () => {
       console.warn("[workspace] notifications failed:", notiRes.reason?.message);
     }
 
-    setLoading(false);
+    if (!silent) setLoading(false);
   };
 
   if (!currentUser) return null;
@@ -133,6 +163,11 @@ const WorkspaceLayout = () => {
                 <i className="fa-solid fa-file-invoice-dollar"></i> Yêu cầu thuê
               </Link>
             )}
+            {currentUser.vaiTro === "DonViGiamSat" && (
+              <Link to="/workspace/requests" className={`wl-nav-item ${location.pathname.includes("/workspace/requests") ? "active" : ""}`}>
+                <i className="fa-solid fa-file-shield"></i> Yêu cầu giám sát
+              </Link>
+            )}
             <Link to="/workspace/jobs" className={`wl-nav-item ${location.pathname.includes("/workspace/jobs") ? "active" : ""}`}>
               <i className="fa-solid fa-briefcase"></i> Công việc
             </Link>
@@ -163,7 +198,17 @@ const WorkspaceLayout = () => {
                <p>Đang tải dữ liệu...</p>
              </div>
           ) : (
-             <Outlet context={{ currentUser, jobs, stats, conversations, notifications, showToast }} />
+             <Outlet
+               context={{
+                 currentUser,
+                 jobs,
+                 stats,
+                 conversations,
+                 notifications,
+                 showToast,
+                 refreshWorkspaceData: () => fetchWorkspaceData(currentUser, { silent: true }),
+               }}
+             />
           )}
         </main>
       </div>

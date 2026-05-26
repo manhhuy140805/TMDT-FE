@@ -2,20 +2,19 @@ import { api } from "../utils/api";
 
 /**
  * Evidence Service
- * POST   /evidences
- * GET    /evidences?tranhChapId=&skip=&take=
+ * POST   /disputes/:id/evidences
+ * GET    /disputes/:id/evidences
+ * DELETE /evidences/:id
  *
  * loaiBangChung: TinNhan | File | HinhAnh | GhiChu | KhacP
  */
 const evidenceService = {
-  getAll: (params = {}) => {
-    const query = new URLSearchParams(params).toString();
-    return api.get(query ? `/evidences?${query}` : "/evidences");
-  },
-  // params: { tranhChapId, skip, take }
+  getByDisputeId: (disputeId) => api.get(`/disputes/${disputeId}/evidences`),
 
-  create: (data) => api.post("/evidences", data),
-  // data: { tranhChapId, loaiBangChung, duongDan, moTa? }
+  create: (disputeId, data) => api.post(`/disputes/${disputeId}/evidences`, data),
+  // data: { nguoiNopId, loaiBangChung, noiDung, duongDanFile? }
+
+  delete: (id) => api.delete(`/evidences/${id}`),
 };
 
 export default evidenceService;

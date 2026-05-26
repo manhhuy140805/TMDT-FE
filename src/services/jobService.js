@@ -55,6 +55,10 @@ const jobService = {
   addSkill: (id, kyNangId) => api.post(`/jobs/${id}/skills/${kyNangId}`),
 
   removeSkill: (id, kyNangId) => api.delete(`/jobs/${id}/skills/${kyNangId}`),
+
+  acceptSupervisor: (id) => api.put(`/jobs/${id}/supervisor/accept`),
+
+  rejectSupervisor: (id, lyDo) => api.put(`/jobs/${id}/supervisor/reject`, { lyDo }),
 };
 
 export default jobService;

@@ -74,6 +74,9 @@ const RequestDetailPage = () => {
     requiresSupervision: job.yeuCauGiamSat,
     supervisorId: job.giamSatId ?? job.giamSat?.taiKhoanId ?? null,
     supervisorFee: job.phiGiamSat ?? 2000000,
+    trangThaiGiamSat: job.trangThaiGiamSat || "ChoDuyet",
+    lyDoTuChoiGiamSat: job.lyDoTuChoiGiamSat || null,
+    giamSat: job.giamSat || null,
     bids: job.soLuongBaoGia ?? 0,
     category: job.loaiDichVu?.tenLoai ?? "",
     createdAt: job.ngayTao,
@@ -135,8 +138,6 @@ const RequestDetailPage = () => {
   const userRole = getUserRole(currentUser);
   const isFreelancer = isFreelancerRole(userRole);
 
-  // isOwner: so sánh taiKhoanId của currentUser với taiKhoanId của employer
-  // employer.id được map từ job.nguoiThueId ?? job.nguoiThue.taiKhoanId
   const currentUserId = currentUser?.taiKhoanId ?? currentUser?.id ?? null;
   const isOwner =
     request &&
@@ -144,13 +145,23 @@ const RequestDetailPage = () => {
     request.employer &&
     request.employer.id === currentUserId;
 
+  const isSupervisor =
+    request &&
+    currentUser &&
+    currentUser.vaiTro === "DonViGiamSat" &&
+    Number(request.supervisorId) === Number(currentUserId);
+
   // Yêu cầu còn nhận hồ sơ khi: trạng thái MoiTao VÀ chưa có freelancer được chọn
   const isAcceptingBids =
     request &&
     (request.status === "DangNhanHoSo" || request.status === "DangMo" || request.status === "MoDau" || request.status === "MoiTao") &&
     !quotes.some((q) => q.status === "DaChapNhan" || q.status === "DuocChon" || q.status === "DA_CHAP_NHAN");
 
-  const canSubmitQuote = isFreelancer && isAcceptingBids && !isOwner;
+  const canSubmitQuote =
+    isFreelancer &&
+    isAcceptingBids &&
+    !isOwner &&
+    (!request.requiresSupervision || request.trangThaiGiamSat === "DaChapNhan");
 
   // ============ API Calls ============
   const fetchRequestDetail = async () => {
@@ -244,6 +255,32 @@ const RequestDetailPage = () => {
       fetchQuotes();
     } catch (err) {
       showToast(err.message || "Gửi báo giá thất bại, vui lòng thử lại!", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAcceptSupervisor = async () => {
+    setSubmitting(true);
+    try {
+      await api.jobs.acceptSupervisor(id);
+      showToast("Đã chấp nhận lời mời giám sát yêu cầu thành công!", "success");
+      fetchRequestDetail();
+    } catch (err) {
+      showToast(err.message || "Không thể chấp nhận lời mời giám sát", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRejectSupervisor = async (reason) => {
+    setSubmitting(true);
+    try {
+      await api.jobs.rejectSupervisor(id, reason || "Không đủ nguồn lực vào thời điểm này.");
+      showToast("Đã từ chối lời mời giám sát yêu cầu.", "warning");
+      fetchRequestDetail();
+    } catch (err) {
+      showToast(err.message || "Không thể từ chối lời mời giám sát", "error");
     } finally {
       setSubmitting(false);
     }
@@ -347,7 +384,6 @@ const RequestDetailPage = () => {
       request.status === "DangNhan" ||
       request.status === "DangThucHien" ||
       request.status === "DaChot" ||
-      request.status === "DaDong" ||
       request.status === "HoanThanh" ||
       request.status === "DaHuy";
 
@@ -412,6 +448,74 @@ const RequestDetailPage = () => {
 
       <div className="rd-layout">
         <div className="rd-main">
+          {request.requiresSupervision && (
+            <div className="rd-card" style={{ border: "1.5px solid #FCD34D", background: "linear-gradient(135deg, #ffffff 0%, #FFFBEB 100%)", boxShadow: "0 10px 25px -5px rgba(245, 158, 11, 0.08)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", borderBottom: "1px solid #FDE68A", paddingBottom: "10px" }}>
+                <h3 className="rd-card-title" style={{ margin: 0, display: "flex", alignItems: "center", gap: "8px", color: "#B45309" }}>
+                  <i className="fa-solid fa-shield-halved" style={{ color: "#F59E0B" }}></i>
+                  Đơn vị Giám sát độc lập
+                </h3>
+                <span
+                  style={{
+                    background: request.trangThaiGiamSat === "DaChapNhan" ? "#D1FAE5" : request.trangThaiGiamSat === "TuChoi" ? "#FEE2E2" : "#FEF3C7",
+                    color: request.trangThaiGiamSat === "DaChapNhan" ? "#047857" : request.trangThaiGiamSat === "TuChoi" ? "#DC2626" : "#D97706",
+                    padding: "4px 10px",
+                    borderRadius: "20px",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px"
+                  }}
+                >
+                  {request.trangThaiGiamSat === "DaChapNhan" ? "Đã chấp nhận" : request.trangThaiGiamSat === "TuChoi" ? "Từ chối" : "Chờ phê duyệt"}
+                </span>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", fontSize: "14px", color: "#475569" }}>
+                <div>
+                  <span style={{ color: "#94A3B8", fontSize: "12px", display: "block" }}>Đơn vị phụ trách</span>
+                  <strong>{request.giamSat?.tenDonVi || `Giám sát viên (ID: ${request.supervisorId})`}</strong>
+                </div>
+                <div>
+                  <span style={{ color: "#94A3B8", fontSize: "12px", display: "block" }}>Chi phí giám sát</span>
+                  <strong style={{ color: "#F59E0B" }}>{Number(request.supervisorFee || 0).toLocaleString("vi-VN")} VNĐ</strong>
+                </div>
+              </div>
+
+              {request.trangThaiGiamSat === "TuChoi" && request.lyDoTuChoiGiamSat && (
+                <div style={{ marginTop: "12px", padding: "10px", background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: "8px", fontSize: "13px", color: "#B91C1C" }}>
+                  <i className="fa-solid fa-circle-exclamation" style={{ marginRight: "6px" }}></i>
+                  <strong>Lý do từ chối:</strong> {request.lyDoTuChoiGiamSat}
+                </div>
+              )}
+
+              {isSupervisor && request.trangThaiGiamSat === "ChoDuyet" && (
+                <div style={{ marginTop: "16px", display: "flex", gap: "12px" }}>
+                  <button
+                    onClick={handleAcceptSupervisor}
+                    disabled={submitting}
+                    className="rd-mf-btn submit"
+                    style={{ flex: 1, height: "40px", fontSize: "13px", justifyContent: "center" }}
+                  >
+                    <i className="fa-solid fa-check"></i> Chấp nhận giám sát
+                  </button>
+                  <button
+                    onClick={() => {
+                      const reason = prompt("Nhập lý do từ chối giám sát:", "Không đủ nguồn lực vào thời điểm này.");
+                      if (reason !== null) {
+                        handleRejectSupervisor(reason);
+                      }
+                    }}
+                    disabled={submitting}
+                    className="rd-mf-btn cancel"
+                    style={{ flex: 1, height: "40px", fontSize: "13px", justifyContent: "center", background: "#fee2e2", color: "#dc2626", borderColor: "#fca5a5" }}
+                  >
+                    <i className="fa-solid fa-xmark"></i> Từ chối
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
           <RequestInfo request={request} />
         </div>
         <div className="rd-sidebar">
@@ -422,6 +526,7 @@ const RequestDetailPage = () => {
             isAcceptingBids={isAcceptingBids}
             isFreelancer={isFreelancer}
             currentUser={currentUser}
+            canSubmitQuote={canSubmitQuote}
           />
           <ClientCard employer={request.employer} location={request.location} />
         </div>

@@ -14,6 +14,7 @@ const ActionCard = ({
   isAcceptingBids = true,
   isFreelancer = false,
   currentUser = null,
+  canSubmitQuote = true,
 }) => {
   const navigate = useNavigate();
   const hasSelectedFreelancer = request.selectedQuoteId && request.selectedFreelancerId;
@@ -78,9 +79,21 @@ const ActionCard = ({
         ) : isAcceptingBids ? (
           <>
             {isFreelancer || !currentUser ? (
-              <button className="ac-btn-primary" onClick={onSubmitQuote}>
-                <i className="fa-solid fa-paper-plane"></i> Nộp Hồ Sơ Báo Giá
-              </button>
+              canSubmitQuote ? (
+                <button className="ac-btn-primary" onClick={onSubmitQuote}>
+                  <i className="fa-solid fa-paper-plane"></i> Nộp Hồ Sơ Báo Giá
+                </button>
+              ) : request.trangThaiGiamSat === "ChoDuyet" ? (
+                <div className="ac-closed" style={{ background: '#FFFBEB', borderColor: '#FDE68A', color: '#B45309', display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'center', lineHeight: '1.4' }}>
+                  <span style={{ fontWeight: 700 }}><i className="fa-solid fa-hourglass-half"></i> Chờ Giám Sát Duyệt</span>
+                  <span style={{ fontSize: '11px', color: '#D97706', fontWeight: 500 }}>Đang chờ đơn vị giám sát phê duyệt yêu cầu để bắt đầu nhận báo giá.</span>
+                </div>
+              ) : (
+                <div className="ac-closed" style={{ background: '#FEF2F2', borderColor: '#FCA5A5', color: '#B91C1C', display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'center', lineHeight: '1.4' }}>
+                  <span style={{ fontWeight: 700 }}><i className="fa-solid fa-circle-xmark"></i> Giám Sát Từ Chối</span>
+                  <span style={{ fontSize: '11px', color: '#DC2626', fontWeight: 500 }}>Đơn vị giám sát đã từ chối yêu cầu. Đang chờ người thuê chọn đơn vị khác.</span>
+                </div>
+              )
             ) : (
               <div className="ac-closed" style={{ background: '#F1F5F9', borderColor: '#CBD5E1', color: '#475569' }}>
                 <i className="fa-solid fa-circle-info"></i>
