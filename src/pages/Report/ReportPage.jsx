@@ -24,7 +24,6 @@ const ReportPage = () => {
 
     // Luồng chính: Gửi báo cáo
     setError('');
-    console.log('Sending report to system...', { target: targetUser.name, content: description });
     
     // Giả lập hệ thống lưu thông tin và thông báo thành công
     setIsSubmitted(true);

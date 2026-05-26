@@ -29,7 +29,6 @@ const RatingPage = () => {
       alert('Vui lòng chọn số sao đánh giá!');
       return;
     }
-    console.log('Submitted rating:', { rating, comment });
     setIsSubmitted(true);
   };
 

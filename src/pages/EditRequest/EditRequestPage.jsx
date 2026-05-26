@@ -36,7 +36,6 @@ const EditRequestPage = () => {
   ];
 
   useEffect(() => {
-    console.log('EditRequestPage - ID from params:', id);
     fetchRequestDetail();
   }, [id]);
 
@@ -46,7 +45,6 @@ const EditRequestPage = () => {
       const response = await api.requests.getById(id);
       if (response.success) {
         const req = response.data;
-        console.log('Fetched request data:', req);
         setRequest(req);
         
         // Populate form with existing data
@@ -83,7 +81,6 @@ const EditRequestPage = () => {
           attachments: []
         };
         
-        console.log('Setting form data:', newFormData);
         setFormData(newFormData);
         
         setCharCounts({
@@ -222,11 +219,7 @@ const EditRequestPage = () => {
         employer: request.employer
       };
 
-      console.log('Submitting update with data:', updateData);
-
       const response = await api.requests.update(id, updateData);
-
-      console.log('Update response:', response);
 
       if (response.success) {
         const toast = document.getElementById('success-toast');
@@ -250,10 +243,8 @@ const EditRequestPage = () => {
   };
 
   const handleCancelRequest = async () => {
-    console.log('Deleting request with ID:', id);
     try {
       const response = await api.requests.delete(id);
-      console.log('Delete response:', response);
       if (response.success) {
         alert('Đã xóa yêu cầu thành công!');
         setShowCancelModal(false);
@@ -281,8 +272,6 @@ const EditRequestPage = () => {
   if (!request) {
     return null;
   }
-
-  console.log('Rendering form with formData:', formData);
 
   return (
     <div className="edit-request-page" style={{background: '#F8FAFC'}}>

@@ -45,7 +45,6 @@ const WorkspacePage = () => {
             role: role,
           };
           setUser(normalizedUser);
-          console.log("Current user (normalized):", normalizedUser);
         }
       } catch (error) {
         console.error("Error parsing user data:", error);

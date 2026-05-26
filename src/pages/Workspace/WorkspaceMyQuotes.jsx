@@ -61,9 +61,7 @@ const WorkspaceMyQuotes = () => {
     setLoading(true);
     setError(null);
     try {
-      console.log("[WorkspaceMyQuotes] Fetching proposals for freelancerId:", freelancerId);
       const res = await api.proposals.getByFreelancerId(freelancerId);
-      console.log("[WorkspaceMyQuotes] API response:", res);
       const list = Array.isArray(res)
         ? res
         : Array.isArray(res?.proposals)

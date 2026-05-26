@@ -4,7 +4,6 @@ import { api } from "../utils/api";
  * Payment Service
  * POST   /payments/deposit       — Tạo thanh toán escrow (đặt cọc)
  * POST   /payments               — Tạo thanh toán chung
- * GET    /payments?congViecId=&skip=&take=
  * GET    /payments/:id
  * GET    /contracts/:id/payments  — Lấy tất cả thanh toán của hợp đồng
  * PUT    /payments/:id/status
@@ -17,10 +16,13 @@ import { api } from "../utils/api";
  */
 const paymentService = {
   getAll: (params = {}) => {
-    const query = new URLSearchParams(params).toString();
-    return api.get(query ? `/payments?${query}` : "/payments");
+    const contractId = params.contractId ?? params.congViecId;
+    if (!contractId) {
+      return Promise.reject(new Error("contractId is required"));
+    }
+    return api.get(`/contracts/${contractId}/payments`);
   },
-  // params: { congViecId, skip, take }
+  // params: { contractId | congViecId }
 
   getById: (id) => api.get(`/payments/${id}`),
 

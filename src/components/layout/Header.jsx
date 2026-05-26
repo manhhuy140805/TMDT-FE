@@ -80,7 +80,17 @@ const Header = () => {
     : "";
   const displayName = user?.hoTen || user?.name || "Người dùng";
   const displayEmail = user?.email || "";
-  const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=0EA5E9&color=fff&size=40`;
+
+  const getRoleColorHex = (vaiTro) => {
+    const role = vaiTro?.toString().trim().toLowerCase() || "";
+    if (role === "freelancer") return "10B981"; // green
+    if (role === "nguoithue" || role === "employer" || role === "client") return "0EA5E9"; // blue
+    if (role === "donvigiamsat" || role === "supervisor") return "F59E0B"; // orange-yellow
+    return "0EA5E9";
+  };
+
+  const roleColorHex = getRoleColorHex(user?.vaiTro);
+  const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=${roleColorHex}&color=fff&size=40`;
   const displayAvatar = user?.anhDaiDien || user?.avatar || fallbackAvatar;
 
   return (
@@ -171,7 +181,7 @@ const Header = () => {
                     <img
                       src={displayAvatar}
                       alt={displayName}
-                      className="user-avatar"
+                      className={`user-avatar user-avatar--${(user?.vaiTro || user?.role || "freelancer").toLowerCase()}`}
                       style={{ margin: 0, display: "block" }}
                       onError={(e) => {
                         e.target.src = fallbackAvatar;
@@ -186,7 +196,7 @@ const Header = () => {
                         <img
                           src={displayAvatar}
                           alt={displayName}
-                          className="dropdown-avatar"
+                          className={`dropdown-avatar dropdown-avatar--${(user?.vaiTro || user?.role || "freelancer").toLowerCase()}`}
                           onError={(e) => {
                             e.target.src = fallbackAvatar;
                           }}

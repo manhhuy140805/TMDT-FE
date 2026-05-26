@@ -48,7 +48,6 @@ const WorkspaceLayout = () => {
   const fetchWorkspaceData = async (user) => {
     setLoading(true);
     const userId = user.taiKhoanId || user.id;
-    console.log("[WorkspaceLayout] Fetching data for userId:", userId, "role:", user.vaiTro, "freelancerId:", user.freelancerId);
 
     // Chạy song song và xử lý lỗi độc lập, 1 endpoint fail không vỡ các phần khác.
     const [contractsRes, convRes, notiRes] = await Promise.allSettled([
@@ -56,10 +55,6 @@ const WorkspaceLayout = () => {
       api.chat.getConversations(userId),
       api.notifications.getByUserId(userId),
     ]);
-
-    console.log("[WorkspaceLayout] contractsRes:", contractsRes);
-    console.log("[WorkspaceLayout] convRes:", convRes);
-    console.log("[WorkspaceLayout] notiRes:", notiRes);
 
     // ── Contracts (thay thế jobs) ──
     if (contractsRes.status === "fulfilled") {

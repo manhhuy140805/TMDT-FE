@@ -265,6 +265,73 @@
   transition: 0.2s;
 }
 .wjd-btn-complete:hover { background: #059669; }
+.wjd-btn-complete:disabled,
+.wjd-btn-revision:disabled,
+.wjd-btn-refund:disabled,
+.wjd-btn-refund-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.wjd-completion-actions {
+  margin-top: 20px;
+  padding: 16px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+}
+.wjd-completion-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0F172A;
+}
+.wjd-completion-actions p {
+  margin: 6px 0 14px;
+  color: #64748B;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.wjd-completion-actions .wjd-btn-complete {
+  margin-top: 0;
+}
+.wjd-btn-revision,
+.wjd-btn-refund {
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px;
+  background: white;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: 0.2s;
+}
+.wjd-btn-revision { color: #D97706; }
+.wjd-btn-revision:hover { background: #FFFBEB; border-color: #F59E0B; }
+.wjd-btn-refund { color: #DC2626; }
+.wjd-btn-refund:hover { background: #FEF2F2; border-color: #EF4444; }
+.wjd-btn-refund-submit {
+  padding: 10px 20px;
+  background: #DC2626;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.wjd-refund-note {
+  padding: 12px;
+  margin: 0 0 18px;
+  border-radius: 8px;
+  background: #FEF3C7;
+  color: #92400E;
+  font-size: 13px;
+  line-height: 1.5;
+}
 .wjd-btn-cancel {
   padding: 10px 20px;
   background: #F1F5F9;
@@ -479,6 +546,17 @@
   object-fit: cover;
   border: 1.5px solid #E2E8F0;
   flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.wjd-party-avatar.wjd-party-avatar--freelancer {
+  border: 2px solid #10B981 !important;
+}
+.wjd-party-avatar.wjd-party-avatar--nguoithue {
+  border: 2px solid #0EA5E9 !important;
+}
+.wjd-party-avatar.wjd-party-avatar--donvigiamsat {
+  border: 2px solid #F59E0B !important;
 }
 
 .wjd-party-info {
@@ -627,6 +705,17 @@
   object-fit: cover;
   border: 2px solid #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+}
+
+.wjd-comm-avatar-wrapper img.wjd-comm-avatar--freelancer {
+  border: 2px solid #10B981 !important;
+}
+.wjd-comm-avatar-wrapper img.wjd-comm-avatar--nguoithue {
+  border: 2px solid #0EA5E9 !important;
+}
+.wjd-comm-avatar-wrapper img.wjd-comm-avatar--donvigiamsat {
+  border: 2px solid #F59E0B !important;
 }
 
 .wjd-comm-role-badge {

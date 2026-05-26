@@ -325,7 +325,14 @@ const ProfilePage = () => {
 
               <div className="quick-profile-body">
                 <div
-                  className="quick-avatar-container"
+                  className={`quick-avatar-container quick-avatar-container--${
+                    (user?.vaiTro || user?.role || "").toString().toLowerCase().includes("nguoithue") || 
+                    accountForm.vaiTro === "Người thuê" 
+                      ? "nguoithue" 
+                      : (user?.vaiTro || user?.role || "").toString().toLowerCase().includes("donvigiamsat")
+                      ? "donvigiamsat" 
+                      : "freelancer"
+                  }`}
                   onClick={() => {
                     setTempAvatarUrl(infoForm.avatar);
                     setShowAvatarModal(true);

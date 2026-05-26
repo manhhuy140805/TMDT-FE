@@ -209,6 +209,20 @@ a {
   border-radius: 50%;
   object-fit: cover;
   border: 1px solid #E2E8F0;
+  box-sizing: border-box;
+}
+
+.user-avatar.user-avatar--freelancer {
+  border: 2px solid #10B981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+.user-avatar.user-avatar--nguoithue {
+  border: 2px solid #0EA5E9;
+  box-shadow: 0 0 8px rgba(14, 165, 233, 0.4);
+}
+.user-avatar.user-avatar--donvigiamsat {
+  border: 2px solid #F59E0B;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
 }
 
 .user-dropdown {
@@ -262,6 +276,20 @@ a {
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #E2E8F0;
+  box-sizing: border-box;
+}
+
+.dropdown-avatar.dropdown-avatar--freelancer {
+  border: 3px solid #10B981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
+}
+.dropdown-avatar.dropdown-avatar--nguoithue {
+  border: 3px solid #0EA5E9;
+  box-shadow: 0 0 10px rgba(14, 165, 233, 0.35);
+}
+.dropdown-avatar.dropdown-avatar--donvigiamsat {
+  border: 3px solid #F59E0B;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
 }
 
 .dropdown-user-details {

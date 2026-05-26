@@ -114,11 +114,7 @@ const EditQuotePage = () => {
         description: formData.description
       };
 
-      console.log('Updating quote with data:', updateData);
-
       const response = await api.quotes.update(id, updateData);
-
-      console.log('Update response:', response);
 
       if (response.success) {
         const toast = document.getElementById('success-toast');

@@ -24,12 +24,10 @@ const useSocket = (userId) => {
     });
 
     socket.on("connect", () => {
-      console.log("[socket] connected:", socket.id);
       setConnected(true);
     });
 
     socket.on("disconnect", (reason) => {
-      console.log("[socket] disconnected:", reason);
       setConnected(false);
     });
 
