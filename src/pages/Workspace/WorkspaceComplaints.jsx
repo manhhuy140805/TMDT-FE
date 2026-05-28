@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import api from "../../services/api";
 import "./WorkspaceComplaints.css";
@@ -34,8 +34,21 @@ const WorkspaceComplaints = () => {
     soTienFreelancer: "",
     soTienGiamSat: "",
   });
+  const autoSyncedDisputesRef = useRef(new Set());
 
   const supervisorId = currentUser?.taiKhoanId || currentUser?.id;
+
+  const getConclusionContractStatus = (ketQua) => {
+    if (ketQua === "TiepTuc") return "HoanThanh";
+    if (
+      ketQua === "HoanTienNguoiThue" ||
+      ketQua === "HuyHopDong" ||
+      ketQua === "PhanChia"
+    ) {
+      return "DaHuy";
+    }
+    return null;
+  };
 
   const fetchDisputes = useCallback(async () => {
     setLoading(true);
@@ -164,6 +177,38 @@ const WorkspaceComplaints = () => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCaseDetails(selectedId);
   }, [fetchCaseDetails, selectedId]);
+
+  useEffect(() => {
+    const ketQua = activeDispute?.ketLuan?.ketQua;
+    const nextStatus = getConclusionContractStatus(ketQua);
+    const isResolved =
+      activeDispute?.trangThai === "DaKetLuan" ||
+      activeDispute?.trangThai === "DaDong";
+
+    if (
+      !isResolved ||
+      !nextStatus ||
+      contract?.trangThai !== "TranhChap" ||
+      !activeDispute?.congViecId ||
+      autoSyncedDisputesRef.current.has(activeDispute.tranhChapId)
+    ) {
+      return;
+    }
+
+    autoSyncedDisputesRef.current.add(activeDispute.tranhChapId);
+    api.contracts
+      .updateStatus(activeDispute.congViecId, nextStatus)
+      .then(() => {
+        setContract((current) =>
+          current ? { ...current, trangThai: nextStatus } : current,
+        );
+        refreshWorkspaceData?.();
+      })
+      .catch((err) => {
+        autoSyncedDisputesRef.current.delete(activeDispute.tranhChapId);
+        console.warn("Khong the dong bo trang thai cong viec:", err);
+      });
+  }, [activeDispute, contract?.trangThai, refreshWorkspaceData]);
 
   const filteredDisputes = useMemo(() => {
     if (filter === "ALL") return disputes;
@@ -310,17 +355,33 @@ const WorkspaceComplaints = () => {
 
     setActionLoading(true);
     try {
+      const isRefundConclusion = resolution.ketQua === "HoanTienNguoiThue";
+
       await api.disputes.resolve(activeDispute.tranhChapId, {
         giamSatId: Number(supervisorId),
         ketQua: resolution.ketQua,
         lyDo: resolution.lyDo.trim(),
-        soTienNguoiThue: Number(resolution.soTienNguoiThue) || 0,
-        soTienFreelancer: Number(resolution.soTienFreelancer) || 0,
-        soTienGiamSat: Number(resolution.soTienGiamSat) || 0,
+        soTienHoan: isRefundConclusion
+          ? Number(resolution.soTienNguoiThue) || 0
+          : 0,
+        soTienFreelancer: isRefundConclusion
+          ? Number(resolution.soTienFreelancer) || 0
+          : 0,
+        soTienGiamSat: isRefundConclusion
+          ? Number(resolution.soTienGiamSat) || 0
+          : 0,
+        benChiuPhi: "ChiaSe",
       });
 
       let nextContractStatus = null;
-      if (contract?.trangThai === "TranhChap") {
+      if (isRefundConclusion) {
+        nextContractStatus = "DaHuy";
+        setContract((current) =>
+          current ? { ...current, trangThai: nextContractStatus } : current,
+        );
+      }
+
+      if (!isRefundConclusion && contract?.trangThai === "TranhChap") {
         nextContractStatus =
           resolution.ketQua === "TiepTuc" ? "DangThucHien" : "DaHuy";
         try {
@@ -782,7 +843,8 @@ const WorkspaceComplaints = () => {
                     )}
                   {(activeDispute.trangThai === "DaKetLuan" ||
                     activeDispute.trangThai === "DaDong") &&
-                    contract?.trangThai !== "TranhChap" && (
+                    (contract?.trangThai !== "TranhChap" ||
+                      activeDispute.ketLuan) && (
                       <span className="wc-finished">
                         <i className="fa-solid fa-circle-check"></i> Hồ sơ đã
                         được kết luận
@@ -792,7 +854,8 @@ const WorkspaceComplaints = () => {
 
                 {(activeDispute.trangThai === "DaKetLuan" ||
                   activeDispute.trangThai === "DaDong") &&
-                  contract?.trangThai === "TranhChap" && (
+                  contract?.trangThai === "TranhChap" &&
+                  !activeDispute.ketLuan && (
                     <section className="wc-sync-warning">
                       <div>
                         <h4>Kết luận đã có, công việc chưa đồng bộ</h4>
