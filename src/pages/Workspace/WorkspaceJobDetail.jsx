@@ -32,6 +32,7 @@ const WorkspaceJobDetail = () => {
   const [refundReason, setRefundReason] = useState("");
   const [decisionSubmitting, setDecisionSubmitting] = useState(false);
   const [refundRequest, setRefundRequest] = useState(null);
+  const [refundDispute, setRefundDispute] = useState(null);
 
   // Custom Confirmation Modal state
   const [confirmModal, setConfirmModal] = useState({
@@ -79,17 +80,19 @@ const WorkspaceJobDetail = () => {
     setLoading(true);
     setError(null);
     try {
-      const [contractRes, progressRes, paymentsRes, refundRes] = await Promise.allSettled([
+      const [contractRes, progressRes, paymentsRes, refundRes, disputeRes] = await Promise.allSettled([
         api.contracts.getDetail(id),
         api.progress.getByContractId(id),
         api.payments.getByContractId(id),
         api.refundRequests.getByContractId(id),
+        api.disputes.getByContractId(id),
       ]);
 
       console.log("[WorkspaceJobDetail] contractRes:", contractRes);
       console.log("[WorkspaceJobDetail] progressRes:", progressRes);
       console.log("[WorkspaceJobDetail] paymentsRes:", paymentsRes);
       console.log("[WorkspaceJobDetail] refundRes:", refundRes);
+      console.log("[WorkspaceJobDetail] disputeRes:", disputeRes);
 
       // Contract
       if (contractRes.status === "fulfilled") {
@@ -145,6 +148,27 @@ const WorkspaceJobDetail = () => {
         }
       } else {
         setRefundRequest(null);
+      }
+
+      if (disputeRes.status === "fulfilled") {
+        const resVal = disputeRes.value;
+        const disputes =
+          resVal?.disputes ||
+          resVal?.data?.disputes ||
+          (Array.isArray(resVal?.data)
+            ? resVal.data
+            : Array.isArray(resVal)
+              ? resVal
+              : []);
+        const resolvedRefundDispute = disputes.find(
+          (item) =>
+            item?.ketLuan &&
+            (item.ketLuan.ketQua === "HoanTienNguoiThue" ||
+              item.ketLuan.ketQua === "HuyHopDong"),
+        );
+        setRefundDispute(resolvedRefundDispute || null);
+      } else {
+        setRefundDispute(null);
       }
     } catch (err) {
       setError(err.message || "Có lỗi xảy ra");
@@ -636,6 +660,32 @@ const WorkspaceJobDetail = () => {
     0,
   );
 
+  const refundConclusion = refundDispute?.ketLuan || null;
+  const refundBreakdown =
+    contract?.trangThai === "DaHuy" && refundConclusion
+      ? {
+          source: "Tranh chấp",
+          reason: refundConclusion.lyDo || refundDispute?.lyDo,
+          date: refundConclusion.ngayKetLuan || refundDispute?.ngayDong,
+          employerAmount: refundConclusion.soTienHoan,
+          freelancerAmount: refundConclusion.soTienFreelancer,
+          supervisorAmount: refundConclusion.soTienGiamSat,
+          totalAmount: refundDispute?.yeuCauHoanTien,
+        }
+      : contract?.trangThai === "DaHuy" &&
+          refundRequest &&
+          getNormalizedStatus(refundRequest) === "DADONGY"
+        ? {
+            source: "Yêu cầu hoàn tiền",
+            reason: refundRequest.lyDo,
+            date: refundRequest.ngayPhanHoi,
+            employerAmount: refundRequest.tienHoan,
+            freelancerAmount: refundRequest.tienFreelancer,
+            supervisorAmount: refundRequest.tienGiamSat,
+            totalAmount: refundRequest.tongEscrow,
+          }
+        : null;
+
   if (loading) {
     return (
       <div className="wjd-loading">
@@ -1101,6 +1151,53 @@ const WorkspaceJobDetail = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {refundBreakdown && (
+            <div className="wjd-card wjd-refund-breakdown">
+              <div className="wjd-card-header">
+                <h2>
+                  <i className="fa-solid fa-money-bill-transfer"></i>{" "}
+                  Thông tin hoàn tiền
+                </h2>
+                <span className="wjd-refund-source">
+                  {refundBreakdown.source}
+                </span>
+              </div>
+
+              <div className="wjd-refund-summary">
+                <div>
+                  <span className="wjd-refund-label">Tổng tiền xử lý</span>
+                  <strong>{formatCurrency(refundBreakdown.totalAmount)}</strong>
+                </div>
+                <div>
+                  <span className="wjd-refund-label">Ngày kết luận</span>
+                  <strong>{formatDate(refundBreakdown.date)}</strong>
+                </div>
+              </div>
+
+              <div className="wjd-refund-allocation">
+                <div className="wjd-refund-party employer">
+                  <span>Người thuê nhận lại</span>
+                  <strong>{formatCurrency(refundBreakdown.employerAmount)}</strong>
+                </div>
+                <div className="wjd-refund-party freelancer">
+                  <span>Freelancer nhận</span>
+                  <strong>{formatCurrency(refundBreakdown.freelancerAmount)}</strong>
+                </div>
+                <div className="wjd-refund-party supervisor">
+                  <span>Giám sát nhận</span>
+                  <strong>{formatCurrency(refundBreakdown.supervisorAmount)}</strong>
+                </div>
+              </div>
+
+              {refundBreakdown.reason && (
+                <div className="wjd-refund-reason">
+                  <span>Căn cứ kết luận</span>
+                  <p>{refundBreakdown.reason}</p>
+                </div>
+              )}
             </div>
           )}
         </div>

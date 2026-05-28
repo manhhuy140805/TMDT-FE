@@ -20,20 +20,20 @@ const WorkspaceOverview = () => {
         <h2>Tổng quan hệ thống</h2>
       </div>
       
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "24px", marginBottom: "32px" }}>
-        <div style={{ background: "#F8FAFC", padding: "20px", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "24px", marginBottom: "32px" }}>
+        <div style={{ background: "#F8FAFC", padding: "20px", borderRadius: "12px", border: "1px solid #E2E8F0", textAlign: "center" }}>
           <div style={{ fontSize: "14px", color: "#64748B", marginBottom: "8px" }}>Dự án đang thực hiện</div>
           <div style={{ fontSize: "28px", fontWeight: "700", color: "#0F172A" }}>{stats.activeJobs}</div>
         </div>
-        <div style={{ background: "#F8FAFC", padding: "20px", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
+        <div style={{ background: "#F8FAFC", padding: "20px", borderRadius: "12px", border: "1px solid #E2E8F0", textAlign: "center" }}>
           <div style={{ fontSize: "14px", color: "#64748B", marginBottom: "8px" }}>Dự án hoàn thành</div>
           <div style={{ fontSize: "28px", fontWeight: "700", color: "#0F172A" }}>{stats.completedJobs}</div>
         </div>
-        <div style={{ background: "#F8FAFC", padding: "20px", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
+        <div style={{ background: "#F8FAFC", padding: "20px", borderRadius: "12px", border: "1px solid #E2E8F0", textAlign: "center" }}>
           <div style={{ fontSize: "14px", color: "#64748B", marginBottom: "8px" }}>Tổng {currentUser?.vaiTro === "NguoiThue" ? "chi phí" : "thu nhập"}</div>
-          <div style={{ fontSize: "28px", fontWeight: "700", color: "#0F172A" }}>{formatCurrency(stats.totalEarnings)}</div>
+          <div style={{ fontSize: "24px", fontWeight: "700", color: "#0F172A", whiteSpace: "nowrap" }}>{formatCurrency(stats.totalEarnings)}</div>
         </div>
-        <div style={{ background: "#F8FAFC", padding: "20px", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
+        <div style={{ background: "#F8FAFC", padding: "20px", borderRadius: "12px", border: "1px solid #E2E8F0", textAlign: "center" }}>
           <div style={{ fontSize: "14px", color: "#64748B", marginBottom: "8px" }}>Đánh giá trung bình</div>
           <div style={{ fontSize: "28px", fontWeight: "700", color: "#0F172A" }}>{stats.avgRating} <i className="fa-solid fa-star" style={{fontSize:"16px", color:"#F59E0B"}}></i></div>
         </div>

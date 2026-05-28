@@ -131,6 +131,78 @@
   transition: width 0.4s ease;
 }
 
+.wjd-refund-breakdown {
+  border-color: #BAE6FD;
+  background: #F8FCFF;
+}
+.wjd-refund-breakdown .wjd-card-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wjd-refund-breakdown .wjd-card-header i {
+  color: #0284C7;
+}
+.wjd-refund-source {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #E0F2FE;
+  color: #0369A1;
+  font-size: 12px;
+  font-weight: 700;
+}
+.wjd-refund-summary,
+.wjd-refund-allocation {
+  display: grid;
+  gap: 12px;
+}
+.wjd-refund-summary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 14px;
+}
+.wjd-refund-summary > div,
+.wjd-refund-party {
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  background: white;
+  padding: 14px;
+}
+.wjd-refund-label,
+.wjd-refund-party span,
+.wjd-refund-reason span {
+  display: block;
+  margin-bottom: 6px;
+  color: #64748B;
+  font-size: 12px;
+  font-weight: 700;
+}
+.wjd-refund-summary strong,
+.wjd-refund-party strong {
+  color: #0F172A;
+  font-size: 15px;
+}
+.wjd-refund-allocation {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.wjd-refund-reason {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 10px;
+  background: #EFF6FF;
+  color: #334155;
+}
+.wjd-refund-reason p {
+  margin: 0;
+  line-height: 1.5;
+  font-size: 13px;
+}
+@media (max-width: 700px) {
+  .wjd-refund-summary,
+  .wjd-refund-allocation {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Timeline */
 .wjd-timeline {
   position: relative;
