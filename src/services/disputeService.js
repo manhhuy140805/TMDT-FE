@@ -22,7 +22,7 @@ const disputeService = {
     api.put(`/disputes/${id}/review`, { giamSatId }),
 
   resolve: (id, data) => api.put(`/disputes/${id}/resolve`, data),
-  // data: { giamSatId, ketQua, lyDo, soTienHoan, benChiuPhi }
+  // data: { giamSatId, ketQua, lyDo, soTienHoan, soTienFreelancer, soTienGiamSat, soTienHeThong, benChiuPhi }
 };
 
 export default disputeService;

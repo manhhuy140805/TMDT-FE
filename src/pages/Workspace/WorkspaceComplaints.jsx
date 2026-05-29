@@ -10,6 +10,8 @@ const CASE_FILTERS = [
   { value: "CLOSED", label: "Đã kết luận" },
 ];
 
+const PLATFORM_FEE_PERCENT = 5;
+
 const WorkspaceComplaints = () => {
   const { currentUser, jobs, showToast, refreshWorkspaceData } =
     useOutletContext();
@@ -24,9 +26,9 @@ const WorkspaceComplaints = () => {
   const [contract, setContract] = useState(null);
   const [evidences, setEvidences] = useState([]);
   const [progressList, setProgressList] = useState([]);
+  const [refundRequest, setRefundRequest] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [showResolution, setShowResolution] = useState(false);
-  const [lockedBar, setLockedBar] = useState(null); // null, "soTienNguoiThue", "soTienFreelancer", "soTienGiamSat"
   const [resolution, setResolution] = useState({
     ketQua: "TiepTuc",
     lyDo: "",
@@ -112,7 +114,7 @@ const WorkspaceComplaints = () => {
 
       const selected = disputes.find((item) => item.tranhChapId === disputeId);
       const contractId = selected?.congViecId;
-      const [disputeResult, evidenceResult, contractResult, progressResult] =
+      const [disputeResult, evidenceResult, contractResult, progressResult, refundResult] =
         await Promise.allSettled([
           api.disputes.getById(disputeId),
           api.evidences.getByDisputeId(disputeId),
@@ -121,6 +123,9 @@ const WorkspaceComplaints = () => {
             : Promise.resolve(null),
           contractId
             ? api.progress.getByContractId(contractId)
+            : Promise.resolve(null),
+          contractId
+            ? api.refundRequests.getByContractId(contractId)
             : Promise.resolve(null),
         ]);
 
@@ -162,6 +167,16 @@ const WorkspaceComplaints = () => {
       } else {
         setProgressList([]);
       }
+
+      if (refundResult.status === "fulfilled") {
+        const resVal = refundResult.value;
+        const rr = resVal?.refundRequest ?? resVal?.refundRequests ?? resVal?.data?.refundRequest ?? resVal?.data?.refundRequests ?? resVal?.data ?? resVal;
+        const finalRR = Array.isArray(rr) ? rr[rr.length - 1] : rr;
+        setRefundRequest(finalRR && (finalRR.trangThai || finalRR.status || finalRR.refundRequestId || finalRR.id) ? finalRR : null);
+      } else {
+        setRefundRequest(null);
+      }
+
       setCaseLoading(false);
     },
     [disputes],
@@ -263,87 +278,120 @@ const WorkspaceComplaints = () => {
     }
   };
 
+  const getSupervisorFee = useCallback(() => {
+    return Number(contract?.phiGiamSat ?? contract?.yeuCau?.phiGiamSat ?? 0) || 0;
+  }, [contract]);
+
+  const getDisputeTotal = useCallback(() => {
+    return Number(contract?.giaThoa ?? activeDispute?.yeuCauHoanTien ?? 0) || 0;
+  }, [activeDispute, contract]);
+
+  const getFreelancerFund = useCallback(() => {
+    return Math.max(0, getDisputeTotal() - getSupervisorFee());
+  }, [getDisputeTotal, getSupervisorFee]);
+
+  const getRequestedRefundAmount = useCallback(() => {
+    const contractId = activeDispute?.congViecId || contract?.congViecId;
+    const requestId = refundRequest?.refundRequestId || refundRequest?.id || "pending";
+    let rememberedAmount = 0;
+    try {
+      rememberedAmount = Number(
+        localStorage.getItem(`refund-requested-amount:${contractId}:${requestId}`) ||
+          localStorage.getItem(`refund-requested-amount:${contractId}:pending`) ||
+          0,
+      ) || 0;
+    } catch {
+      rememberedAmount = 0;
+    }
+
+    const candidates = [
+      refundRequest?.requestedRefundAmount,
+      refundRequest?.tienHoanYeuCau,
+      refundRequest?.soTienYeuCau,
+      refundRequest?.soTienHoanYeuCau,
+      refundRequest?.yeuCauHoanTien,
+      refundRequest?.soTienHoan,
+      refundRequest?.refundAmount,
+      refundRequest?.amount,
+      rememberedAmount,
+      activeDispute?.yeuCauHoanTien,
+      refundRequest?.tienHoan,
+    ];
+    return candidates.map(Number).find((amount) => amount > 0) || 0;
+  }, [activeDispute, contract, refundRequest]);
+
+  const getMaxRefundAmount = useCallback(() => {
+    const requestedRefund = getRequestedRefundAmount();
+    return Math.min(getFreelancerFund(), requestedRefund || getFreelancerFund());
+  }, [getFreelancerFund, getRequestedRefundAmount]);
+
+  const calculateRefundResolution = useCallback(
+    (refundAmount) => {
+      const freelancerFund = getFreelancerFund();
+      const maxRefund = getRequestedRefundAmount() || freelancerFund;
+      const actualMaxRefund = Math.min(freelancerFund, maxRefund);
+
+      const refundToEmployerGross = Math.max(
+        0,
+        Math.min(Number(refundAmount) || 0, actualMaxRefund),
+      );
+      const remainingForFreelancerGross = Math.max(0, freelancerFund - refundToEmployerGross);
+
+      let systemFee = 0;
+      let refundToEmployer = refundToEmployerGross;
+      let freelancerReceives = remainingForFreelancerGross;
+      let benChiuPhi = "Freelancer";
+
+      if (refundToEmployerGross > remainingForFreelancerGross) {
+        systemFee = Math.round((refundToEmployerGross * PLATFORM_FEE_PERCENT) / 100);
+        refundToEmployer = Math.max(0, refundToEmployerGross - systemFee);
+        benChiuPhi = "NguoiThue";
+      } else {
+        systemFee = Math.round((remainingForFreelancerGross * PLATFORM_FEE_PERCENT) / 100);
+        freelancerReceives = Math.max(0, remainingForFreelancerGross - systemFee);
+        benChiuPhi = "Freelancer";
+      }
+
+      return {
+        refundToEmployer,
+        supervisorReceives: getSupervisorFee(),
+        systemFee,
+        freelancerReceives,
+        freelancerGross: remainingForFreelancerGross,
+        benChiuPhi
+      };
+    },
+    [getFreelancerFund, getRequestedRefundAmount, getSupervisorFee],
+  );
+
   const openResolution = () => {
-    const totalAmount = Number(activeDispute.yeuCauHoanTien) || 0;
-    // Mặc định chia đôi giữa người thuê và freelancer
-    const defaultAmount = Math.floor(totalAmount / 2);
+    const defaultAmount = getMaxRefundAmount();
+    const amounts = calculateRefundResolution(defaultAmount);
+
     setResolution({
       ketQua: "TiepTuc",
       lyDo: "",
-      soTienNguoiThue: defaultAmount,
-      soTienFreelancer: defaultAmount,
-      soTienGiamSat: totalAmount - defaultAmount - defaultAmount,
-      soTienHoan: activeDispute.yeuCauHoanTien || "",
-      benChiuPhi: "ChiaSe",
+      soTienNguoiThue: amounts.refundToEmployer,
+      soTienFreelancer: amounts.freelancerReceives,
+      soTienGiamSat: amounts.supervisorReceives,
+      soTienHeThong: amounts.systemFee,
+      soTienHoan: amounts.refundToEmployer,
+      benChiuPhi: amounts.benChiuPhi,
     });
-    setLockedBar(null); // Reset lock khi mở form
     setShowResolution(true);
   };
 
-  const toggleLockBar = (barName) => {
-    setLockedBar(lockedBar === barName ? null : barName);
-  };
-
-  const handleSliderChange = (party, value) => {
-    const totalAmount = Number(activeDispute.yeuCauHoanTien) || 0;
-    const numValue = Math.max(0, Math.min(Number(value) || 0, totalAmount));
-
-    if (lockedBar) {
-      // Có thanh được lock
-      if (party === lockedBar) {
-        // Không kéo thanh đang lock
-        return;
-      }
-
-      // Kéo thanh không được lock - tìm 2 thanh không bị lock
-      const lockedAmount = resolution[lockedBar] || 0;
-      const remaining = totalAmount - lockedAmount;
-
-      // Cap giá trị tại remaining
-      const newValue = Math.min(numValue, remaining);
-
-      // Xác định thanh thứ 3 (cái khác) để tự động tính lại
-      let otherBar;
-      if (lockedBar === "soTienNguoiThue") {
-        otherBar =
-          party === "soTienFreelancer" ? "soTienGiamSat" : "soTienFreelancer";
-      } else if (lockedBar === "soTienFreelancer") {
-        otherBar =
-          party === "soTienNguoiThue" ? "soTienGiamSat" : "soTienNguoiThue";
-      } else {
-        otherBar =
-          party === "soTienNguoiThue" ? "soTienFreelancer" : "soTienNguoiThue";
-      }
-
-      // Thanh còn lại = remaining - kéo
-      const otherAmount = Math.max(0, remaining - newValue);
-
-      setResolution((current) => ({
-        ...current,
-        [party]: newValue,
-        [otherBar]: otherAmount,
-      }));
-    } else {
-      // Không có thanh lock - tính toán 2 thanh còn lại tự động để luôn sum = totalAmount
-      // Lấy 2 thanh không được kéo và chia đều phần còn lại
-      setResolution((current) => {
-        let newResolution = { ...current, [party]: numValue };
-
-        // Tìm 2 thanh khác
-        const bars = ["soTienNguoiThue", "soTienFreelancer", "soTienGiamSat"];
-        const otherBars = bars.filter((bar) => bar !== party);
-
-        // Tính phần còn lại
-        const remaining = Math.max(0, totalAmount - numValue);
-
-        // Chia đều 2 thanh còn lại từ phần remaining
-        const eachAmount = Math.floor(remaining / 2);
-        newResolution[otherBars[0]] = eachAmount;
-        newResolution[otherBars[1]] = remaining - eachAmount;
-
-        return newResolution;
-      });
-    }
+  const handleRefundAmountChange = (value) => {
+    const amounts = calculateRefundResolution(value);
+    setResolution((current) => ({
+      ...current,
+      soTienNguoiThue: amounts.refundToEmployer,
+      soTienFreelancer: amounts.freelancerReceives,
+      soTienGiamSat: amounts.supervisorReceives,
+      soTienHeThong: amounts.systemFee,
+      soTienHoan: amounts.refundToEmployer,
+      benChiuPhi: amounts.benChiuPhi,
+    }));
   };
 
   const handleResolve = async (event) => {
@@ -370,7 +418,7 @@ const WorkspaceComplaints = () => {
         soTienGiamSat: isRefundConclusion
           ? Number(resolution.soTienGiamSat) || 0
           : 0,
-        benChiuPhi: "ChiaSe",
+        benChiuPhi: isRefundConclusion ? resolution.benChiuPhi : "ChiaSe",
       });
 
       let nextContractStatus = null;
@@ -617,7 +665,7 @@ const WorkspaceComplaints = () => {
                   <div>
                     <span>Yêu cầu hoàn</span>
                     <strong>
-                      {formatCurrency(activeDispute.yeuCauHoanTien)}
+                      {formatCurrency(getRequestedRefundAmount() || activeDispute.yeuCauHoanTien)}
                     </strong>
                   </div>
                   <div>
@@ -914,218 +962,67 @@ const WorkspaceComplaints = () => {
                     {resolution.ketQua !== "TiepTuc" && (
                       <div className="wc-resolution-distribution">
                         <div className="wc-resolution-total">
-                          Phân bỏ —{" "}
-                          {formatCurrency(activeDispute.yeuCauHoanTien)}
+                          Phân bổ quỹ Freelancer —{" "}
+                          {formatCurrency(getFreelancerFund())}
                         </div>
 
                         <div className="wc-slider-group">
                           <div className="wc-slider-item">
                             <div className="wc-slider-header">
                               <span className="wc-party nguoithue">
-                                <i className="fa-solid fa-circle"></i>
-                                Người thuê
+                                <i className="fa-solid fa-circle"></i> Người thuê (Yêu cầu)
                               </span>
                               <div className="wc-slider-values">
                                 <span className="wc-percentage">
                                   {Math.round(
-                                    ((resolution.soTienNguoiThue || 0) /
-                                      (activeDispute.yeuCauHoanTien || 1)) *
+                                    ((resolution.soTienHoan || 0) /
+                                      (getFreelancerFund() || 1)) *
                                       100,
                                   )}
                                   %
                                 </span>
                                 <span className="wc-amount">
-                                  {formatCurrency(
-                                    resolution.soTienNguoiThue || 0,
-                                  )}
+                                  {formatCurrency(resolution.soTienHoan || 0)}
                                 </span>
-                                <button
-                                  type="button"
-                                  className={`wc-lock-btn ${lockedBar === "soTienNguoiThue" ? "locked" : ""}`}
-                                  onClick={() =>
-                                    toggleLockBar("soTienNguoiThue")
-                                  }
-                                  title={
-                                    lockedBar === "soTienNguoiThue"
-                                      ? "Bỏ ghim"
-                                      : "Ghim thanh này"
-                                  }
-                                >
-                                  <i
-                                    className={`fa-solid ${lockedBar === "soTienNguoiThue" ? "fa-lock" : "fa-lock-open"}`}
-                                  ></i>
-                                </button>
                               </div>
                             </div>
                             <input
                               type="range"
                               min="0"
-                              max={activeDispute.yeuCauHoanTien || 0}
-                              value={resolution.soTienNguoiThue || 0}
+                              max={getMaxRefundAmount()}
+                              value={resolution.soTienHoan || 0}
                               onChange={(event) =>
-                                handleSliderChange(
-                                  "soTienNguoiThue",
-                                  event.target.value,
-                                )
+                                handleRefundAmountChange(event.target.value)
                               }
-                              disabled={lockedBar === "soTienNguoiThue"}
                               className="wc-slider nguoithue-slider"
                             />
-                          </div>
-
-                          <div className="wc-slider-item">
-                            <div className="wc-slider-header">
-                              <span className="wc-party freelancer">
-                                <i className="fa-solid fa-circle"></i>
-                                Freelancer
-                              </span>
-                              <div className="wc-slider-values">
-                                <span className="wc-percentage">
-                                  {Math.round(
-                                    ((resolution.soTienFreelancer || 0) /
-                                      (activeDispute.yeuCauHoanTien || 1)) *
-                                      100,
-                                  )}
-                                  %
-                                </span>
-                                <span className="wc-amount">
-                                  {formatCurrency(
-                                    resolution.soTienFreelancer || 0,
-                                  )}
-                                </span>
-                                <button
-                                  type="button"
-                                  className={`wc-lock-btn ${lockedBar === "soTienFreelancer" ? "locked" : ""}`}
-                                  onClick={() =>
-                                    toggleLockBar("soTienFreelancer")
-                                  }
-                                  title={
-                                    lockedBar === "soTienFreelancer"
-                                      ? "Bỏ ghim"
-                                      : "Ghim thanh này"
-                                  }
-                                >
-                                  <i
-                                    className={`fa-solid ${lockedBar === "soTienFreelancer" ? "fa-lock" : "fa-lock-open"}`}
-                                  ></i>
-                                </button>
-                              </div>
+                            <div className="wc-slider-hint" style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>
+                              Giới hạn tối đa: {formatCurrency(getMaxRefundAmount())}
                             </div>
-                            <input
-                              type="range"
-                              min="0"
-                              max={activeDispute.yeuCauHoanTien || 0}
-                              value={resolution.soTienFreelancer || 0}
-                              onChange={(event) =>
-                                handleSliderChange(
-                                  "soTienFreelancer",
-                                  event.target.value,
-                                )
-                              }
-                              disabled={lockedBar === "soTienFreelancer"}
-                              className="wc-slider freelancer-slider"
-                            />
-                          </div>
-
-                          <div className="wc-slider-item">
-                            <div className="wc-slider-header">
-                              <span className="wc-party giamsat">
-                                <i className="fa-solid fa-circle"></i>
-                                Giám sát
-                              </span>
-                              <div className="wc-slider-values">
-                                <span className="wc-percentage">
-                                  {Math.round(
-                                    ((resolution.soTienGiamSat || 0) /
-                                      (activeDispute.yeuCauHoanTien || 1)) *
-                                      100,
-                                  )}
-                                  %
-                                </span>
-                                <span className="wc-amount">
-                                  {formatCurrency(
-                                    resolution.soTienGiamSat || 0,
-                                  )}
-                                </span>
-                                <button
-                                  type="button"
-                                  className={`wc-lock-btn ${lockedBar === "soTienGiamSat" ? "locked" : ""}`}
-                                  onClick={() => toggleLockBar("soTienGiamSat")}
-                                  title={
-                                    lockedBar === "soTienGiamSat"
-                                      ? "Bỏ ghim"
-                                      : "Ghim thanh này"
-                                  }
-                                >
-                                  <i
-                                    className={`fa-solid ${lockedBar === "soTienGiamSat" ? "fa-lock" : "fa-lock-open"}`}
-                                  ></i>
-                                </button>
-                              </div>
-                            </div>
-                            <input
-                              type="range"
-                              min="0"
-                              max={activeDispute.yeuCauHoanTien || 0}
-                              value={resolution.soTienGiamSat || 0}
-                              onChange={(event) =>
-                                handleSliderChange(
-                                  "soTienGiamSat",
-                                  event.target.value,
-                                )
-                              }
-                              disabled={lockedBar === "soTienGiamSat"}
-                              className="wc-slider giamsat-slider"
-                            />
                           </div>
                         </div>
 
-                        <div className="wc-distribution-chart">
-                          {(resolution.soTienNguoiThue || 0) > 0 && (
-                            <div
-                              className="wc-chart-bar nguoithue"
-                              style={{
-                                width: `${((resolution.soTienNguoiThue || 0) / (activeDispute.yeuCauHoanTien || 1)) * 100}%`,
-                              }}
-                            ></div>
-                          )}
-                          {(resolution.soTienFreelancer || 0) > 0 && (
-                            <div
-                              className="wc-chart-bar freelancer"
-                              style={{
-                                width: `${((resolution.soTienFreelancer || 0) / (activeDispute.yeuCauHoanTien || 1)) * 100}%`,
-                              }}
-                            ></div>
-                          )}
-                          {(resolution.soTienGiamSat || 0) > 0 && (
-                            <div
-                              className="wc-chart-bar giamsat"
-                              style={{
-                                width: `${((resolution.soTienGiamSat || 0) / (activeDispute.yeuCauHoanTien || 1)) * 100}%`,
-                              }}
-                            ></div>
-                          )}
-                        </div>
-
-                        <div className="wc-total-percentage">
-                          Tổng phân bố:{" "}
-                          <strong>
-                            {Math.round(
-                              (((resolution.soTienNguoiThue || 0) +
-                                (resolution.soTienFreelancer || 0) +
-                                (resolution.soTienGiamSat || 0)) /
-                                (activeDispute.yeuCauHoanTien || 1)) *
-                                100,
-                            )}
-                            %
-                          </strong>
-                          {Math.round(
-                            (((resolution.soTienNguoiThue || 0) +
-                              (resolution.soTienFreelancer || 0) +
-                              (resolution.soTienGiamSat || 0)) /
-                              (activeDispute.yeuCauHoanTien || 1)) *
-                              100,
-                          ) === 100 && <i className="fa-solid fa-check"></i>}
+                        <div className="wc-summary-card" style={{ background: "#F8FAFC", borderRadius: "8px", padding: "16px", marginTop: "16px", border: "1px solid #E2E8F0" }}>
+                          <h5 style={{ margin: "0 0 12px 0", color: "#334155", fontSize: "14px", borderBottom: "1px solid #e2e8f0", paddingBottom: "8px" }}>
+                            Phân bổ thực tế (đã trừ 5% phí hệ thống cho {resolution.benChiuPhi === "NguoiThue" ? "Người thuê" : "Freelancer"})
+                          </h5>
+                          
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                            <span style={{ color: "#475569" }}>Người thuê nhận lại:</span>
+                            <strong style={{ color: "#3B82F6" }}>{formatCurrency(resolution.soTienNguoiThue)}</strong>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                            <span style={{ color: "#475569" }}>Freelancer nhận:</span>
+                            <strong style={{ color: "#10B981" }}>{formatCurrency(resolution.soTienFreelancer)}</strong>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                            <span style={{ color: "#475569" }}>Giám sát viên:</span>
+                            <strong style={{ color: "#F59E0B" }}>{formatCurrency(resolution.soTienGiamSat)}</strong>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between" }}>
+                            <span style={{ color: "#475569" }}>Phí hệ thống (5%):</span>
+                            <strong style={{ color: "#EF4444" }}>{formatCurrency(resolution.soTienHeThong)}</strong>
+                          </div>
                         </div>
                       </div>
                     )}

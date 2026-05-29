@@ -9,7 +9,7 @@ const WorkspaceJobs = () => {
   const filteredJobs = jobs.filter(j => {
     if (filter === "ACTIVE") return j.trangThai === "DangThucHien" || j.trangThai === "MoiTao" || j.trangThai === "TamDung" || j.trangThai === "TranhChap";
     if (filter === "COMPLETED") return j.trangThai === "HoanThanh";
-    if (filter === "CANCELLED") return j.trangThai === "DaHuy";
+    if (filter === "CANCELLED") return j.trangThai === "DaHuy" || j.trangThai === "DaHoanTien";
     return true;
   });
 
@@ -47,6 +47,7 @@ const WorkspaceJobs = () => {
     if (status === "HoanThanh") return <span style={{ background: "#D1FAE5", color: "#047857", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: 600 }}>Hoàn thành</span>;
     if (status === "TamDung") return <span style={{ background: "#FEF3C7", color: "#D97706", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: 600 }}>Tạm dừng</span>;
     if (status === "DaHuy") return <span style={{ background: "#FEE2E2", color: "#DC2626", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: 600 }}>Đã hủy</span>;
+    if (status === "DaHoanTien") return <span style={{ background: "#E0E7FF", color: "#4338CA", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: 600 }}>Đã hoàn tiền</span>;
     if (status === "MoiTao") return <span style={{ background: "#EFF6FF", color: "#2563EB", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: 600 }}>Mới tạo</span>;
     if (status === "TranhChap") return <span style={{ background: "#FEF2F2", color: "#EF4444", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: 600 }}>Tranh chấp</span>;
     return <span style={{ background: "#F1F5F9", color: "#64748B", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: 600 }}>{status}</span>;
@@ -98,9 +99,9 @@ const WorkspaceJobs = () => {
           onClick={() => setFilter("CANCELLED")}
         >
           <i className="fa-solid fa-ban icon-cancelled"></i>
-          <span>Đã hủy</span>
+          <span>Đã hủy / Hoàn tiền</span>
           <span className="wl-project-status-count">
-            {jobs.filter(j => j.trangThai === "DaHuy").length}
+            {jobs.filter(j => j.trangThai === "DaHuy" || j.trangThai === "DaHoanTien").length}
           </span>
         </button>
         <button
@@ -140,7 +141,7 @@ const WorkspaceJobs = () => {
                     </span>
                   </div>
                 </div>
-                {getStatusBadge(contract.trangThai)}
+                {getStatusBadge(contract)}
               </div>
               <p style={{ color: "#475569", fontSize: "14px", lineHeight: "1.5", margin: "0 0 16px 0" }}>
                 {contract.yeuCau?.moTa?.substring(0, 150) || "Không có mô tả"}
