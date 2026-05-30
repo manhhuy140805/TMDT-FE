@@ -9,11 +9,14 @@ import { api } from "../utils/api";
  */
 const refundRequestService = {
   create: (data) => api.post("/refund-requests", data),
-  // data: { congViecId, nguoiThueId, lyDo, moTa, requestedRefundAmount/tienHoan/yeuCauHoanTien }
+  // data: { congViecId, nguoiThueId, lyDo, moTa, bangChungArray }
 
   accept: (id, freelancerId, data = {}) => api.put(`/refund-requests/${id}/accept`, { freelancerId, ...data }),
 
-  reject: (id, freelancerId, data = {}) => api.put(`/refund-requests/${id}/reject`, { freelancerId, ...data }),
+  reject: (id, freelancerId, bangChungArray = []) => api.put(`/refund-requests/${id}/reject`, { 
+    freelancerId, 
+    bangChungArray 
+  }),
 
   getByContractId: (contractId) => api.get(`/contracts/${contractId}/refund-requests`),
 };

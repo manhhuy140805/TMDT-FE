@@ -30,6 +30,9 @@ const WorkspaceJobDetail = () => {
   const [submitting, setSubmitting] = useState(false);
   const [showRefundRequest, setShowRefundRequest] = useState(false);
   const [refundReason, setRefundReason] = useState("");
+  const [evidenceFiles, setEvidenceFiles] = useState([]);
+  const [showRejectRefundModal, setShowRejectRefundModal] = useState(false);
+  const [rejectEvidenceFiles, setRejectEvidenceFiles] = useState([]);
   const [decisionSubmitting, setDecisionSubmitting] = useState(false);
   const [refundRequest, setRefundRequest] = useState(null);
   const [refundDispute, setRefundDispute] = useState(null);
@@ -325,6 +328,11 @@ const WorkspaceJobDetail = () => {
       return;
     }
 
+    if (!evidenceFiles || evidenceFiles.length === 0) {
+      showToast("Vui lòng cung cấp ít nhất 1 minh chứng (file hoặc ghi chú).", "warning");
+      return;
+    }
+
     const activeUserId = currentUser?.taiKhoanId || currentUser?.id;
     if (!activeUserId) {
       showToast("Không xác định được tài khoản!", "error");
@@ -333,11 +341,39 @@ const WorkspaceJobDetail = () => {
 
     setDecisionSubmitting(true);
     try {
+      // Upload files trước
+      const uploadedPaths = [];
+      for (const file of evidenceFiles) {
+        if (file.file) {
+          const formData = new FormData();
+          formData.append('file', file.file);
+          const uploadRes = await fetch('http://localhost:8080/upload/evidence', {
+            method: 'POST',
+            body: formData,
+          });
+          if (!uploadRes.ok) {
+            throw new Error('Upload file thất bại');
+          }
+          const uploadData = await uploadRes.json();
+          uploadedPaths.push({
+            loaiBangChung: 'File',
+            duongDanFile: uploadData.filePath,
+          });
+        } else if (file.note) {
+          uploadedPaths.push({
+            loaiBangChung: 'GhiChu',
+            noiDung: file.note,
+          });
+        }
+      }
+
+      // Tạo yêu cầu hoàn tiền với minh chứng
       const res = await api.refundRequests.create({
         congViecId: Number(id),
         nguoiThueId: Number(activeUserId),
         lyDo: refundReason.trim(),
-        moTa: refundReason.trim()
+        moTa: refundReason.trim(),
+        bangChungArray: uploadedPaths,
       });
       const rr = res?.refundRequest ?? res?.data ?? res;
       if (rr && (rr.trangThai || rr.status)) {
@@ -346,6 +382,7 @@ const WorkspaceJobDetail = () => {
       }
       setShowRefundRequest(false);
       setRefundReason("");
+      setEvidenceFiles([]);
       showToast("Đã gửi yêu cầu hoàn tiền. Đang chờ freelancer phản hồi.", "success");
       fetchData(); // Backup reload
     } catch (err) {
@@ -390,26 +427,61 @@ const WorkspaceJobDetail = () => {
     if (!activeUserId) return showToast("Không xác định được tài khoản!", "error");
     if (!refundRequest) return showToast("Không tìm thấy yêu cầu hoàn tiền!", "error");
 
-    showConfirm(
-      "Từ chối hoàn tiền",
-      "Bạn từ chối hoàn tiền? Hợp đồng sẽ tự động chuyển sang trạng thái Tranh Chấp và Đơn vị giám sát sẽ tiến hành phân xử.",
-      "danger",
-      async () => {
-        setDecisionSubmitting(true);
-        try {
-          const reqId = refundRequest.refundRequestId || refundRequest.id;
-          await api.refundRequests.reject(reqId, Number(activeUserId));
-          setContract((prev) => prev ? { ...prev, trangThai: "TranhChap" } : prev);
-          setRefundRequest((prev) => prev ? { ...prev, trangThai: "TuChoi" } : prev);
-          showToast("Đã từ chối hoàn tiền. Hệ thống đã chuyển hợp đồng sang Tranh chấp.", "warning");
-          await Promise.all([fetchData(), refreshWorkspaceData?.()]);
-        } catch (err) {
-          showToast("Lỗi: " + (err.message || "Không thể từ chối hoàn tiền"), "error");
-        } finally {
-          setDecisionSubmitting(false);
+    // Mở modal để nhập minh chứng
+    setShowRejectRefundModal(true);
+  };
+
+  const handleSubmitRejectRefund = async () => {
+    const activeUserId = currentUser?.taiKhoanId || currentUser?.id;
+    if (!activeUserId) return showToast("Không xác định được tài khoản!", "error");
+    if (!refundRequest) return showToast("Không tìm thấy yêu cầu hoàn tiền!", "error");
+
+    if (!rejectEvidenceFiles || rejectEvidenceFiles.length === 0) {
+      showToast("Vui lòng cung cấp ít nhất 1 minh chứng (file hoặc ghi chú).", "warning");
+      return;
+    }
+
+    setDecisionSubmitting(true);
+    try {
+      // Upload files trước
+      const uploadedPaths = [];
+      for (const file of rejectEvidenceFiles) {
+        if (file.file) {
+          const formData = new FormData();
+          formData.append('file', file.file);
+          const uploadRes = await fetch('http://localhost:8080/upload/evidence', {
+            method: 'POST',
+            body: formData,
+          });
+          if (!uploadRes.ok) {
+            throw new Error('Upload file thất bại');
+          }
+          const uploadData = await uploadRes.json();
+          uploadedPaths.push({
+            loaiBangChung: 'File',
+            duongDanFile: uploadData.filePath,
+          });
+        } else if (file.note) {
+          uploadedPaths.push({
+            loaiBangChung: 'GhiChu',
+            noiDung: file.note,
+          });
         }
       }
-    );
+
+      const reqId = refundRequest.refundRequestId || refundRequest.id;
+      await api.refundRequests.reject(reqId, Number(activeUserId), uploadedPaths);
+      setContract((prev) => prev ? { ...prev, trangThai: "TranhChap" } : prev);
+      setRefundRequest((prev) => prev ? { ...prev, trangThai: "TuChoi" } : prev);
+      setShowRejectRefundModal(false);
+      setRejectEvidenceFiles([]);
+      showToast("Đã từ chối hoàn tiền. Hệ thống đã chuyển hợp đồng sang Tranh chấp.", "warning");
+      await Promise.all([fetchData(), refreshWorkspaceData?.()]);
+    } catch (err) {
+      showToast("Lỗi: " + (err.message || "Không thể từ chối hoàn tiền"), "error");
+    } finally {
+      setDecisionSubmitting(false);
+    }
   };
 
   const handleChatWithUser = async (targetId, targetName) => {
@@ -1915,11 +1987,141 @@ const WorkspaceJobDetail = () => {
                   rows="4"
                 />
               </div>
+
+              {/* Phần minh chứng */}
+              <div className="wjd-form-group">
+                <label>
+                  Minh chứng{" "}
+                  <span style={{ color: "#EF4444" }}>*</span>
+                  <span style={{ fontSize: "12px", color: "#64748B", fontWeight: "normal", marginLeft: "8px" }}>
+                    (Ít nhất 1 file hoặc ghi chú)
+                  </span>
+                </label>
+                
+                {/* Danh sách minh chứng đã thêm */}
+                {evidenceFiles.length > 0 && (
+                  <div style={{ marginBottom: "12px" }}>
+                    {evidenceFiles.map((item, index) => (
+                      <div
+                        key={index}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "8px 12px",
+                          background: "#F8FAFC",
+                          border: "1px solid #E2E8F0",
+                          borderRadius: "6px",
+                          marginBottom: "8px",
+                          fontSize: "13px",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1 }}>
+                          {item.file ? (
+                            <>
+                              <i className="fa-solid fa-file" style={{ color: "#3B82F6" }}></i>
+                              <span>{item.file.name}</span>
+                              <span style={{ color: "#64748B", fontSize: "12px" }}>
+                                ({(item.file.size / 1024).toFixed(1)} KB)
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <i className="fa-solid fa-note-sticky" style={{ color: "#10B981" }}></i>
+                              <span style={{ color: "#64748B" }}>Ghi chú: </span>
+                              <span>{item.note.substring(0, 50)}{item.note.length > 50 ? '...' : ''}</span>
+                            </>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEvidenceFiles(prev => prev.filter((_, i) => i !== index));
+                          }}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            color: "#EF4444",
+                            cursor: "pointer",
+                            padding: "4px 8px",
+                          }}
+                        >
+                          <i className="fa-solid fa-times"></i>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Nút thêm file */}
+                <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+                  <label
+                    style={{
+                      flex: 1,
+                      padding: "8px 16px",
+                      background: "#3B82F6",
+                      color: "white",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      textAlign: "center",
+                      fontSize: "13px",
+                      border: "none",
+                    }}
+                  >
+                    <i className="fa-solid fa-upload"></i> Thêm file
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif"
+                      style={{ display: "none" }}
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          if (file.size > 10 * 1024 * 1024) {
+                            showToast("File không được vượt quá 10MB", "warning");
+                            return;
+                          }
+                          setEvidenceFiles(prev => [...prev, { file }]);
+                          e.target.value = '';
+                        }
+                      }}
+                    />
+                  </label>
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const note = prompt("Nhập ghi chú minh chứng:");
+                      if (note && note.trim()) {
+                        setEvidenceFiles(prev => [...prev, { note: note.trim() }]);
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "8px 16px",
+                      background: "#10B981",
+                      color: "white",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      fontSize: "13px",
+                      border: "none",
+                    }}
+                  >
+                    <i className="fa-solid fa-note-sticky"></i> Thêm ghi chú
+                  </button>
+                </div>
+
+                <p style={{ fontSize: "12px", color: "#64748B", margin: "8px 0 0 0" }}>
+                  <i className="fa-solid fa-info-circle"></i> Hỗ trợ: PDF, Word, Excel, Ảnh (tối đa 10MB/file)
+                </p>
+              </div>
             </div>
             <div className="wjd-modal-footer">
               <button
                 className="wjd-btn-cancel"
-                onClick={() => setShowRefundRequest(false)}
+                onClick={() => {
+                  setShowRefundRequest(false);
+                  setEvidenceFiles([]);
+                }}
                 disabled={decisionSubmitting}
               >
                 Hủy
@@ -1935,6 +2137,194 @@ const WorkspaceJobDetail = () => {
                   <i className="fa-solid fa-paper-plane"></i>
                 )}{" "}
                 Gửi yêu cầu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRejectRefundModal && (
+        <div
+          className="wjd-modal-overlay"
+          onClick={() => !decisionSubmitting && setShowRejectRefundModal(false)}
+        >
+          <div className="wjd-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="wjd-modal-header">
+              <h3>
+                <i className="fa-solid fa-times-circle"></i> Từ chối hoàn tiền
+              </h3>
+              <button
+                className="wjd-modal-close"
+                onClick={() => setShowRejectRefundModal(false)}
+                disabled={decisionSubmitting}
+              >
+                <i className="fa-solid fa-times"></i>
+              </button>
+            </div>
+            <div className="wjd-modal-body">
+              <p className="wjd-refund-note" style={{ color: "#DC2626" }}>
+                Bạn sắp từ chối yêu cầu hoàn tiền. Hệ thống sẽ mở tranh chấp để giám sát xem xét.
+              </p>
+
+              {/* Phần minh chứng */}
+              <div className="wjd-form-group">
+                <label>
+                  Minh chứng từ chối{" "}
+                  <span style={{ color: "#EF4444" }}>*</span>
+                  <span style={{ fontSize: "12px", color: "#64748B", fontWeight: "normal", marginLeft: "8px" }}>
+                    (Ít nhất 1 file hoặc ghi chú)
+                  </span>
+                </label>
+                
+                {/* Danh sách minh chứng đã thêm */}
+                {rejectEvidenceFiles.length > 0 && (
+                  <div style={{ marginBottom: "12px" }}>
+                    {rejectEvidenceFiles.map((item, index) => (
+                      <div
+                        key={index}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "8px 12px",
+                          background: "#F8FAFC",
+                          border: "1px solid #E2E8F0",
+                          borderRadius: "6px",
+                          marginBottom: "8px",
+                          fontSize: "13px",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1 }}>
+                          {item.file ? (
+                            <>
+                              <i className="fa-solid fa-file" style={{ color: "#3B82F6" }}></i>
+                              <span>{item.file.name}</span>
+                              <span style={{ color: "#64748B", fontSize: "12px" }}>
+                                ({(item.file.size / 1024).toFixed(1)} KB)
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <i className="fa-solid fa-note-sticky" style={{ color: "#10B981" }}></i>
+                              <span style={{ color: "#64748B" }}>Ghi chú: </span>
+                              <span>{item.note.substring(0, 50)}{item.note.length > 50 ? '...' : ''}</span>
+                            </>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRejectEvidenceFiles(prev => prev.filter((_, i) => i !== index));
+                          }}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            color: "#EF4444",
+                            cursor: "pointer",
+                            padding: "4px 8px",
+                          }}
+                        >
+                          <i className="fa-solid fa-times"></i>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Nút thêm file */}
+                <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+                  <label
+                    style={{
+                      flex: 1,
+                      padding: "8px 16px",
+                      background: "#3B82F6",
+                      color: "white",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      textAlign: "center",
+                      fontSize: "13px",
+                      border: "none",
+                    }}
+                  >
+                    <i className="fa-solid fa-upload"></i> Thêm file
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif"
+                      style={{ display: "none" }}
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          if (file.size > 10 * 1024 * 1024) {
+                            showToast("File không được vượt quá 10MB", "warning");
+                            return;
+                          }
+                          setRejectEvidenceFiles(prev => [...prev, { file }]);
+                          e.target.value = '';
+                        }
+                      }}
+                    />
+                  </label>
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const note = prompt("Nhập ghi chú minh chứng từ chối:");
+                      if (note && note.trim()) {
+                        setRejectEvidenceFiles(prev => [...prev, { note: note.trim() }]);
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "8px 16px",
+                      background: "#10B981",
+                      color: "white",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      fontSize: "13px",
+                      border: "none",
+                    }}
+                  >
+                    <i className="fa-solid fa-note-sticky"></i> Thêm ghi chú
+                  </button>
+                </div>
+
+                <p style={{ fontSize: "12px", color: "#64748B", margin: "8px 0 0 0" }}>
+                  <i className="fa-solid fa-info-circle"></i> Hỗ trợ: PDF, Word, Excel, Ảnh (tối đa 10MB/file)
+                </p>
+              </div>
+            </div>
+            <div className="wjd-modal-footer">
+              <button
+                className="wjd-btn-cancel"
+                onClick={() => {
+                  setShowRejectRefundModal(false);
+                  setRejectEvidenceFiles([]);
+                }}
+                disabled={decisionSubmitting}
+              >
+                Hủy
+              </button>
+              <button
+                className="wjd-btn-danger"
+                onClick={handleSubmitRejectRefund}
+                disabled={decisionSubmitting}
+                style={{
+                  background: "#DC2626",
+                  color: "white",
+                  padding: "8px 16px",
+                  borderRadius: "6px",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                }}
+              >
+                {decisionSubmitting ? (
+                  <i className="fa-solid fa-circle-notch fa-spin"></i>
+                ) : (
+                  <i className="fa-solid fa-times"></i>
+                )}{" "}
+                Từ chối
               </button>
             </div>
           </div>

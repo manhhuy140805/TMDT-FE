@@ -24,7 +24,6 @@ const WorkspaceComplaints = () => {
   const [caseError, setCaseError] = useState(null);
   const [activeDispute, setActiveDispute] = useState(null);
   const [contract, setContract] = useState(null);
-  const [evidences, setEvidences] = useState([]);
   const [progressList, setProgressList] = useState([]);
   const [refundRequest, setRefundRequest] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -35,6 +34,12 @@ const WorkspaceComplaints = () => {
     soTienNguoiThue: "",
     soTienFreelancer: "",
     soTienGiamSat: "",
+    bangChungs: [],
+  });
+  const [supervisorEvidenceForm, setSupervisorEvidenceForm] = useState({
+    loaiBangChung: "GhiChu",
+    noiDung: "",
+    file: null,
   });
   const autoSyncedDisputesRef = useRef(new Set());
 
@@ -103,7 +108,6 @@ const WorkspaceComplaints = () => {
       if (!disputeId) {
         setActiveDispute(null);
         setContract(null);
-        setEvidences([]);
         setProgressList([]);
         setCaseError(null);
         return;
@@ -114,10 +118,9 @@ const WorkspaceComplaints = () => {
 
       const selected = disputes.find((item) => item.tranhChapId === disputeId);
       const contractId = selected?.congViecId;
-      const [disputeResult, evidenceResult, contractResult, progressResult, refundResult] =
+      const [disputeResult, contractResult, progressResult, refundResult] =
         await Promise.allSettled([
           api.disputes.getById(disputeId),
-          api.evidences.getByDisputeId(disputeId),
           contractId
             ? api.contracts.getDetail(contractId)
             : Promise.resolve(null),
@@ -136,17 +139,6 @@ const WorkspaceComplaints = () => {
       } else {
         setActiveDispute(selected || null);
         setCaseError("Không thể tải đầy đủ thông tin tranh chấp.");
-      }
-
-      if (evidenceResult.status === "fulfilled") {
-        const value = evidenceResult.value;
-        setEvidences(
-          value?.evidences ||
-            value?.data?.evidences ||
-            (Array.isArray(value?.data) ? value.data : []),
-        );
-      } else {
-        setEvidences([]);
       }
 
       if (contractResult.status === "fulfilled") {
@@ -377,6 +369,12 @@ const WorkspaceComplaints = () => {
       soTienHeThong: amounts.systemFee,
       soTienHoan: amounts.refundToEmployer,
       benChiuPhi: amounts.benChiuPhi,
+      bangChungs: [],
+    });
+    setSupervisorEvidenceForm({
+      loaiBangChung: "GhiChu",
+      noiDung: "",
+      file: null,
     });
     setShowResolution(true);
   };
@@ -394,6 +392,68 @@ const WorkspaceComplaints = () => {
     }));
   };
 
+  const handleAddSupervisorEvidence = async () => {
+    if (!supervisorEvidenceForm.noiDung.trim() && !supervisorEvidenceForm.file) {
+      return;
+    }
+
+    let duongDanFile = null;
+    if (supervisorEvidenceForm.file) {
+      const formData = new FormData();
+      formData.append("file", supervisorEvidenceForm.file);
+      try {
+        const uploadRes = await fetch("http://localhost:8080/upload/evidence", {
+          method: "POST",
+          body: formData,
+        });
+        if (!uploadRes.ok) {
+          throw new Error("Upload file thất bại");
+        }
+        const uploadData = await uploadRes.json();
+        duongDanFile = uploadData?.filePath;
+        if (!duongDanFile) {
+          showToast("Không thể lấy đường dẫn tệp.", "error");
+          return;
+        }
+      } catch (err) {
+        console.error("File upload error:", err);
+        showToast("Không thể tải lên tệp: " + (err.message || "Lỗi không xác định"), "error");
+        return;
+      }
+    }
+
+    try {
+      const newEvidence = {
+        loaiBangChung: supervisorEvidenceForm.loaiBangChung,
+        noiDung: supervisorEvidenceForm.noiDung.trim() || undefined,
+        duongDanFile: duongDanFile || undefined,
+      };
+
+      setResolution((current) => ({
+        ...current,
+        bangChungs: [...(current.bangChungs || []), newEvidence],
+      }));
+
+      setSupervisorEvidenceForm({
+        loaiBangChung: "GhiChu",
+        noiDung: "",
+        file: null,
+      });
+
+      showToast("Đã thêm minh chứng.", "success");
+    } catch (err) {
+      console.error("Add evidence error:", err);
+      showToast("Không thể thêm minh chứng.", "error");
+    }
+  };
+
+  const handleRemoveSupervisorEvidence = (index) => {
+    setResolution((current) => ({
+      ...current,
+      bangChungs: current.bangChungs.filter((_, i) => i !== index),
+    }));
+  };
+
   const handleResolve = async (event) => {
     event.preventDefault();
     if (!resolution.lyDo.trim()) {
@@ -404,6 +464,12 @@ const WorkspaceComplaints = () => {
     setActionLoading(true);
     try {
       const isRefundConclusion = resolution.ketQua === "HoanTienNguoiThue";
+
+      // Prepare evidence array if supervisor provided any
+      let bangChungArray = [];
+      if (resolution.bangChungs && resolution.bangChungs.length > 0) {
+        bangChungArray = resolution.bangChungs;
+      }
 
       await api.disputes.resolve(activeDispute.tranhChapId, {
         giamSatId: Number(supervisorId),
@@ -419,6 +485,7 @@ const WorkspaceComplaints = () => {
           ? Number(resolution.soTienGiamSat) || 0
           : 0,
         benChiuPhi: isRefundConclusion ? resolution.benChiuPhi : "ChiaSe",
+        bangChungArray: bangChungArray.length > 0 ? bangChungArray : undefined,
       });
 
       let nextContractStatus = null;
@@ -674,7 +741,7 @@ const WorkspaceComplaints = () => {
                   </div>
                   <div>
                     <span>Minh chứng</span>
-                    <strong>{evidences.length} tài liệu</strong>
+                    <strong>{(activeDispute?.bangChungs || []).length} tài liệu</strong>
                   </div>
                 </div>
 
@@ -809,15 +876,15 @@ const WorkspaceComplaints = () => {
                       <i className="fa-solid fa-folder-open"></i>Minh chứng đã
                       nộp
                     </div>
-                    <span className="wc-count">{evidences.length}</span>
+                    <span className="wc-count">{(activeDispute?.bangChungs || []).length}</span>
                   </div>
-                  {evidences.length === 0 ? (
+                  {!activeDispute?.bangChungs || activeDispute.bangChungs.length === 0 ? (
                     <div className="wc-evidence-empty">
                       Chưa có minh chứng được nộp cho tranh chấp này.
                     </div>
                   ) : (
                     <div className="wc-evidences">
-                      {evidences.map((evidence) => {
+                      {activeDispute.bangChungs.map((evidence) => {
                         const fileUrl = getFileUrl(evidence.duongDanFile);
                         return (
                           <article
@@ -840,7 +907,7 @@ const WorkspaceComplaints = () => {
                                 {evidence.noiDung || "Không có mô tả tài liệu."}
                               </p>
                               <small>
-                                Nộp bởi tài khoản #{evidence.nguoiNopId}
+                                Nộp bởi: {evidence.loaiNguoiNop === "NguoiThue" ? "Người thuê" : "Freelancer"} (ID: {evidence.nguoiNopId})
                               </small>
                             </div>
                             {fileUrl && (
@@ -1042,6 +1109,109 @@ const WorkspaceComplaints = () => {
                         placeholder="Mô tả kết quả đánh giá minh chứng và căn cứ ra quyết định..."
                       />
                     </label>
+
+                    <div className="wc-supervisor-evidence">
+                      <h5>Minh chứng bổ sung (Tùy chọn)</h5>
+                      <p style={{ fontSize: "13px", color: "#64748b", marginBottom: "12px" }}>
+                        Giám sát viên có thể cung cấp thêm minh chứng để hỗ trợ kết luận (không bắt buộc).
+                      </p>
+
+                      {resolution.bangChungs && resolution.bangChungs.length > 0 && (
+                        <div style={{ marginBottom: "16px", padding: "12px", background: "#F0F9FF", borderRadius: "6px", border: "1px solid #BAE6FD" }}>
+                          <strong style={{ fontSize: "13px", color: "#0369A1" }}>
+                            {resolution.bangChungs.length} minh chứng đã thêm
+                          </strong>
+                          <div style={{ marginTop: "8px" }}>
+                            {resolution.bangChungs.map((evidence, idx) => (
+                              <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #BAE6FD" }}>
+                                <span style={{ fontSize: "12px", color: "#334155" }}>
+                                  <i className="fa-solid fa-check" style={{ color: "#10B981", marginRight: "6px" }}></i>
+                                  {evidence.loaiBangChung}: {evidence.noiDung?.substring(0, 30) || evidence.duongDanFile?.split("/").pop() || "Tệp"}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveSupervisorEvidence(idx)}
+                                  style={{ background: "none", border: "none", color: "#EF4444", cursor: "pointer", fontSize: "12px" }}
+                                >
+                                  <i className="fa-solid fa-trash"></i>
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+                        <label style={{ display: "flex", flexDirection: "column" }}>
+                          <span style={{ fontSize: "12px", fontWeight: "500", marginBottom: "4px", color: "#334155" }}>Loại minh chứng</span>
+                          <select
+                            value={supervisorEvidenceForm.loaiBangChung}
+                            onChange={(e) =>
+                              setSupervisorEvidenceForm((current) => ({
+                                ...current,
+                                loaiBangChung: e.target.value,
+                              }))
+                            }
+                            style={{ padding: "8px", borderRadius: "4px", border: "1px solid #CBD5E1", fontSize: "13px" }}
+                          >
+                            <option value="GhiChu">Ghi chú</option>
+                            <option value="File">Tệp đính kèm</option>
+                            <option value="HinhAnh">Hình ảnh</option>
+                            <option value="TinNhan">Tin nhắn</option>
+                          </select>
+                        </label>
+                        <label style={{ display: "flex", flexDirection: "column" }}>
+                          <span style={{ fontSize: "12px", fontWeight: "500", marginBottom: "4px", color: "#334155" }}>Tệp (nếu có)</span>
+                          <input
+                            type="file"
+                            onChange={(e) =>
+                              setSupervisorEvidenceForm((current) => ({
+                                ...current,
+                                file: e.target.files?.[0] || null,
+                              }))
+                            }
+                            style={{ padding: "6px", borderRadius: "4px", border: "1px solid #CBD5E1", fontSize: "12px" }}
+                          />
+                        </label>
+                      </div>
+
+                      <label style={{ display: "flex", flexDirection: "column", marginBottom: "12px" }}>
+                        <span style={{ fontSize: "12px", fontWeight: "500", marginBottom: "4px", color: "#334155" }}>Nội dung minh chứng</span>
+                        <textarea
+                          rows="3"
+                          value={supervisorEvidenceForm.noiDung}
+                          onChange={(e) =>
+                            setSupervisorEvidenceForm((current) => ({
+                              ...current,
+                              noiDung: e.target.value,
+                            }))
+                          }
+                          placeholder="Mô tả minh chứng bổ sung (tùy chọn)..."
+                          style={{ padding: "8px", borderRadius: "4px", border: "1px solid #CBD5E1", fontSize: "13px", fontFamily: "inherit" }}
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={handleAddSupervisorEvidence}
+                        disabled={!supervisorEvidenceForm.noiDung.trim() && !supervisorEvidenceForm.file}
+                        style={{
+                          padding: "8px 12px",
+                          background: (!supervisorEvidenceForm.noiDung.trim() && !supervisorEvidenceForm.file) ? "#E5E7EB" : "#E0F2FE",
+                          color: (!supervisorEvidenceForm.noiDung.trim() && !supervisorEvidenceForm.file) ? "#9CA3AF" : "#0369A1",
+                          border: (!supervisorEvidenceForm.noiDung.trim() && !supervisorEvidenceForm.file) ? "1px solid #D1D5DB" : "1px solid #BAE6FD",
+                          borderRadius: "4px",
+                          cursor: (!supervisorEvidenceForm.noiDung.trim() && !supervisorEvidenceForm.file) ? "not-allowed" : "pointer",
+                          fontSize: "12px",
+                          fontWeight: "500",
+                          marginBottom: "16px",
+                        }}
+                      >
+                        <i className="fa-solid fa-plus" style={{ marginRight: "4px" }}></i>
+                        Thêm minh chứng
+                      </button>
+                    </div>
+
                     <div className="wc-resolution-actions">
                       <button
                         type="button"

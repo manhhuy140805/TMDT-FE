@@ -30,10 +30,13 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      const res = await authService.login({
-        email: formData.email,
+      const loginData = {
+        email: formData.email.trim().toLowerCase(),
         matKhau: formData.password,
-      });
+      };
+      console.log("Attempting login with:", { ...loginData, matKhau: "***" });
+      
+      const res = await authService.login(loginData);
 
       // API trả về { message, user } — chỉ lưu phần user
       const userData = res?.user ?? res;
@@ -68,6 +71,10 @@ const LoginPage = () => {
       navigate("/");
     } catch (err) {
       console.error("Login error:", err);
+      console.error("Error details:", {
+        message: err.message,
+        stack: err.stack,
+      });
       setError(err.message || "Có lỗi xảy ra. Vui lòng thử lại!");
     } finally {
       setLoading(false);
