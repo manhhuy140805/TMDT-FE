@@ -2,7 +2,7 @@ import { api } from "../utils/api";
 
 /**
  * Progress Service
- * POST   /contracts/:id/progress
+ * POST   /progress
  * GET    /contracts/:id/progress
  * GET    /progress/:id
  * PUT    /progress/:id
@@ -15,11 +15,12 @@ const progressService = {
 
   getById: (id) => api.get(`/progress/${id}`),
 
-  create: (contractId, data) => api.post(`/contracts/${contractId}/progress`, data),
-  // data: { tieuDe (required), phanTramHoanThanh (required, 0-100), moTa? }
+  create: (contractId, data) =>
+    api.post("/progress", { ...data, congViecId: Number(contractId) }),
+  // data: { freelancerId, tieuDe, phanTram (0-100), moTa? }
 
   update: (id, data) => api.put(`/progress/${id}`, data),
-  // data: { tieuDe?, moTa?, phanTramHoanThanh? }
+  // data: { tieuDe?, moTa?, phanTram? }
 
   delete: (id) => api.delete(`/progress/${id}`),
 };

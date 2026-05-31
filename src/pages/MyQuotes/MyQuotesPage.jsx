@@ -29,8 +29,8 @@ const MyQuotesPage = () => {
       setLoading(false);
       return;
     }
-    const freelancerId = currentUser.freelancerId ?? currentUser.taiKhoanId;
-    fetchMyQuotes(freelancerId);
+    const taiKhoanId = currentUser.taiKhoanId ?? currentUser.id;
+    fetchMyQuotes(taiKhoanId);
   }, []);
 
   const fetchMyQuotes = async (freelancerId) => {

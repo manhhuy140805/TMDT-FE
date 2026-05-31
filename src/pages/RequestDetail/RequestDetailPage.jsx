@@ -244,7 +244,7 @@ const RequestDetailPage = () => {
     try {
       await api.proposals.create({
         yeuCauId: parseInt(id),
-        freelancerId: currentUser.freelancerId ?? currentUser.taiKhoanId,
+        freelancerId: currentUser.taiKhoanId ?? currentUser.id,
         giaDeXuat: Number(minPrice),
         thoiGianThucHien: Number(duration),
         noiDung: description,

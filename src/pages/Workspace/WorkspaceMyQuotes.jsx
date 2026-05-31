@@ -80,27 +80,8 @@ const WorkspaceMyQuotes = () => {
     }
 
     const loadQuotes = async () => {
-      let fId = currentUser.freelancerId;
-
-      // Nếu chưa có freelancerId → gọi profile API để lấy
-      if (!fId) {
-        try {
-          const profileRes = await api.users.getProfile(currentUser.taiKhoanId);
-          fId = profileRes?.profile?.freelancer?.freelancerId;
-          if (fId) {
-            // Cập nhật localStorage để lần sau không cần gọi lại
-            const updated = { ...currentUser, freelancerId: fId };
-            localStorage.setItem("user", JSON.stringify(updated));
-          }
-        } catch (err) {
-          console.warn("Không lấy được freelancerId từ profile:", err.message);
-        }
-      }
-
-      // Fallback cuối cùng: dùng taiKhoanId
-      if (!fId) fId = currentUser.taiKhoanId;
-
-      fetchMyQuotes(fId);
+      const taiKhoanId = currentUser.taiKhoanId ?? currentUser.id;
+      fetchMyQuotes(taiKhoanId);
     };
 
     loadQuotes();
