@@ -203,6 +203,8 @@
 
 .wc-status {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
   white-space: nowrap;
   border-radius: 999px;
   padding: 4px 8px;
